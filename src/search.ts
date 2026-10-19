@@ -2,13 +2,13 @@ import MiniSearch, { type SearchResult as MSResult } from "minisearch";
 import { stripCode } from "./markdown.js";
 import type { EdgeKind, KBGraph, KBNode, NodeType } from "./types.js";
 
-/** Lowercase, strip diacritics (Vietnamese tones/marks), map đ → d. */
+/** Lowercase, strip combining marks, and fold stroked d characters. */
 export const fold = (s: string): string =>
   s.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
 
 /**
- * Small EN + VI stopword list, stored folded. Folding merges some Vietnamese words
- * (e.g. "là"/"lá"), so only very common function words are listed.
+ * Common function words, stored folded. Folding can merge distinct words,
+ * so the list is kept small.
  */
 const STOPWORDS = new Set(
   [
@@ -87,7 +87,7 @@ export interface SearchOptions {
   /** Include deprecated nodes (default false). */
   includeDeprecated?: boolean;
   /** Typo tolerance as a fraction of term length, for terms ≥ 5 chars (default 0.2; false disables).
-   *  Short terms are exact because Vietnamese syllables are 2–4 chars and fuzzy matching them is noisy. */
+   *  Short terms are exact to avoid noisy matches from small spelling differences. */
   fuzzy?: number | false;
   /** Prefix-match the last query term when ≥ 3 chars (default true). */
   prefix?: boolean;

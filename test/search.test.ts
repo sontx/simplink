@@ -10,11 +10,11 @@ const sample = async () => {
   return createSearchIndex(r.graph);
 };
 
-test("fold strips Vietnamese marks and đ", () => {
+test("fold normalizes case, combining marks, and stroked d characters", () => {
   assert.equal(fold("Đăng ký mẫu tin Gửi HÀNG LOẠT"), "dang ky mau tin gui hang loat");
 });
 
-test("Vietnamese query matches with and without diacritics, same ranking", async () => {
+test("queries with and without diacritics produce the same ranking", async () => {
   const s = await sample();
   const a = s.search("gửi tin nhắn hàng loạt");
   const b = s.search("gui tin nhan hang loat");
@@ -31,7 +31,7 @@ test("aliases outrank body matches", async () => {
 test("typo tolerance on long terms, none on short terms", async () => {
   const s = await sample();
   assert.ok(s.search("brodcast").hits.some((h) => h.id === "goal.send-zalo-broadcast"));
-  // "dang" must not fuzzy-match "hang" (Vietnamese syllables are short)
+  // Short terms such as "dang" must not fuzzy-match "hang".
   assert.deepEqual(s.search("dang ky mau").hits.map((h) => h.id), ["procedure.zalo.register-template"]);
 });
 

@@ -61,7 +61,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_kb",
     description:
-      "Search the product knowledge base (Vietnamese or English, diacritics optional). " +
+      "Search the product knowledge base (diacritics optional). " +
       "Start here for any user request about what the product can do or how to achieve something. " +
       "Returns `goals` (ranked entry points; pass the best one to resolve_goal) and `hits` (matching nodes of any type). " +
       "A hit with type `procedure` and no goals is a standalone procedure; use resolve_procedure for it.",
