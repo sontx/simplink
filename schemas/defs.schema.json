@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kb.local/schemas/defs.schema.json",
+  "$defs": {
+    "nodeId": {
+      "title": "node id",
+      "type": "string",
+      "pattern": "^(goal|procedure|capability|state|constraint)(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "goalId": {
+      "title": "goal id",
+      "type": "string",
+      "pattern": "^goal(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "procedureId": {
+      "title": "procedure id",
+      "type": "string",
+      "pattern": "^procedure(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "capabilityId": {
+      "title": "capability id",
+      "type": "string",
+      "pattern": "^capability(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "stateId": {
+      "title": "state id",
+      "type": "string",
+      "pattern": "^state(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "constraintId": {
+      "title": "constraint id",
+      "type": "string",
+      "pattern": "^constraint(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+    },
+    "nodeRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nodeId"
+      }
+    },
+    "procedureRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/procedureId"
+      }
+    },
+    "capabilityRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/capabilityId"
+      }
+    },
+    "stateRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/stateId"
+      }
+    },
+    "constraintRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/constraintId"
+      }
+    },
+    "stringList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "common": {
+      "type": "object",
+      "required": [
+        "type",
+        "title",
+        "summary"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "type": {
+          "enum": [
+            "goal",
+            "procedure",
+            "capability",
+            "state",
+            "constraint"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aliases": {
+          "$ref": "#/$defs/stringList"
+        },
+        "tags": {
+          "$ref": "#/$defs/stringList"
+        },
+        "related": {
+          "$ref": "#/$defs/nodeRefs"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "deprecated"
+          ]
+        },
+        "availability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "plans": {
+              "$ref": "#/$defs/stringList"
+            },
+            "permissions": {
+              "$ref": "#/$defs/stringList"
+            }
+          }
+        },
+        "sources": {
+          "$ref": "#/$defs/stringList",
+          "description": "Repo paths or doc URLs this node was derived from. Not indexed for search."
+        }
+      }
+    },
+    "slug": {
+      "title": "slug (lowercase kebab-case)",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "question",
+        "options"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "when",
+              "procedure"
+            ],
+            "properties": {
+              "key": {
+                "$ref": "#/$defs/slug"
+              },
+              "when": {
+                "type": "string",
+                "minLength": 1
+              },
+              "procedure": {
+                "$ref": "#/$defs/procedureId"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

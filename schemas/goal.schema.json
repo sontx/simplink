@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kb.local/schemas/goal.schema.json",
+  "title": "KB goal",
+  "type": "object",
+  "allOf": [{ "$ref": "defs.schema.json#/$defs/common" }],
+  "required": ["when_to_use", "procedures"],
+  "properties": {
+    "type": { "const": "goal" },
+    "when_to_use": { "$ref": "defs.schema.json#/$defs/stringList", "type": "array", "minItems": 1 },
+    "procedures":  { "$ref": "defs.schema.json#/$defs/procedureRefs", "type": "array", "minItems": 1 }
+  },
+  "unevaluatedProperties": false
+}

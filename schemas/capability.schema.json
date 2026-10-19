@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kb.local/schemas/capability.schema.json",
+  "title": "KB capability",
+  "type": "object",
+  "allOf": [{ "$ref": "defs.schema.json#/$defs/common" }],
+  "required": [],
+  "properties": {
+    "type": { "const": "capability" },
+    "requires":       { "$ref": "defs.schema.json#/$defs/capabilityRefs" },
+    "constrained_by": { "$ref": "defs.schema.json#/$defs/constraintRefs" }
+  },
+  "unevaluatedProperties": false
+}

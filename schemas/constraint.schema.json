@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kb.local/schemas/constraint.schema.json",
+  "title": "KB constraint",
+  "type": "object",
+  "allOf": [{ "$ref": "defs.schema.json#/$defs/common" }],
+  "required": ["severity"],
+  "properties": {
+    "type": { "const": "constraint" },
+    "severity": { "enum": ["blocking", "warning"] }
+  },
+  "unevaluatedProperties": false
+}

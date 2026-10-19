@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kb.local/schemas/state.schema.json",
+  "title": "KB state",
+  "type": "object",
+  "allOf": [{ "$ref": "defs.schema.json#/$defs/common" }],
+  "required": ["check", "satisfied_by"],
+  "properties": {
+    "type": { "const": "state" },
+    "check":        { "type": "string", "minLength": 1 },
+    "satisfied_by": { "$ref": "defs.schema.json#/$defs/procedureRefs", "type": "array", "minItems": 1 }
+  },
+  "unevaluatedProperties": false
+}

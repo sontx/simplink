@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kb.local/schemas/procedure.schema.json",
+  "title": "KB procedure",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "defs.schema.json#/$defs/common"
+    }
+  ],
+  "required": [],
+  "properties": {
+    "type": {
+      "const": "procedure"
+    },
+    "requires": {
+      "$ref": "defs.schema.json#/$defs/procedureRefs"
+    },
+    "preconditions": {
+      "$ref": "defs.schema.json#/$defs/stateRefs"
+    },
+    "produces": {
+      "$ref": "defs.schema.json#/$defs/stateRefs"
+    },
+    "uses": {
+      "$ref": "defs.schema.json#/$defs/capabilityRefs"
+    },
+    "constrained_by": {
+      "$ref": "defs.schema.json#/$defs/constraintRefs"
+    },
+    "optional_preconditions": {
+      "$ref": "defs.schema.json#/$defs/stateRefs"
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "defs.schema.json#/$defs/choice"
+      }
+    }
+  },
+  "unevaluatedProperties": false
+}

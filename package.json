@@ -1,0 +1,41 @@
+{
+  "name": "@sontx/simplink",
+  "version": "0.1.0",
+  "packageManager": "pnpm@12.14.0",
+  "description": "Markdown graph KB: loader, schema validation, and lint CLI",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "simp-lint": "dist/cli.js",
+    "simp-resolve": "dist/resolve-cli.js",
+    "simp-search": "dist/search-cli.js",
+    "simp-mcp": "dist/mcp/bin.js",
+    "simp-mcp-http": "dist/mcp/http-bin.js"
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint:kb": "node dist/cli.js kb",
+    "dev": "tsx src/cli.ts kb",
+    "test": "tsx --test test/*.test.ts",
+    "start:http": "node dist/mcp/http-bin.js --kb kb"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "ajv": "8.17.1",
+    "gray-matter": "4.0.3",
+    "minisearch": "7.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.6",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
