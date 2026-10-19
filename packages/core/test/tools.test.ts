@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
@@ -6,7 +7,7 @@ import { tmpdir } from "node:os";
 import { createKBTools, type KBTools } from "../src/index.js";
 
 let cached: KBTools | undefined;
-const tools = async () => (cached ??= await createKBTools(path.resolve("kb")));
+const tools = async () => (cached ??= await createKBTools(fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url))));
 const call = async (name: string, args: unknown) => (await tools()).call(name, args);
 const parse = (r: { content: string }) => JSON.parse(r.content);
 

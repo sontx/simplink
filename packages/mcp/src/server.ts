@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import type { KBTools } from "../tools/core.js";
+import type { KBTools } from "@sontx/simplink-core";
 
 export const SERVER_INSTRUCTIONS =
   "Product knowledge base as a graph of goals, procedures, capabilities, states, and constraints. " +

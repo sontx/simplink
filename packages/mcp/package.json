@@ -1,0 +1,38 @@
+{
+  "name": "@sontx/simplink-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json --force",
+    "test": "tsx --test test/*.test.ts",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "MCP server and stdio/HTTP transports for Simplink knowledge bases",
+  "bin": {
+    "simp-mcp": "dist/bin.js",
+    "simp-mcp-http": "dist/http-bin.js"
+  },
+  "dependencies": {
+    "@sontx/simplink-core": "workspace:^",
+    "@modelcontextprotocol/sdk": "1.31.0"
+  }
+}

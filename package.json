@@ -1,34 +1,14 @@
 {
-  "name": "@sontx/simplink",
-  "version": "0.1.0",
+  "name": "simplink-workspace",
+  "private": true,
   "packageManager": "pnpm@12.14.0",
-  "description": "Markdown graph KB: loader, schema validation, and lint CLI",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "simp-lint": "dist/cli.js",
-    "simp-resolve": "dist/resolve-cli.js",
-    "simp-search": "dist/search-cli.js",
-    "simp-mcp": "dist/mcp/bin.js",
-    "simp-mcp-http": "dist/mcp/http-bin.js"
-  },
-  "files": [
-    "dist",
-    "schemas"
-  ],
   "scripts": {
-    "build": "tsc",
-    "lint:kb": "node dist/cli.js kb",
-    "dev": "tsx src/cli.ts kb",
-    "test": "tsx --test test/*.test.ts",
-    "start:http": "node dist/mcp/http-bin.js --kb kb"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "1.31.0",
-    "ajv": "8.17.1",
-    "gray-matter": "4.0.3",
-    "minisearch": "7.1.2"
+    "build": "pnpm -r build",
+    "test": "pnpm build && pnpm -r test",
+    "lint:kb": "node packages/core/dist/cli.js kb",
+    "dev": "tsx packages/core/src/cli.ts kb",
+    "start:http": "node packages/mcp/dist/http-bin.js --kb kb"
   },
   "devDependencies": {
     "@types/node": "20.17.6",

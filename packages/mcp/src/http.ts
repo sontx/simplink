@@ -1,6 +1,6 @@
 import type { IncomingMessage, RequestListener, ServerResponse } from "node:http";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { KBTools } from "../tools/core.js";
+import type { KBTools } from "@sontx/simplink-core";
 import { createMcpServer } from "./server.js";
 
 export interface McpHttpOptions {

@@ -1,18 +1,19 @@
+import { fileURLToPath } from "node:url";
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import path from "node:path";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { createKBTools, createMcpHttpHandler, type McpHttpOptions, type RequestLog } from "../src/index.js";
+import { createKBTools } from "@sontx/simplink-core";
+import { createMcpHttpHandler, type McpHttpOptions, type RequestLog } from "@sontx/simplink-mcp";
 
 const logs: RequestLog[] = [];
 let base = "";
 let srv: Server;
 
 async function start(opts: McpHttpOptions = {}) {
-  const tools = await createKBTools(path.resolve("kb"), { tenantContext: false });
+  const tools = await createKBTools(fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url)), { tenantContext: false });
   const s = createServer(createMcpHttpHandler(tools, { onRequest: (e) => logs.push(e), ...opts }));
   await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
   return { s, url: `http://127.0.0.1:${(s.address() as AddressInfo).port}` };
@@ -75,7 +76,7 @@ test("routing: healthz, 404, 405 for GET/DELETE on /mcp", async () => {
   const h = await fetch(`${base}/healthz`);
   assert.equal(h.status, 200);
   const body = await h.json();
-  assert.deepEqual(body, { ok: true, kb: { nodes: 22, edges: 34, errors: 0, warnings: 0 } }); // root path not leaked
+  assert.deepEqual(body, { ok: true, kb: { nodes: 17, edges: 20, errors: 0, warnings: 0 } }); // root path not leaked
   assert.equal((await fetch(`${base}/nope`)).status, 404);
   for (const method of ["GET", "DELETE"]) {
     const r = await fetch(`${base}/mcp`, { method });

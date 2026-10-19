@@ -1,0 +1,41 @@
+{
+  "name": "@sontx/simplink-core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "schemas"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json --force",
+    "test": "tsx --test test/*.test.ts",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Markdown graph KB: loading, validation, resolution, search, and tools",
+  "bin": {
+    "simp-lint": "dist/cli.js",
+    "simp-resolve": "dist/resolve-cli.js",
+    "simp-search": "dist/search-cli.js"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "gray-matter": "4.0.3",
+    "minisearch": "7.1.2"
+  }
+}

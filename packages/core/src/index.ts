@@ -10,5 +10,3 @@ export { renderResolvedGoal, type RenderOptions, type RenderResult } from "./ren
 export { section, orderedItems, estimateTokens } from "./markdown.js";
 export * from "./search.js";
 export { createKBTools, buildDefinitions, TOOL_DEFINITIONS, type KBToolsOptions, type ToolDefinition, type ToolResult, type KBTools, type KBStatus } from "./tools/core.js";
-export { createMcpServer, SERVER_INSTRUCTIONS } from "./mcp/server.js";
-export { createMcpHttpHandler, type McpHttpOptions, type RequestLog } from "./mcp/http.js";

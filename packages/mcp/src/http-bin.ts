@@ -2,7 +2,7 @@
 import { createServer } from "node:http";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { createKBTools } from "../tools/core.js";
+import { createKBTools } from "@sontx/simplink-core";
 import { createMcpHttpHandler } from "./http.js";
 
 const env = process.env;

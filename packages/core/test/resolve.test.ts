@@ -1,10 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import path from "node:path";
 import { lintKB, renderResolvedGoal, resolveGoal } from "../src/index.js";
 import { fixture as lintFixture, proc, sig } from "./helpers.js";
 
-const SAMPLE = path.resolve("kb");
+const SAMPLE = fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url));
 const GOAL = "goal.send-zalo-broadcast";
 
 async function sampleGraph() {

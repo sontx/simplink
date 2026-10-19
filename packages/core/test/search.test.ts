@@ -1,11 +1,11 @@
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import path from "node:path";
 import { createSearchIndex, fold, lintKB } from "../src/index.js";
 import { fixture, goal, proc } from "./helpers.js";
 
 const sample = async () => {
-  const r = await lintKB(path.resolve("kb"));
+  const r = await lintKB(fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url)));
   assert.equal(r.errorCount, 0);
   return createSearchIndex(r.graph);
 };

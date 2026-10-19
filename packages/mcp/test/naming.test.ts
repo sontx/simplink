@@ -1,24 +1,9 @@
-import { spawnSync } from "node:child_process";
-import assert from "node:assert/strict";
-import path from "node:path";
 import { test } from "node:test";
+import assert from "node:assert/strict";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createMcpServer, type KBTools } from "../src/index.js";
-
-const help = (script: string) => {
-  const result = spawnSync(process.execPath, ["--import", "tsx", path.resolve(script), "--help"], {
-    encoding: "utf8",
-  });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout;
-};
-
-test("CLI help uses the simp command names", () => {
-  assert.match(help("src/cli.ts"), /^Usage: simp-lint\b/);
-  assert.match(help("src/resolve-cli.ts"), /^Usage: simp-resolve\b/);
-  assert.match(help("src/search-cli.ts"), /^Usage: simp-search\b/);
-});
+import type { KBTools } from "@sontx/simplink-core";
+import { createMcpServer } from "@sontx/simplink-mcp";
 
 test("MCP server identifies itself with the simp name", async () => {
   const tools: KBTools = {

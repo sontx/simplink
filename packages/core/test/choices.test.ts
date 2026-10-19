@@ -1,12 +1,12 @@
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import path from "node:path";
 import { lintKB, resolveGoal, renderResolvedGoal, type ChooseStep, type RunStep } from "../src/index.js";
 import { choiceYaml, fixture, goal, proc, sig, state } from "./helpers.js";
 
 const GOAL = "goal.send-zalo-message";
 const sample = async () => {
-  const r = await lintKB(path.resolve("kb"));
+  const r = await lintKB(fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url)));
   assert.equal(r.errorCount, 0);
   return r.graph;
 };

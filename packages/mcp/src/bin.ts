@@ -2,7 +2,7 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createKBTools } from "../tools/core.js";
+import { createKBTools } from "@sontx/simplink-core";
 import { createMcpServer } from "./server.js";
 
 // stdout carries the MCP protocol: log to stderr only.
