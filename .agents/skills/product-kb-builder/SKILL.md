@@ -1,6 +1,6 @@
 ---
 name: product-kb-builder
-description: Build, extend, or re-sync a Markdown graph knowledge base (kb-graph format — goals, procedures, capabilities, states, constraints as Markdown files with YAML frontmatter) from a product's codebase and docs, so an AI agent can search it and turn user goals into step-by-step plans. Use this whenever the user wants to create, bootstrap, populate, extend, update, or sync a product KB, agent knowledge base, or `kb/` folder from code or documentation; document what the product can do for an AI agent or support bot; add a feature or module to the KB; or fix kb-lint errors — even if they don't say "kb-graph" or "skill".
+description: Build, extend, or re-sync a Markdown graph knowledge base (kb-graph format — goals, procedures, capabilities, states, constraints as Markdown files with YAML frontmatter) from a product's codebase and docs, so an AI agent can search it and turn user goals into step-by-step plans. Use this whenever the user wants to create, bootstrap, populate, extend, update, or sync a product KB, agent knowledge base, or `kb/` folder from code or documentation; document what the product can do for an AI agent or support bot; add a feature or module to the KB; or fix simp-lint errors — even if they don't say "kb-graph" or "skill".
 ---
 
 # Product KB Builder
@@ -17,10 +17,12 @@ quality of what you write here is the quality of the agent's answers.
 
 `<skill>` below means the directory containing this SKILL.md.
 
-1. **Find the tooling.** Run `npx kb-lint --help`. If it is missing, ask the user where kb-graph is
-   installed (e.g. `node <path>/dist/cli.js`). You need `kb-lint`, `kb-search`, and `kb-resolve` throughout.
+1. **Find the tooling.** Run `npx simp-lint --help`. If it is missing, ask the user where
+   `@sontx/simplink-core` is installed (in this repository, after `pnpm build`:
+   `node packages/core/dist/cli.js`, `search-cli.js`, and `resolve-cli.js`). You need `simp-lint`,
+   `simp-search`, and `simp-resolve` throughout.
 2. **Find the KB directory** (default `kb/`). If it already has files, you are in **update mode**: run
-   `kb-lint` first, read `kb/INVENTORY.md` if it exists, and work incrementally (see "Update mode").
+   `simp-lint` first, read `kb/INVENTORY.md` if it exists, and work incrementally (see "Update mode").
 3. **Read `references/schema.md` now.** It defines every field, edge, and lint code. Writing files from
    memory of the format causes lint churn.
 4. **Ask two things** if the user hasn't said: the KB's primary language for titles and steps
@@ -66,7 +68,7 @@ For each node:
 
 After each area:
 
-1. Run `npx kb-lint kb`. Fix every error before moving on (see the fix table in `references/schema.md`).
+1. Run `npx simp-lint kb`. Fix every error before moving on (see the fix table in `references/schema.md`).
    Errors compound across areas because later nodes link to earlier ones.
 2. Run `node <skill>/scripts/inventory_check.mjs --kb kb` and update each row's status in `INVENTORY.md`.
 3. Tell the user briefly what was added, then continue to the next area.
@@ -76,9 +78,9 @@ After each area:
 Lint checks structure, not usefulness. Check usefulness directly:
 
 1. **Retrieval.** For each goal, write 2–3 queries a real user might type — at least one in Vietnamese and
-   one in English, _not_ copied from its aliases. Run `npx kb-search "<query>" --kb kb`. The goal should
+   one in English, _not_ copied from its aliases. Run `npx simp-search "<query>" --kb kb`. The goal should
    appear in the top 3 `Goals`. If it doesn't, improve `aliases` / `when_to_use`, not the query.
-2. **Plans.** Run `npx kb-resolve <goal-id> --kb kb` for each goal and read it as the user would:
+2. **Plans.** Run `npx simp-resolve <goal-id> --kb kb` for each goal and read it as the user would:
    - Is a prerequisite missing? Add a `preconditions` state (with `satisfied_by`) or a `requires` procedure.
    - Does a step depend on a decision? Model it as a `choices` entry.
    - Does a plan-gated feature show the right availability? Check `availability`.

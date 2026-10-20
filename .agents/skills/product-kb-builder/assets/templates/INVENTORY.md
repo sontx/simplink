@@ -2,7 +2,7 @@
 
 Product: TODO · Primary language: TODO · Scope: TODO
 Status values: `planned` → `drafted` → `verified`, or `skipped` (with a reason in notes).
-This file sits at the KB root, so the kb-graph loader ignores it.
+This file sits at the KB root, so the loader ignores it.
 
 ## Area: TODO area name
 

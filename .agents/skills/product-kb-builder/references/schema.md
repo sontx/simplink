@@ -1,7 +1,7 @@
-# kb-graph schema reference
+# Simplink KB schema reference
 
-The schema files live in kb-graph's `schemas/` directory and are authoritative; this is the readable
-version. `kb-lint` enforces all of it.
+The JSON schemas bundled with `@sontx/simplink-core` (`packages/core/schemas/` in this repository) are
+authoritative; this is the readable version. `simp-lint` enforces all of it.
 
 ## Contents
 
@@ -45,8 +45,15 @@ kb/procedures/zalo/send-message.md  →  procedure.zalo.send-message
 | `status`       |          | `active` \| `deprecated`                       | Default `active`                                     |
 | `availability` |          | `{ plans?: string[], permissions?: string[] }` | Tenant gating                                        |
 | `sources`      |          | string[]                                       | Repo paths / doc URLs used as evidence. Not searched |
+| `docs`         |          | `{ path?: string, order?: integer }`           | Docs export placement; see below                     |
 
 Unknown keys are errors (E005), so do not invent fields.
+
+`docs` affects only the site layout of `simp-docs` / `kb.docs()`, never the node id or source path:
+
+- `path`: relative POSIX `.md` path with lowercase kebab-case segments, e.g. `getting-started/connect.md`.
+  `index.md` is reserved for generated landing pages. Two nodes with the same destination fail the export.
+- `order`: nonnegative integer; smaller numbers appear first in navigation.
 
 ## 3. Fields per type
 

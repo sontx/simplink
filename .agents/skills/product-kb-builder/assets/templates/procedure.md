@@ -1,6 +1,6 @@
 ---
 type: procedure
-title: { { title } }
+title: {{title}}
 summary: TODO what this procedure does (≤ 200 chars)
 # requires: []                # procedures that must always run first
 # preconditions: []           # states that must be true (checked, fixed if false)

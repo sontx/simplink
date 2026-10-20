@@ -58,10 +58,11 @@ const title = values.title ?? humanize(segs.at(-1));
 const yamlTitle = /[:#\[\]{}&*!|>'"%@`]/.test(title)
   ? JSON.stringify(title)
   : title;
+// Formatters may rewrite the placeholder as "{ { title } }".
 const content = readFileSync(
   path.join(templateDir, `${type}.md`),
   "utf8",
-).replace("{{title}}", yamlTitle);
+).replace(/\{\s*\{\s*title\s*\}\s*\}/, () => yamlTitle);
 
 mkdirSync(path.dirname(file), { recursive: true });
 writeFileSync(file, content);

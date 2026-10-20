@@ -1,6 +1,6 @@
 ---
 type: goal
-title: { { title } }
+title: {{title}}
 summary: TODO one sentence on the outcome (≤ 200 chars)
 aliases:
   - TODO cách người dùng nói (tiếng Việt)

@@ -1,6 +1,6 @@
 ---
 type: capability
-title: { { title } }
+title: {{title}}
 summary: TODO what the product can do (≤ 200 chars)
 # requires: []        # other capabilities
 # constrained_by: []
