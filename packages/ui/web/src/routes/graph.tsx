@@ -48,6 +48,8 @@ function Graph() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const types = ["goal", "procedure", "capability", "state", "constraint"];
+  const defaultTypes = ["goal", "procedure", "capability"];
+  const selectedTypes = search.types?.split(",") ?? defaultTypes;
   const kinds = [...new Set(kb?.edges.map((e) => e.kind) ?? [])];
   const update = (next: Partial<typeof search>) =>
     void navigate({ search: (old) => ({ ...old, ...next }) });
@@ -79,8 +81,8 @@ function Graph() {
         {types.map((type) => (
           <label className={check} key={type} title={enumDescription(type)}>
             <Checkbox
-              checked={(search.types?.split(",") ?? types).includes(type)}
-              onCheckedChange={() => toggle("types", type, types)}
+              checked={selectedTypes.includes(type)}
+              onCheckedChange={() => toggle("types", type, defaultTypes)}
             />
             <span
               className={`${type} size-1.5 rounded-full bg-(--type-color)`}
@@ -168,7 +170,7 @@ function Graph() {
         focus={search.focus}
         depth={search.depth ?? (search.focus ? 2 : 1)}
         filters={{
-          types: search.types?.split(","),
+          types: selectedTypes,
           kinds: search.kinds?.split(","),
           deprecated: search.deprecated,
           issuesOnly: search.issuesOnly,

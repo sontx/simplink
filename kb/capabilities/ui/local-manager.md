@@ -26,7 +26,7 @@ sources:
 
 `@sontx/simplink-ui` provides the `simp-ui` command. The main views are:
 
-- **Graph**: the knowledge graph, with filters for **Node types**, **Relationships**, **Depth**, **Show deprecated**, and **Only with issues**, plus an **Orphans** list. Select a node to open the **NODE INSPECTOR**.
+- **Graph**: the knowledge graph, with filters for **Node types**, **Relationships**, **Depth**, **Show deprecated**, and **Only with issues**, plus an **Orphans** list. **State** and **Constraint** are unchecked by default; enable them under **Node types** to show them. Select a node to open the **NODE INSPECTOR**.
 - **Nodes**: a table filterable by title or ID, type, status, and tag. Each node page has **Overview**, **Source**, and **Docs** tabs.
 - **Issues**: lint findings, filterable by **Severity**.
 - **Docs**: an in-memory preview of the exported docs in **Site** or **Graph** layout.
