@@ -6,7 +6,11 @@ import { docsQuery, kbQuery, pageQuery } from "../../api.js";
 import { ErrorMessage } from "../../components/ui/primitives.js";
 import { Button } from "../../components/ui/button.js";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
-import { headingId, Markdown } from "../../components/markdown.js";
+import {
+  headingId,
+  Markdown,
+  stripFrontmatter,
+} from "../../components/markdown.js";
 import { cn, label } from "../../lib/utils.js";
 
 export const Route = createFileRoute("/docs/$")({
@@ -62,9 +66,6 @@ const pageName = (path: string) => {
   const parts = path.replace(/(?:^|\/)index\.md$/, "").split("/");
   return label(parts.at(-1)?.replace(/\.md$/, "") || "Overview");
 };
-
-const stripFrontmatter = (content: string) =>
-  content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
 
 /** h2/h3 headings outside code fences, for the "On this page" list. */
 function outline(content: string) {

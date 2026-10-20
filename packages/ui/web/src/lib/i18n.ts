@@ -127,6 +127,9 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "Save file": "Lưu tệp",
   "Delete file": "Xóa tệp",
   "Published documentation": "Tài liệu xuất bản",
+  "Open docs": "Mở tài liệu",
+  "Graph docs": "Tài liệu đồ thị",
+  "Loading documentation…": "Đang tải tài liệu…",
   "This node contributes to the following live page.":
     "Nút này đóng góp nội dung cho trang xem trước sau.",
   "Open {path}": "Mở {path}",

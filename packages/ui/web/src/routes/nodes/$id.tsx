@@ -1,5 +1,5 @@
 import { usePreferences } from "../../components/preferences.js";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, kbQuery, nodeQuery } from "../../api.js";
@@ -7,11 +7,12 @@ import {
   Badge,
   Button,
   Dialog,
-  Textarea,
   ErrorMessage,
   Page,
 } from "../../components/ui/primitives.js";
 import { Markdown } from "../../components/markdown.js";
+import { SourceFiles } from "../../components/source-files.js";
+import { NodeDocs } from "../../components/node-docs.js";
 import {
   Tabs,
   TabsList,
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/nodes/$id")({
 
 const muted = "text-muted-foreground";
 const actions = "mt-4.5 flex flex-wrap items-center gap-2.25";
+const SourceEditor = lazy(() => import("../../components/source-editor.js"));
 
 function NodePage() {
   const { id } = Route.useParams();
@@ -38,7 +40,7 @@ function NodePage() {
 }
 
 function NodeContent() {
-  const { t, label, enumDescription } = usePreferences();
+  const { t, label, enumDescription, theme } = usePreferences();
 
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
@@ -173,9 +175,18 @@ function NodeContent() {
                     }
                     className="m-0 wrap-anywhere text-muted-foreground"
                   >
-                    {typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value)}
+                    {key === "sources" && Array.isArray(value) ? (
+                      <SourceFiles
+                        sources={value.filter(
+                          (source): source is string =>
+                            typeof source === "string",
+                        )}
+                      />
+                    ) : typeof value === "object" ? (
+                      JSON.stringify(value)
+                    ) : (
+                      String(value)
+                    )}
                   </dd>
                 </div>
               ))}
@@ -244,17 +255,36 @@ function NodeContent() {
                   : t("Markdown source")}
             </span>
           </div>
-          <Textarea
-            aria-label={t("Markdown source")}
-            disabled={save.isPending}
-            className="mt-4 h-[52dvh] min-h-80 bg-card p-5 font-mono text-xs leading-[1.8] [tab-size:2]"
-            spellCheck={false}
-            value={raw ?? detail.raw}
-            onChange={(e) => {
-              setRaw(e.target.value);
-              setSaved(false);
-            }}
-          />
+          <div className="mt-4 h-[52dvh] min-h-80 overflow-hidden rounded-md border border-input">
+            <Suspense fallback={t("Loading node…")}>
+              <SourceEditor
+                nodeType={node.type}
+                theme={theme === "dark" ? "vs-dark" : "light"}
+                value={raw ?? detail.raw}
+                options={{
+                  ariaLabel: t("Markdown source"),
+                  readOnly: save.isPending,
+                  automaticLayout: true,
+                  minimap: { enabled: false },
+                  lineNumbers: "off",
+                  fontSize: 12,
+                  tabSize: 2,
+                  quickSuggestions: {
+                    other: true,
+                    comments: false,
+                    strings: true,
+                  },
+                  wordWrap: "on",
+                  scrollBeyondLastLine: false,
+                  padding: { top: 20, bottom: 20 },
+                }}
+                onChange={(value) => {
+                  setRaw(value ?? "");
+                  setSaved(false);
+                }}
+              />
+            </Suspense>
+          </div>
           <ErrorMessage error={save.error} />
           <div className={actions}>
             <Button
@@ -276,38 +306,7 @@ function NodeContent() {
           ))}
         </TabsContent>
         <TabsContent value="docs">
-          <h2>{t("Published documentation")}</h2>
-          {docPath ? (
-            <>
-              <p className={muted}>
-                {t("This node contributes to the following live page.")}
-              </p>
-              <Button variant="default" asChild>
-                <Link
-                  to="/docs/$"
-                  params={{ _splat: docPath }}
-                  search={{ layout: "site" }}
-                >
-                  {t("Open {path}", { path: docPath })}
-                </Link>
-              </Button>
-            </>
-          ) : (
-            <p className={muted}>
-              {t(
-                "This node has no docs.path. Add a docs path in Source to include it in the site preview.",
-              )}
-            </p>
-          )}
-          <p>
-            <Link
-              to="/docs/$"
-              params={{ _splat: node.path }}
-              search={{ layout: "graph" }}
-            >
-              {t("Browse graph documentation →")}
-            </Link>
-          </p>
+          <NodeDocs docPath={docPath} nodePath={node.path} />
         </TabsContent>
       </Tabs>
       {deleting && (

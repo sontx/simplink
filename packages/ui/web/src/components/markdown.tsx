@@ -8,6 +8,10 @@ import React, {
   useEffect,
   type ReactNode,
 } from "react";
+
+export const stripFrontmatter = (content: string) =>
+  content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
+
 const headingText = (children: ReactNode): string =>
   Children.toArray(children)
     .map((child) =>

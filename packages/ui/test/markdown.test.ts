@@ -2,7 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { docHref, Markdown } from "../web/src/components/markdown.js";
+import {
+  docHref,
+  Markdown,
+  stripFrontmatter,
+} from "../web/src/components/markdown.js";
+
+test("documentation previews hide frontmatter and preserve Markdown separators", () => {
+  assert.equal(
+    stripFrontmatter("---\r\ntitle: Page\r\n---\r\n# Page\r\n\r\n---\r\nBody"),
+    "# Page\r\n\r\n---\r\nBody",
+  );
+  assert.equal(stripFrontmatter("# Page\n\n---\nBody"), "# Page\n\n---\nBody");
+});
 test("docs links resolve relative paths and preserve layout and fragments", () => {
   assert.equal(
     docHref("../features/send.md#limits", "guides/how-to/start.md", "graph"),
