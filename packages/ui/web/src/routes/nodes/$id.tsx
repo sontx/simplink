@@ -143,7 +143,7 @@ function NodeContent() {
         value={tab}
         onValueChange={(value) => void navigate({ search: { tab: value } })}
       >
-        <TabsList className="my-6">
+        <TabsList className="mb-4">
           {["overview", "source", "docs"].map((value) => (
             <TabsTrigger
               key={value}
@@ -159,7 +159,7 @@ function NodeContent() {
           className="grid grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)] gap-11.25 max-[1100px]:grid-cols-1 max-[780px]:gap-3.75"
         >
           <div>
-            <h3 className="text-[13px]">{t("Frontmatter")}</h3>
+            <div className="font-semibold mb-2">{t("Frontmatter")}</div>
             <dl className="mb-7.5 border-t border-border">
               {Object.entries(node.data).map(([key, value]) => (
                 <div
@@ -192,7 +192,7 @@ function NodeContent() {
               ))}
             </dl>
             <Markdown content={node.body} />
-            <h3 className="text-[13px]">{t("Relationships")}</h3>
+            <div className="font-semibold mb-2 mt-6">{t("Relationships")}</div>
             {["out", "in"].map((dir) => (
               <section key={dir}>
                 <h4>{dir === "out" ? t("Outgoing") : t("Incoming")}</h4>
