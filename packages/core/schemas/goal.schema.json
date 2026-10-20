@@ -7,8 +7,16 @@
   "required": ["when_to_use", "procedures"],
   "properties": {
     "type": { "const": "goal" },
-    "when_to_use": { "$ref": "defs.schema.json#/$defs/stringList", "type": "array", "minItems": 1 },
-    "procedures":  { "$ref": "defs.schema.json#/$defs/procedureRefs", "type": "array", "minItems": 1 }
+    "when_to_use": {
+      "$ref": "defs.schema.json#/$defs/stringList",
+      "type": "array",
+      "minItems": 1
+    },
+    "procedures": {
+      "$ref": "defs.schema.json#/$defs/procedureRefs",
+      "type": "array",
+      "minItems": 1
+    }
   },
   "unevaluatedProperties": false
 }

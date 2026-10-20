@@ -4,7 +4,13 @@ import type { MaybePromise } from "./types.js";
 import { createValidator, type ValidatorExtension } from "./schema.js";
 import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
-import { FOLDER_TO_TYPE, issue, type Issue, type KBGraph, type KBNode } from "./types.js";
+import {
+  FOLDER_TO_TYPE,
+  issue,
+  type Issue,
+  type KBGraph,
+  type KBNode,
+} from "./types.js";
 
 export type LintRule = (graph: KBGraph) => MaybePromise<Issue[]>;
 export interface LintOptions {
@@ -20,7 +26,8 @@ export interface LintResult {
   warningCount: number;
 }
 
-const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
 function toNode(doc: RawDoc, id: string): KBNode {
   const d = doc.data;
@@ -35,7 +42,12 @@ function toNode(doc: RawDoc, id: string): KBNode {
     tags: strings(d.tags),
     status: d.status === "deprecated" ? "deprecated" : "active",
     availability:
-      av && typeof av === "object" ? { plans: av.plans ? strings(av.plans) : undefined, permissions: av.permissions ? strings(av.permissions) : undefined } : undefined,
+      av && typeof av === "object"
+        ? {
+            plans: av.plans ? strings(av.plans) : undefined,
+            permissions: av.permissions ? strings(av.permissions) : undefined,
+          }
+        : undefined,
     data: d,
     body: doc.body,
   };
@@ -46,22 +58,35 @@ function toNode(doc: RawDoc, id: string): KBNode {
  * Files that fail path or YAML checks are excluded from the graph; files with
  * schema errors are still included so graph rules can report on them.
  */
-export async function lintKB(root: string | DocSource, opts: LintOptions = {}): Promise<LintResult> {
+export async function lintKB(
+  root: string | DocSource,
+  opts: LintOptions = {},
+): Promise<LintResult> {
   for (const code of opts.disable ?? []) {
-    if (code.startsWith("E")) throw new Error(`Cannot disable error code ${code}; only warnings may be disabled`);
+    if (code.startsWith("E"))
+      throw new Error(
+        `Cannot disable error code ${code}; only warnings may be disabled`,
+      );
   }
   const validate = opts.validator ?? createValidator();
   const issues: Issue[] = [];
   const nodes = new Map<string, KBNode>();
 
   for (const doc of await loadDocs(root)) {
-    const add = (code: string, msg: string) => issues.push(issue(code, doc.relPath, msg));
+    const add = (code: string, msg: string) =>
+      issues.push(issue(code, doc.relPath, msg));
     if (!doc.folderType) {
-      add("E003", `not inside a type folder (${Object.keys(FOLDER_TO_TYPE).join(", ")})`);
+      add(
+        "E003",
+        `not inside a type folder (${Object.keys(FOLDER_TO_TYPE).join(", ")})`,
+      );
       continue;
     }
     if (!doc.derivedId) {
-      add("E004", "path does not form a valid id (use lowercase kebab-case, no dots in names)");
+      add(
+        "E004",
+        "path does not form a valid id (use lowercase kebab-case, no dots in names)",
+      );
       continue;
     }
     if (doc.parseError) {
@@ -69,10 +94,17 @@ export async function lintKB(root: string | DocSource, opts: LintOptions = {}): 
       continue;
     }
     if (doc.data.type !== doc.folderType)
-      add("E003", `type "${String(doc.data.type)}" does not match folder type "${doc.folderType}"`);
+      add(
+        "E003",
+        `type "${String(doc.data.type)}" does not match folder type "${doc.folderType}"`,
+      );
     if (doc.data.id !== undefined && doc.data.id !== doc.derivedId)
-      add("E002", `id "${String(doc.data.id)}" does not match path-derived id "${doc.derivedId}"`);
-    for (const f of await validate(doc.folderType, doc.data)) add(f.code, f.message);
+      add(
+        "E002",
+        `id "${String(doc.data.id)}" does not match path-derived id "${doc.derivedId}"`,
+      );
+    for (const f of await validate(doc.folderType, doc.data))
+      add(f.code, f.message);
 
     const existing = nodes.get(doc.derivedId);
     if (existing) {
@@ -84,13 +116,22 @@ export async function lintKB(root: string | DocSource, opts: LintOptions = {}): 
 
   const graph = buildGraph(nodes);
   issues.push(...lintGraph(graph));
-  for (const rule of opts.rules ?? []) issues.push(...await rule(graph));
+  for (const rule of opts.rules ?? []) issues.push(...(await rule(graph)));
   const disabled = new Set(opts.disable);
-  for (let i = issues.length - 1; i >= 0; i--) if (disabled.has(issues[i].code)) issues.splice(i, 1);
+  for (let i = issues.length - 1; i >= 0; i--)
+    if (disabled.has(issues[i].code)) issues.splice(i, 1);
   issues.sort(
-    (a, b) => a.path.localeCompare(b.path) || (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1) || a.code.localeCompare(b.code),
+    (a, b) =>
+      a.path.localeCompare(b.path) ||
+      (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1) ||
+      a.code.localeCompare(b.code),
   );
 
   const errorCount = issues.filter((i) => i.severity === "error").length;
-  return { graph, issues, errorCount, warningCount: issues.length - errorCount };
+  return {
+    graph,
+    issues,
+    errorCount,
+    warningCount: issues.length - errorCount,
+  };
 }

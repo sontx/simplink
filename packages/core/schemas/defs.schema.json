@@ -77,23 +77,13 @@
     },
     "common": {
       "type": "object",
-      "required": [
-        "type",
-        "title",
-        "summary"
-      ],
+      "required": ["type", "title", "summary"],
       "properties": {
         "id": {
           "$ref": "#/$defs/nodeId"
         },
         "type": {
-          "enum": [
-            "goal",
-            "procedure",
-            "capability",
-            "state",
-            "constraint"
-          ]
+          "enum": ["goal", "procedure", "capability", "state", "constraint"]
         },
         "title": {
           "type": "string",
@@ -113,10 +103,7 @@
           "$ref": "#/$defs/nodeRefs"
         },
         "status": {
-          "enum": [
-            "active",
-            "deprecated"
-          ]
+          "enum": ["active", "deprecated"]
         },
         "availability": {
           "type": "object",
@@ -144,11 +131,7 @@
     "choice": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "question",
-        "options"
-      ],
+      "required": ["id", "question", "options"],
       "properties": {
         "id": {
           "$ref": "#/$defs/slug"
@@ -163,11 +146,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "key",
-              "when",
-              "procedure"
-            ],
+            "required": ["key", "when", "procedure"],
             "properties": {
               "key": {
                 "$ref": "#/$defs/slug"

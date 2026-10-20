@@ -26,11 +26,16 @@ export const state = (title: string, satisfiedBy: string) =>
 export const sig = (plan: PlanStep[]) =>
   plan.map((s) => {
     const id = s.kind === "check" ? s.state.id : s.procedure.id;
-    const when = s.when?.length ? `?${s.when.map((c) => c.state).join(",")}` : "";
+    const when = s.when?.length
+      ? `?${s.when.map((c) => c.state).join(",")}`
+      : "";
     return `${s.kind}:${id}${when}`;
   });
 
 export const choiceYaml = (id: string, options: [string, string][]) =>
   `choices:\n  - id: ${id}\n    question: Pick?\n    options:\n${options
-    .map(([key, p]) => `      - key: ${key}\n        when: use ${key}\n        procedure: ${p}\n`)
+    .map(
+      ([key, p]) =>
+        `      - key: ${key}\n        when: use ${key}\n        procedure: ${p}\n`,
+    )
     .join("")}`;

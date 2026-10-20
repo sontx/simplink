@@ -7,7 +7,7 @@
   "required": [],
   "properties": {
     "type": { "const": "capability" },
-    "requires":       { "$ref": "defs.schema.json#/$defs/capabilityRefs" },
+    "requires": { "$ref": "defs.schema.json#/$defs/capabilityRefs" },
     "constrained_by": { "$ref": "defs.schema.json#/$defs/constraintRefs" }
   },
   "unevaluatedProperties": false

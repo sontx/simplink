@@ -13,17 +13,32 @@ const { values } = parseArgs({
     port: { type: "string", default: env.PORT ?? "3000" },
     path: { type: "string", default: env.MCP_PATH ?? "/mcp" },
     "max-body": { type: "string", default: env.MAX_BODY_BYTES ?? "1000000" },
-    "allowed-host": { type: "string", multiple: true, default: env.ALLOWED_HOSTS?.split(",").filter(Boolean) ?? [] },
-    "allowed-origin": { type: "string", multiple: true, default: env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [] },
+    "allowed-host": {
+      type: "string",
+      multiple: true,
+      default: env.ALLOWED_HOSTS?.split(",").filter(Boolean) ?? [],
+    },
+    "allowed-origin": {
+      type: "string",
+      multiple: true,
+      default: env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
+    },
   },
 });
 
-const log = (entry: Record<string, unknown>) => process.stdout.write(`${JSON.stringify({ t: new Date().toISOString(), ...entry })}\n`);
+const log = (entry: Record<string, unknown>) =>
+  process.stdout.write(
+    `${JSON.stringify({ t: new Date().toISOString(), ...entry })}\n`,
+  );
 
 const root = path.resolve(values.kb!);
 const tools = await createKBTools(root, { tenantContext: false });
 log({ msg: "kb loaded", ...tools.status });
-if (tools.status.errors) log({ msg: "kb has lint errors; serving anyway", errors: tools.status.errors });
+if (tools.status.errors)
+  log({
+    msg: "kb has lint errors; serving anyway",
+    errors: tools.status.errors,
+  });
 
 const server = createServer(
   createMcpHttpHandler(tools, {
@@ -38,7 +53,12 @@ const server = createServer(
 server.keepAliveTimeout = 65_000;
 server.headersTimeout = 66_000;
 
-server.listen(Number(values.port), values.host, () => log({ msg: "listening", url: `http://${values.host}:${values.port}${values.path}` }));
+server.listen(Number(values.port), values.host, () =>
+  log({
+    msg: "listening",
+    url: `http://${values.host}:${values.port}${values.path}`,
+  }),
+);
 
 const shutdown = (signal: string) => {
   log({ msg: "shutting down", signal });

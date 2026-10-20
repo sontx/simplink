@@ -1,11 +1,22 @@
 import * as ajv2020 from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv/dist/2020.js";
-import { createKB, isKB, type KB, type KBExtensions, type KBStatus } from "../kb.js";
+import {
+  createKB,
+  isKB,
+  type KB,
+  type KBExtensions,
+  type KBStatus,
+} from "../kb.js";
 import type { DocSource } from "../source.js";
 import type { ResolveOptions } from "../resolve.js";
 import type { MaybePromise } from "../types.js";
 export type { KBStatus } from "../kb.js";
-import { EDGE_KINDS, NODE_TYPES, type EdgeKind, type NodeType } from "../types.js";
+import {
+  EDGE_KINDS,
+  NODE_TYPES,
+  type EdgeKind,
+  type NodeType,
+} from "../types.js";
 
 const Ajv2020 = ajv2020.default.default ?? ajv2020.default;
 
@@ -14,7 +25,11 @@ export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  annotations?: { readOnlyHint?: boolean; openWorldHint?: boolean; title?: string };
+  annotations?: {
+    readOnlyHint?: boolean;
+    openWorldHint?: boolean;
+    title?: string;
+  };
 }
 
 export interface ToolResult {
@@ -39,20 +54,40 @@ export interface KBTools {
 const resolveProps = {
   states: {
     type: "object",
-    description: 'Known state values, e.g. {"state.channel.zalo-connected": true}. Omitted states are unknown and produce CHECK steps.',
+    description:
+      'Known state values, e.g. {"state.channel.zalo-connected": true}. Omitted states are unknown and produce CHECK steps.',
     additionalProperties: { type: "boolean" },
   },
-  plan: { type: "string", description: "Tenant plan (e.g. \"pro\"), used for availability. Omit if unknown." },
-  permissions: { type: "array", items: { type: "string" }, description: "Tenant/user permissions, used for availability." },
+  plan: {
+    type: "string",
+    description:
+      'Tenant plan (e.g. "pro"), used for availability. Omit if unknown.',
+  },
+  permissions: {
+    type: "array",
+    items: { type: "string" },
+    description: "Tenant/user permissions, used for availability.",
+  },
   choices: {
     type: "object",
-    description: 'Pre-selected options for CHOOSE steps: {"<choiceId>": "<optionKey>"} or {"<procedureId>:<choiceId>": "<optionKey>"}.',
+    description:
+      'Pre-selected options for CHOOSE steps: {"<choiceId>": "<optionKey>"} or {"<procedureId>:<choiceId>": "<optionKey>"}.',
     additionalProperties: { type: "string" },
   },
-  token_budget: { type: "integer", minimum: 200, maximum: 8000, default: 2000, description: "Approximate size limit for the returned plan." },
+  token_budget: {
+    type: "integer",
+    minimum: 200,
+    maximum: 8000,
+    default: 2000,
+    description: "Approximate size limit for the returned plan.",
+  },
 } as const;
 
-const idProp = (what: string) => ({ type: "string", minLength: 1, description: `${what} id, e.g. from search_kb results.` });
+const idProp = (what: string) => ({
+  type: "string",
+  minLength: 1,
+  description: `${what} id, e.g. from search_kb results.`,
+});
 const readOnly = { readOnlyHint: true, openWorldHint: false };
 
 const DEFAULT_DEFINITIONS: ToolDefinition[] = [
@@ -68,8 +103,17 @@ const DEFAULT_DEFINITIONS: ToolDefinition[] = [
       required: ["query"],
       additionalProperties: false,
       properties: {
-        query: { type: "string", minLength: 1, description: "The user's intent in their own words." },
-        types: { type: "array", items: { enum: [...NODE_TYPES] }, uniqueItems: true, description: "Restrict hits to these node types." },
+        query: {
+          type: "string",
+          minLength: 1,
+          description: "The user's intent in their own words.",
+        },
+        types: {
+          type: "array",
+          items: { enum: [...NODE_TYPES] },
+          uniqueItems: true,
+          description: "Restrict hits to these node types.",
+        },
         limit: { type: "integer", minimum: 1, maximum: 25, default: 8 },
       },
     },
@@ -113,7 +157,13 @@ const DEFAULT_DEFINITIONS: ToolDefinition[] = [
       additionalProperties: false,
       properties: {
         id: idProp("Node"),
-        max_body_chars: { type: "integer", minimum: 0, maximum: 20000, default: 3000, description: "0 omits the body." },
+        max_body_chars: {
+          type: "integer",
+          minimum: 0,
+          maximum: 20000,
+          default: 3000,
+          description: "0 omits the body.",
+        },
       },
     },
     annotations: { ...readOnly, title: "Get node" },
@@ -131,8 +181,19 @@ const DEFAULT_DEFINITIONS: ToolDefinition[] = [
         id: idProp("Node"),
         depth: { type: "integer", minimum: 1, maximum: 3, default: 2 },
         direction: { enum: ["out", "in", "both"], default: "both" },
-        kinds: { type: "array", items: { enum: [...EDGE_KINDS] }, uniqueItems: true, description: "Only follow these edge kinds." },
-        limit: { type: "integer", minimum: 1, maximum: 100, default: 40, description: "Max nodes returned." },
+        kinds: {
+          type: "array",
+          items: { enum: [...EDGE_KINDS] },
+          uniqueItems: true,
+          description: "Only follow these edge kinds.",
+        },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 100,
+          default: 40,
+          description: "Max nodes returned.",
+        },
       },
     },
     annotations: { ...readOnly, title: "Get related" },
@@ -157,7 +218,10 @@ export function buildDefinitions(opts: KBToolsOptions = {}): ToolDefinition[] {
       const props = d.inputSchema.properties as Record<string, unknown>;
       delete props.plan;
       delete props.permissions;
-      d.description = d.description.replace("(states, tenant plan/permissions, chosen options)", "(states, chosen options)");
+      d.description = d.description.replace(
+        "(states, tenant plan/permissions, chosen options)",
+        "(states, chosen options)",
+      );
     }
   }
   return defs;
@@ -165,15 +229,32 @@ export function buildDefinitions(opts: KBToolsOptions = {}): ToolDefinition[] {
 
 // ---------- helpers ----------
 
-const json = (v: unknown): ToolResult => ({ content: JSON.stringify(v, (_, x) => (Array.isArray(x) && x.length === 0 ? undefined : x)) });
+const json = (v: unknown): ToolResult => ({
+  content: JSON.stringify(v, (_, x) =>
+    Array.isArray(x) && x.length === 0 ? undefined : x,
+  ),
+});
 const fail = (msg: string): ToolResult => ({ content: msg, isError: true });
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
-const COMMON_KEYS = new Set(["id", "type", "title", "summary", "aliases", "tags", "status", "availability", ...EDGE_KINDS]);
+const COMMON_KEYS = new Set([
+  "id",
+  "type",
+  "title",
+  "summary",
+  "aliases",
+  "tags",
+  "status",
+  "availability",
+  ...EDGE_KINDS,
+]);
 
-function groupEdges(edges: { kind: EdgeKind; id: string }[]): Record<string, string[]> {
+function groupEdges(
+  edges: { kind: EdgeKind; id: string }[],
+): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const e of edges) (out[e.kind] ??= []).includes(e.id) || out[e.kind].push(e.id);
+  for (const e of edges)
+    (out[e.kind] ??= []).includes(e.id) || out[e.kind].push(e.id);
   return out;
 }
 
@@ -183,116 +264,179 @@ export class ToolError extends Error {}
 
 /** Default specs are independent copies and can be replaced or removed before validation. */
 export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
-  const handlers: Record<string, (a: any, kb: KB) => MaybePromise<ToolResult>> = {
-    search_kb: async (a, kb) => {
-      const { graph } = kb;
-      const r = await kb.search(a.query, { types: a.types as NodeType[] | undefined, limit: a.limit });
-      return json({
-        goals: r.goals.map((g) => ({ id: g.id, title: g.title, relevance: r2(g.relevance) })),
-        hits: r.hits.map((h) => ({ id: h.id, type: h.type, title: h.title, summary: h.summary, relevance: r2(h.relevance), goals: h.goals })),
-      });
-    },
-    resolve_goal: async (a, kb) => {
-      const { graph } = kb;
-      const node = await requireNode(kb, a.goal_id, "goal");
-      return { content: (await kb.render(kb.resolveGoal(node, resolveOpts(a)), { tokenBudget: a.token_budget })).text };
-    },
-    resolve_procedure: async (a, kb) => {
-      const { graph } = kb;
-      const node = await requireNode(kb, a.procedure_id, "procedure");
-      return { content: (await kb.render(kb.resolveProcedure(node, resolveOpts(a)), { tokenBudget: a.token_budget })).text };
-    },
-    get_node: async (a, kb) => {
-      const { graph } = kb;
-      const id = await requireNode(kb, a.id);
-      const n = graph.nodes.get(id)!;
-      const fields = Object.fromEntries(Object.entries(n.data).filter(([k]) => !COMMON_KEYS.has(k)));
-      const body = n.body.trim();
-      const max: number = a.max_body_chars;
-      return json({
-        id: n.id,
-        type: n.type,
-        title: n.title,
-        summary: n.summary,
-        status: n.status === "deprecated" ? "deprecated" : undefined,
-        aliases: n.aliases,
-        tags: n.tags,
-        availability: n.availability,
-        fields: Object.keys(fields).length ? fields : undefined,
-        out: groupEdges(graph.out.get(id)!.map((e) => ({ kind: e.kind, id: e.to }))),
-        in: groupEdges(graph.in.get(id)!.map((e) => ({ kind: e.kind, id: e.from }))),
-        body: max > 0 && body ? body.slice(0, max) : undefined,
-        body_truncated: max > 0 && body.length > max ? true : undefined,
-      });
-    },
-    get_related: async (a, kb) => {
-      const { graph } = kb;
-      const id = await requireNode(kb, a.id);
-      const kinds = a.kinds ? new Set<EdgeKind>(a.kinds) : null;
-      const dist = new Map([[id, 0]]);
-      const edges = new Map<string, [string, EdgeKind, string]>();
-      let frontier = [id];
-      let truncated = false;
-      for (let d = 1; d <= a.depth && frontier.length; d++) {
-        const next: string[] = [];
-        for (const cur of frontier) {
-          const cand = [
-            ...(a.direction !== "in" ? graph.out.get(cur)!.map((e) => [e, e.to] as const) : []),
-            ...(a.direction !== "out" ? graph.in.get(cur)!.map((e) => [e, e.from] as const) : []),
-          ];
-          for (const [e, other] of cand) {
-            if ((kinds && !kinds.has(e.kind)) || !graph.nodes.has(other)) continue;
-            if (!dist.has(other)) {
-              if (dist.size >= a.limit) {
-                truncated = true;
+  const handlers: Record<string, (a: any, kb: KB) => MaybePromise<ToolResult>> =
+    {
+      search_kb: async (a, kb) => {
+        const { graph } = kb;
+        const r = await kb.search(a.query, {
+          types: a.types as NodeType[] | undefined,
+          limit: a.limit,
+        });
+        return json({
+          goals: r.goals.map((g) => ({
+            id: g.id,
+            title: g.title,
+            relevance: r2(g.relevance),
+          })),
+          hits: r.hits.map((h) => ({
+            id: h.id,
+            type: h.type,
+            title: h.title,
+            summary: h.summary,
+            relevance: r2(h.relevance),
+            goals: h.goals,
+          })),
+        });
+      },
+      resolve_goal: async (a, kb) => {
+        const { graph } = kb;
+        const node = await requireNode(kb, a.goal_id, "goal");
+        return {
+          content: (
+            await kb.render(kb.resolveGoal(node, resolveOpts(a)), {
+              tokenBudget: a.token_budget,
+            })
+          ).text,
+        };
+      },
+      resolve_procedure: async (a, kb) => {
+        const { graph } = kb;
+        const node = await requireNode(kb, a.procedure_id, "procedure");
+        return {
+          content: (
+            await kb.render(kb.resolveProcedure(node, resolveOpts(a)), {
+              tokenBudget: a.token_budget,
+            })
+          ).text,
+        };
+      },
+      get_node: async (a, kb) => {
+        const { graph } = kb;
+        const id = await requireNode(kb, a.id);
+        const n = graph.nodes.get(id)!;
+        const fields = Object.fromEntries(
+          Object.entries(n.data).filter(([k]) => !COMMON_KEYS.has(k)),
+        );
+        const body = n.body.trim();
+        const max: number = a.max_body_chars;
+        return json({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          summary: n.summary,
+          status: n.status === "deprecated" ? "deprecated" : undefined,
+          aliases: n.aliases,
+          tags: n.tags,
+          availability: n.availability,
+          fields: Object.keys(fields).length ? fields : undefined,
+          out: groupEdges(
+            graph.out.get(id)!.map((e) => ({ kind: e.kind, id: e.to })),
+          ),
+          in: groupEdges(
+            graph.in.get(id)!.map((e) => ({ kind: e.kind, id: e.from })),
+          ),
+          body: max > 0 && body ? body.slice(0, max) : undefined,
+          body_truncated: max > 0 && body.length > max ? true : undefined,
+        });
+      },
+      get_related: async (a, kb) => {
+        const { graph } = kb;
+        const id = await requireNode(kb, a.id);
+        const kinds = a.kinds ? new Set<EdgeKind>(a.kinds) : null;
+        const dist = new Map([[id, 0]]);
+        const edges = new Map<string, [string, EdgeKind, string]>();
+        let frontier = [id];
+        let truncated = false;
+        for (let d = 1; d <= a.depth && frontier.length; d++) {
+          const next: string[] = [];
+          for (const cur of frontier) {
+            const cand = [
+              ...(a.direction !== "in"
+                ? graph.out.get(cur)!.map((e) => [e, e.to] as const)
+                : []),
+              ...(a.direction !== "out"
+                ? graph.in.get(cur)!.map((e) => [e, e.from] as const)
+                : []),
+            ];
+            for (const [e, other] of cand) {
+              if ((kinds && !kinds.has(e.kind)) || !graph.nodes.has(other))
                 continue;
+              if (!dist.has(other)) {
+                if (dist.size >= a.limit) {
+                  truncated = true;
+                  continue;
+                }
+                dist.set(other, d);
+                next.push(other);
               }
-              dist.set(other, d);
-              next.push(other);
+              edges.set(`${e.from}|${e.kind}|${e.to}`, [e.from, e.kind, e.to]);
             }
-            edges.set(`${e.from}|${e.kind}|${e.to}`, [e.from, e.kind, e.to]);
           }
+          frontier = next;
         }
-        frontier = next;
-      }
-      return json({
-        root: id,
-        nodes: [...dist].map(([nid, distance]) => {
-          const n = graph.nodes.get(nid)!;
-          return { id: nid, type: n.type, title: n.title, distance };
-        }),
-        edges: [...edges.values()].filter(([f, , t]) => dist.has(f) && dist.has(t)),
-        truncated: truncated || undefined,
-      });
-    },
-  };
+        return json({
+          root: id,
+          nodes: [...dist].map(([nid, distance]) => {
+            const n = graph.nodes.get(nid)!;
+            return { id: nid, type: n.type, title: n.title, distance };
+          }),
+          edges: [...edges.values()].filter(
+            ([f, , t]) => dist.has(f) && dist.has(t),
+          ),
+          truncated: truncated || undefined,
+        });
+      },
+    };
 
-  return buildDefinitions(opts).map(definition => ({ definition, handler: handlers[definition.name] }));
+  return buildDefinitions(opts).map((definition) => ({
+    definition,
+    handler: handlers[definition.name],
+  }));
 }
 
-export const TOOL_DEFINITIONS: ToolDefinition[] = defaultToolSpecs().map(spec => spec.definition);
+export const TOOL_DEFINITIONS: ToolDefinition[] = defaultToolSpecs().map(
+  (spec) => spec.definition,
+);
 
 /** Loads once or reuses an existing snapshot, then serves validated async calls. */
-export async function createKBTools(input: string | DocSource | KB, opts: KBToolsOptions = {}): Promise<KBTools> {
-  if (isKB(input) && opts.extensions !== undefined) throw new Error("extensions cannot be supplied with an existing KB");
+export async function createKBTools(
+  input: string | DocSource | KB,
+  opts: KBToolsOptions = {},
+): Promise<KBTools> {
+  if (isKB(input) && opts.extensions !== undefined)
+    throw new Error("extensions cannot be supplied with an existing KB");
   const kb = isKB(input) ? input : await createKB(input, opts.extensions);
   const { status } = kb;
-  const specs = opts.tools ? opts.tools(defaultToolSpecs(opts), kb) : defaultToolSpecs(opts);
+  const specs = opts.tools
+    ? opts.tools(defaultToolSpecs(opts), kb)
+    : defaultToolSpecs(opts);
   const handlers = new Map<string, KBToolSpec["handler"]>();
   for (const spec of specs) {
-    if (handlers.has(spec.definition.name)) throw new Error(`Duplicate tool name "${spec.definition.name}"`);
+    if (handlers.has(spec.definition.name))
+      throw new Error(`Duplicate tool name "${spec.definition.name}"`);
     handlers.set(spec.definition.name, spec.handler);
   }
-  const definitions = specs.map(spec => structuredClone(spec.definition));
-  const ajv = new Ajv2020({ allErrors: true, strict: false, useDefaults: true });
-  const validators = new Map<string, ValidateFunction>(definitions.map(d => [d.name, ajv.compile(d.inputSchema)]));
+  const definitions = specs.map((spec) => structuredClone(spec.definition));
+  const ajv = new Ajv2020({
+    allErrors: true,
+    strict: false,
+    useDefaults: true,
+  });
+  const validators = new Map<string, ValidateFunction>(
+    definitions.map((d) => [d.name, ajv.compile(d.inputSchema)]),
+  );
   const call = async (name: string, args: unknown): Promise<ToolResult> => {
     const handler = handlers.get(name);
     const validate = validators.get(name);
-    if (!handler || !validate) return fail(`Unknown tool "${name}". Available: ${definitions.map((d) => d.name).join(", ")}`);
+    if (!handler || !validate)
+      return fail(
+        `Unknown tool "${name}". Available: ${definitions.map((d) => d.name).join(", ")}`,
+      );
     const input = structuredClone(args ?? {});
     if (!validate(input)) {
-      const msg = (validate.errors ?? []).map((e) => `${e.instancePath || "(args)"} ${e.message}`).join("; ");
+      const msg = (validate.errors ?? [])
+        .map((e) => `${e.instancePath || "(args)"} ${e.message}`)
+        .join("; ");
       return fail(`Invalid arguments for ${name}: ${msg}`);
     }
     try {
@@ -313,24 +457,41 @@ function resolveOpts(a: any): ResolveOptions {
   return {
     states: a.states,
     choices: a.choices,
-    tenant: a.plan !== undefined || a.permissions !== undefined ? {
-      ...(a.plan !== undefined ? { plan: a.plan } : {}),
-      ...(a.permissions !== undefined ? { permissions: a.permissions } : {}),
-    } : undefined,
+    tenant:
+      a.plan !== undefined || a.permissions !== undefined
+        ? {
+            ...(a.plan !== undefined ? { plan: a.plan } : {}),
+            ...(a.permissions !== undefined
+              ? { permissions: a.permissions }
+              : {}),
+          }
+        : undefined,
   };
 }
 
 /** Returns the id if it exists (and has the expected type), else throws a ToolError with suggestions. */
-async function requireNode(kb: KB, id: string, type?: NodeType): Promise<string> {
+async function requireNode(
+  kb: KB,
+  id: string,
+  type?: NodeType,
+): Promise<string> {
   const { graph } = kb;
   const n = graph.nodes.get(id);
   if (n && (!type || n.type === type)) return id;
   if (n && type) {
-    const hint = n.type === "procedure" ? " Use resolve_procedure." : n.type === "goal" ? " Use resolve_goal." : "";
+    const hint =
+      n.type === "procedure"
+        ? " Use resolve_procedure."
+        : n.type === "goal"
+          ? " Use resolve_goal."
+          : "";
     throw new ToolError(`"${id}" is a ${n.type}, not a ${type}.${hint}`);
   }
   const query = id.split(".").slice(1).join(" ").replace(/-/g, " ") || id;
-  const similar = (await kb.search(query, { types: type ? [type] : undefined, limit: 3 }))
-    .hits.map((h) => h.id);
-  throw new ToolError(`Node "${id}" not found.${similar.length ? ` Did you mean: ${similar.join(", ")}?` : " Use search_kb to find ids."}`);
+  const similar = (
+    await kb.search(query, { types: type ? [type] : undefined, limit: 3 })
+  ).hits.map((h) => h.id);
+  throw new ToolError(
+    `Node "${id}" not found.${similar.length ? ` Did you mean: ${similar.join(", ")}?` : " Use search_kb to find ids."}`,
+  );
 }

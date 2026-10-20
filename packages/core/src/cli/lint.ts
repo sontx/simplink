@@ -3,7 +3,10 @@ import { lintKB } from "../lint.js";
 
 import { type CliContext, integerOption, formatOption } from "./context.js";
 
-export async function runLint(argv: string[], ctx: CliContext = {}): Promise<number> {
+export async function runLint(
+  argv: string[],
+  ctx: CliContext = {},
+): Promise<number> {
   const stdout = ctx.stdout ?? console.log;
   const stderr = ctx.stderr ?? console.error;
   try {
@@ -31,14 +34,30 @@ Exit code 1 on any error or when --max-warnings is exceeded.`);
     const root = positionals[0] ?? "kb";
     formatOption(values.format, ["text", "json"]);
     if (positionals.length > 1) throw new Error("Expected one KB directory");
-    const maxWarnings = integerOption(values["max-warnings"], "max-warnings", -1);
-    const result = await lintKB(root, { ...ctx.extensions?.lint, validator: ctx.extensions?.validator });
-    const shown = values.quiet ? result.issues.filter((i) => i.severity === "error") : result.issues;
+    const maxWarnings = integerOption(
+      values["max-warnings"],
+      "max-warnings",
+      -1,
+    );
+    const result = await lintKB(root, {
+      ...ctx.extensions?.lint,
+      validator: ctx.extensions?.validator,
+    });
+    const shown = values.quiet
+      ? result.issues.filter((i) => i.severity === "error")
+      : result.issues;
 
     if (values.format === "json") {
       stdout(
         JSON.stringify(
-          { root, nodes: result.graph.nodes.size, edges: result.graph.edges.length, errors: result.errorCount, warnings: result.warningCount, issues: shown },
+          {
+            root,
+            nodes: result.graph.nodes.size,
+            edges: result.graph.edges.length,
+            errors: result.errorCount,
+            warnings: result.warningCount,
+            issues: shown,
+          },
           null,
           2,
         ),
@@ -58,7 +77,8 @@ Exit code 1 on any error or when --max-warnings is exceeded.`);
       );
     }
 
-    const tooManyWarnings = maxWarnings >= 0 && result.warningCount > maxWarnings;
+    const tooManyWarnings =
+      maxWarnings >= 0 && result.warningCount > maxWarnings;
     return result.errorCount > 0 || tooManyWarnings ? 1 : 0;
   } catch (err) {
     stderr((err as Error).message);

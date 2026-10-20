@@ -8,9 +8,15 @@ export interface TenantContext {
   permissions?: string[];
 }
 
-export type AvailabilityPolicy = (node: KBNode, tenant?: TenantContext) => string[] | null;
+export type AvailabilityPolicy = (
+  node: KBNode,
+  tenant?: TenantContext,
+) => string[] | null;
 export type RankedCandidate = Omit<Alternative, "rank"> & { order: number };
-export type AlternativeComparator = (a: RankedCandidate, b: RankedCandidate) => number;
+export type AlternativeComparator = (
+  a: RankedCandidate,
+  b: RankedCandidate,
+) => number;
 
 export interface ResolveOptions {
   availability?: AvailabilityPolicy;
@@ -118,16 +124,25 @@ export interface ResolvedGoal {
   warnings: string[];
 }
 
-const ref = (n: KBNode): NodeRef => ({ id: n.id, title: n.title, summary: n.summary });
+const ref = (n: KBNode): NodeRef => ({
+  id: n.id,
+  title: n.title,
+  summary: n.summary,
+});
 const missingRef = (id: string): NodeRef => ({ id, title: id, summary: "" });
 
 const targetIds = (n: KBNode, kind: string): string[] => {
   const v = n.data[kind];
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  return Array.isArray(v)
+    ? v.filter((x): x is string => typeof x === "string")
+    : [];
 };
 
 /** Reasons a node is unavailable for the tenant; null when it is gated but no tenant was given. */
-export function defaultAvailability(n: KBNode, tenant?: TenantContext): string[] | null {
+export function defaultAvailability(
+  n: KBNode,
+  tenant?: TenantContext,
+): string[] | null {
   const plans = n.availability?.plans ?? [];
   const perms = n.availability?.permissions ?? [];
   if (!plans.length && !perms.length) return [];
@@ -136,11 +151,13 @@ export function defaultAvailability(n: KBNode, tenant?: TenantContext): string[]
   if (plans.length && (!tenant.plan || !plans.includes(tenant.plan)))
     reasons.push(`${n.id} requires plan: ${plans.join(" | ")}`);
   const missing = perms.filter((p) => !(tenant.permissions ?? []).includes(p));
-  if (missing.length) reasons.push(`${n.id} requires permission: ${missing.join(", ")}`);
+  if (missing.length)
+    reasons.push(`${n.id} requires permission: ${missing.join(", ")}`);
   return reasons;
 }
 
-const availabilityRank = (a: boolean | null) => (a === true ? 0 : a === null ? 1 : 2);
+const availabilityRank = (a: boolean | null) =>
+  a === true ? 0 : a === null ? 1 : 2;
 
 type StateValue = boolean | "checked";
 
@@ -196,10 +213,21 @@ class PlanBuilder {
 
   private pickSatisfier(s: KBNode | undefined): KBNode | undefined {
     const sats = s ? this.targets(s, "satisfied_by") : [];
-    return sats.find((x) => (this.opts.availability ?? defaultAvailability)(x, this.opts.tenant)?.length === 0) ?? sats[0];
+    return (
+      sats.find(
+        (x) =>
+          (this.opts.availability ?? defaultAvailability)(x, this.opts.tenant)
+            ?.length === 0,
+      ) ?? sats[0]
+    );
   }
 
-  addProcedure(p: KBNode, reason: RunStep["reason"], when: Condition[], depth: number): void {
+  addProcedure(
+    p: KBNode,
+    reason: RunStep["reason"],
+    when: Condition[],
+    depth: number,
+  ): void {
     if (this.preRun.has(p.id)) return;
     const existing = this.runs.get(p.id);
     if (existing) {
@@ -217,18 +245,23 @@ class PlanBuilder {
     this.inProgress.add(p.id);
     const start = this.plan.length;
 
-    for (const dep of this.targets(p, "requires")) this.addProcedure(dep, "requires", when, depth + 1);
-    for (const stateId of targetIds(p, "preconditions")) this.precondition(p, stateId, when, depth);
+    for (const dep of this.targets(p, "requires"))
+      this.addProcedure(dep, "requires", when, depth + 1);
+    for (const stateId of targetIds(p, "preconditions"))
+      this.precondition(p, stateId, when, depth);
     for (const cap of this.targets(p, "uses")) this.addCapability(cap);
-    for (const c of this.targets(p, "constrained_by")) this.constraints.set(c.id, c);
+    for (const c of this.targets(p, "constrained_by"))
+      this.constraints.set(c.id, c);
 
     const optional = this.optionalPreconditions(p);
     const choices = new Map(getChoices(p).map((c) => [c.id, c]));
-    const steps: StepItem[] = orderedItems(section(p.body, "Steps") ?? "").map((text) => {
-      const id = choiceMarker(text);
-      const c = id ? choices.get(id) : undefined;
-      return c ? this.choose(p, c, depth) : text;
-    });
+    const steps: StepItem[] = orderedItems(section(p.body, "Steps") ?? "").map(
+      (text) => {
+        const id = choiceMarker(text);
+        const c = id ? choices.get(id) : undefined;
+        return c ? this.choose(p, c, depth) : text;
+      },
+    );
     const failure = section(p.body, "Failure handling")?.trim();
 
     const step: RunStep = {
@@ -243,12 +276,18 @@ class PlanBuilder {
     this.plan.push(step);
     this.runs.set(p.id, { step, start });
     this.runProcedures.push(p);
-    if (when.length === 0) for (const s of targetIds(p, "produces")) this.state.set(s, true);
+    if (when.length === 0)
+      for (const s of targetIds(p, "produces")) this.state.set(s, true);
 
     this.inProgress.delete(p.id);
   }
 
-  private precondition(p: KBNode, stateId: string, when: Condition[], depth: number): void {
+  private precondition(
+    p: KBNode,
+    stateId: string,
+    when: Condition[],
+    depth: number,
+  ): void {
     const v = this.state.get(stateId);
     if (v === true) {
       if (this.known.get(stateId) === true) this.satisfied.add(stateId);
@@ -258,7 +297,8 @@ class PlanBuilder {
 
     const s = this.node(stateId, p.id);
     const sat = this.pickSatisfier(s);
-    if (s && !sat) this.warnings.push(`${stateId} has no resolvable satisfied_by procedure`);
+    if (s && !sat)
+      this.warnings.push(`${stateId} has no resolvable satisfied_by procedure`);
 
     if (v === false) {
       if (sat) this.addProcedure(sat, "precondition", when, depth + 1);
@@ -274,7 +314,13 @@ class PlanBuilder {
       ...(when.length ? { when } : {}),
     });
     this.state.set(stateId, "checked");
-    if (sat) this.addProcedure(sat, "precondition", [...when, { state: stateId, is: false }], depth + 1);
+    if (sat)
+      this.addProcedure(
+        sat,
+        "precondition",
+        [...when, { state: stateId, is: false }],
+        depth + 1,
+      );
   }
 
   /** Advisory only: never adds steps. Skipped when the state is already true. */
@@ -296,7 +342,8 @@ class PlanBuilder {
   }
 
   private choose(p: KBNode, c: ChoiceDef, depth: number): ChooseStep {
-    const picked = this.opts.choices?.[`${p.id}:${c.id}`] ?? this.opts.choices?.[c.id];
+    const picked =
+      this.opts.choices?.[`${p.id}:${c.id}`] ?? this.opts.choices?.[c.id];
     let defs = c.options;
     let selected: string | undefined;
     if (picked !== undefined) {
@@ -304,7 +351,10 @@ class PlanBuilder {
       if (hit) {
         defs = [hit];
         selected = picked;
-      } else this.warnings.push(`choice "${c.id}" has no option "${picked}"; showing all`);
+      } else
+        this.warnings.push(
+          `choice "${c.id}" has no option "${picked}"; showing all`,
+        );
     }
 
     const branches = defs.map((o) => {
@@ -328,14 +378,26 @@ class PlanBuilder {
       // States/procedures common to every branch hold after the choice.
       const children = branches.map((b) => b.child);
       for (const [k, v] of children[0]?.state ?? []) {
-        if (v === true && children.every((ch) => ch.state.get(k) === true)) this.state.set(k, true);
-        else if (this.state.get(k) !== true && children.every((ch) => ch.state.get(k) !== undefined && ch.state.get(k) !== false))
+        if (v === true && children.every((ch) => ch.state.get(k) === true))
+          this.state.set(k, true);
+        else if (
+          this.state.get(k) !== true &&
+          children.every(
+            (ch) => ch.state.get(k) !== undefined && ch.state.get(k) !== false,
+          )
+        )
           this.state.set(k, "checked");
       }
       for (const id of children[0]?.runs.keys() ?? [])
         if (children.every((ch) => ch.runs.has(id))) this.preRun.add(id);
     }
-    return { kind: "choose", choice: c.id, question: c.question, ...(selected ? { selected } : {}), options };
+    return {
+      kind: "choose",
+      choice: c.id,
+      question: c.question,
+      ...(selected ? { selected } : {}),
+      options,
+    };
   }
 
   private merge(child: PlanBuilder, adoptState: boolean): void {
@@ -359,33 +421,53 @@ class PlanBuilder {
       if (kept.length) step.when = kept;
       else delete step.when;
     }
-    for (const s of targetIds(this.g.nodes.get(entry.step.procedure.id)!, "produces")) this.state.set(s, true);
+    for (const s of targetIds(
+      this.g.nodes.get(entry.step.procedure.id)!,
+      "produces",
+    ))
+      this.state.set(s, true);
   }
 
   private addCapability(cap: KBNode): void {
     if (this.capabilities.has(cap.id)) return;
     this.capabilities.set(cap.id, cap);
-    for (const c of this.targets(cap, "constrained_by")) this.constraints.set(c.id, c);
+    for (const c of this.targets(cap, "constrained_by"))
+      this.constraints.set(c.id, c);
     for (const dep of this.targets(cap, "requires")) this.addCapability(dep);
   }
 
   summary(): Summary {
-    const gated = [...this.runProcedures, ...this.capabilities.values()].map((n) => (this.opts.availability ?? defaultAvailability)(n, this.opts.tenant));
+    const gated = [...this.runProcedures, ...this.capabilities.values()].map(
+      (n) =>
+        (this.opts.availability ?? defaultAvailability)(n, this.opts.tenant),
+    );
     // "X requires plan: e" + "Y requires plan: e" → "requires plan: e (X, Y)"
     const grouped = new Map<string, string[]>();
     const ungrouped: string[] = [];
     for (const r of gated.flatMap((r) => r ?? [])) {
       const match = /^(\S+) requires (.+)$/.exec(r);
-      if (!match) { ungrouped.push(r); continue; }
+      if (!match) {
+        ungrouped.push(r);
+        continue;
+      }
       const [, id, need] = match;
       grouped.set(need, [...new Set([...(grouped.get(need) ?? []), id])]);
     }
-    const reasons = [...grouped].map(([need, ids]) => `requires ${need} (${ids.join(", ")})`).concat(ungrouped);
-    let available: boolean | null = reasons.length ? false : gated.some((r) => r === null) ? null : true;
+    const reasons = [...grouped]
+      .map(([need, ids]) => `requires ${need} (${ids.join(", ")})`)
+      .concat(ungrouped);
+    let available: boolean | null = reasons.length
+      ? false
+      : gated.some((r) => r === null)
+        ? null
+        : true;
 
     for (const cg of this.choiceGates) {
       const best = cg.options.reduce<boolean | null>(
-        (acc, o) => (availabilityRank(o.available) < availabilityRank(acc) ? o.available : acc),
+        (acc, o) =>
+          availabilityRank(o.available) < availabilityRank(acc)
+            ? o.available
+            : acc,
         false,
       );
       if (best === false) {
@@ -394,7 +476,8 @@ class PlanBuilder {
       } else if (best === null && available === true) available = null;
     }
 
-    const severityRank = (n: KBNode) => (n.data.severity === "blocking" ? 0 : 1);
+    const severityRank = (n: KBNode) =>
+      n.data.severity === "blocking" ? 0 : 1;
     return {
       available,
       unavailableReasons: reasons,
@@ -402,7 +485,10 @@ class PlanBuilder {
       capabilities: [...this.capabilities.values()].map(ref),
       constraints: [...this.constraints.values()]
         .sort((a, b) => severityRank(a) - severityRank(b))
-        .map((c) => ({ ...ref(c), severity: c.data.severity === "blocking" ? "blocking" : "warning" })),
+        .map((c) => ({
+          ...ref(c),
+          severity: c.data.severity === "blocking" ? "blocking" : "warning",
+        })),
       warnings: this.warnings,
     };
   }
@@ -410,7 +496,9 @@ class PlanBuilder {
   toAlternative(main: KBNode): Omit<Alternative, "rank"> {
     return {
       procedure: ref(main),
-      deprecated: [...this.runProcedures, ...this.capabilities.values()].some((n) => n.status === "deprecated"),
+      deprecated: [...this.runProcedures, ...this.capabilities.values()].some(
+        (n) => n.status === "deprecated",
+      ),
       satisfiedStates: [...this.satisfied],
       ...this.summary(),
     };
@@ -422,17 +510,24 @@ const prepWork = (a: Omit<Alternative, "rank">) =>
 
 export const defaultRank: AlternativeComparator = (a, b) =>
   availabilityRank(a.available) - availabilityRank(b.available) ||
-  Number(a.deprecated) - Number(b.deprecated) || prepWork(a) - prepWork(b) ||
-  a.plan.length - b.plan.length || a.order - b.order;
+  Number(a.deprecated) - Number(b.deprecated) ||
+  prepWork(a) - prepWork(b) ||
+  a.plan.length - b.plan.length ||
+  a.order - b.order;
 
 /**
  * Resolves a goal into ranked alternatives, one per goal procedure.
  * Ranking: availability → not deprecated → least prep work → fewest steps → declaration order.
  * Assumes the KB passed `simp-lint` (no dependency cycles); guards exist but only warn.
  */
-export function resolveGoal(g: KBGraph, goalId: string, opts: ResolveOptions = {}): ResolvedGoal {
+export function resolveGoal(
+  g: KBGraph,
+  goalId: string,
+  opts: ResolveOptions = {},
+): ResolvedGoal {
   const goal = g.nodes.get(goalId);
-  if (!goal || goal.type !== "goal") throw new Error(`"${goalId}" is not a goal node`);
+  if (!goal || goal.type !== "goal")
+    throw new Error(`"${goalId}" is not a goal node`);
 
   const warnings: string[] = [];
   const alts = targetIds(goal, "procedures").flatMap((id, order) => {
@@ -457,10 +552,20 @@ export function resolveGoal(g: KBGraph, goalId: string, opts: ResolveOptions = {
 }
 
 /** Resolves a single procedure (e.g. a fix procedure found by search) as a one-alternative result. */
-export function resolveProcedure(g: KBGraph, procedureId: string, opts: ResolveOptions = {}): ResolvedGoal {
+export function resolveProcedure(
+  g: KBGraph,
+  procedureId: string,
+  opts: ResolveOptions = {},
+): ResolvedGoal {
   const p = g.nodes.get(procedureId);
-  if (!p || p.type !== "procedure") throw new Error(`"${procedureId}" is not a procedure node`);
+  if (!p || p.type !== "procedure")
+    throw new Error(`"${procedureId}" is not a procedure node`);
   const b = new PlanBuilder(g, opts);
   b.addProcedure(p, "main", [], 0);
-  return { subject: "procedure", goal: { ...ref(p), whenToUse: [] }, alternatives: [{ rank: 1, ...b.toAlternative(p) }], warnings: [] };
+  return {
+    subject: "procedure",
+    goal: { ...ref(p), whenToUse: [] },
+    alternatives: [{ rank: 1, ...b.toAlternative(p) }],
+    warnings: [],
+  };
 }

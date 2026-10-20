@@ -4,9 +4,18 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 const help = (script: string) => {
-  const result = spawnSync(process.execPath, ["--import", "tsx", fileURLToPath(new URL(`../${script}`, import.meta.url)), "--help"], {
-    encoding: "utf8",
-  });
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--import",
+      "tsx",
+      fileURLToPath(new URL(`../${script}`, import.meta.url)),
+      "--help",
+    ],
+    {
+      encoding: "utf8",
+    },
+  );
   assert.equal(result.status, 0, result.stderr);
   return result.stdout;
 };

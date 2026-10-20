@@ -1,5 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import type { KBTools } from "@sontx/simplink-core";
 
 export const SERVER_INSTRUCTIONS =
@@ -26,7 +29,10 @@ export function createMcpServer(tools: KBTools, version = "0.2.0"): McpServer {
 
   server.server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const r = await tools.call(req.params.name, req.params.arguments ?? {});
-    return { content: [{ type: "text" as const, text: r.content }], ...(r.isError ? { isError: true } : {}) };
+    return {
+      content: [{ type: "text" as const, text: r.content }],
+      ...(r.isError ? { isError: true } : {}),
+    };
   });
 
   return server;

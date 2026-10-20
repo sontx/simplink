@@ -15,6 +15,8 @@ choices:
         when: A phone number is known
         procedure: procedure.zalo.deliver-by-phone
 ---
+
 ## Steps
+
 1. Open the customer conversation.
 2. choice:recipient

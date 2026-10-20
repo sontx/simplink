@@ -6,4 +6,5 @@ aliases: [nhắn tin cho khách]
 when_to_use: [Contact a customer]
 procedures: [procedure.zalo.send-message]
 ---
+
 Customer messaging entry point.

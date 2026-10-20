@@ -12,7 +12,8 @@ test("MCP server identifies itself with the simp name", async () => {
     call: async () => ({ content: "" }),
   };
   const server = createMcpServer(tools);
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: "test", version: "0" });
   await client.connect(clientTransport);

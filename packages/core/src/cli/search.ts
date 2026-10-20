@@ -3,7 +3,10 @@ import { createKB } from "../kb.js";
 import { NODE_TYPES, type NodeType } from "../types.js";
 import { type CliContext, integerOption, formatOption } from "./context.js";
 
-export async function runSearch(argv: string[], ctx: CliContext = {}): Promise<number> {
+export async function runSearch(
+  argv: string[],
+  ctx: CliContext = {},
+): Promise<number> {
   const stdout = ctx.stdout ?? console.log;
   const stderr = ctx.stderr ?? console.error;
   try {
@@ -21,7 +24,9 @@ export async function runSearch(argv: string[], ctx: CliContext = {}): Promise<n
 
     const query = positionals.join(" ");
     if (values.help) {
-      stdout(`Usage: simp-search <query...> [--kb dir] [--type goal|procedure|...]... [--limit N] [--format text|json]`);
+      stdout(
+        `Usage: simp-search <query...> [--kb dir] [--type goal|procedure|...]... [--limit N] [--format text|json]`,
+      );
       return 0;
     }
     formatOption(values.format, ["text", "json"]);
@@ -34,7 +39,9 @@ export async function runSearch(argv: string[], ctx: CliContext = {}): Promise<n
     const kb = await createKB(values.kb!, ctx.extensions);
     const errorCount = kb.status.errors;
     if (errorCount) {
-      stderr(`KB has ${errorCount} lint error(s); run simp-lint ${values.kb} first.`);
+      stderr(
+        `KB has ${errorCount} lint error(s); run simp-lint ${values.kb} first.`,
+      );
       return 2;
     }
     const r = await kb.search(query, {
@@ -45,9 +52,15 @@ export async function runSearch(argv: string[], ctx: CliContext = {}): Promise<n
     if (values.format === "json") stdout(JSON.stringify(r, null, 2));
     else {
       stdout("Goals:");
-      for (const g of r.goals) stdout(`  ${g.relevance.toFixed(2)}  ${g.id}  — via ${g.via.map((v) => (v.id === "self" ? "self" : `${v.id} (${v.hops})`)).join(", ")}`);
+      for (const g of r.goals)
+        stdout(
+          `  ${g.relevance.toFixed(2)}  ${g.id}  — via ${g.via.map((v) => (v.id === "self" ? "self" : `${v.id} (${v.hops})`)).join(", ")}`,
+        );
       stdout("Hits:");
-      for (const h of r.hits) stdout(`  ${h.relevance.toFixed(2)}  ${h.id}  [${Object.keys(h.matched).join(", ")}]`);
+      for (const h of r.hits)
+        stdout(
+          `  ${h.relevance.toFixed(2)}  ${h.id}  [${Object.keys(h.matched).join(", ")}]`,
+        );
     }
 
     return 0;

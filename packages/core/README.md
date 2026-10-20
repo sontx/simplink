@@ -35,15 +35,21 @@ Pass `KBExtensions` as the second argument to `createKB`, or as `createKBTools(i
 - **Tools:** `tools(defaults, kb)` in `KBToolsOptions` synchronously returns `KBToolSpec[]` to add, override, or remove tools. Each spec has a `definition` and a synchronous or async `handler(args, kb)`. `defaultToolSpecs` and `buildDefinitions` return independent copies. Duplicate names are rejected, schemas validate arguments and apply defaults, and thrown/rejected `ToolError` messages pass through. Other exceptions become internal tool errors. `tenantContext: false` hides public plan/permission arguments; configured tenant defaults still apply. Application `tenant.context` is never exposed in tool schemas. Missing-node suggestions use the configured search engine.
 
 ```ts
-const custom = await createKB(memorySource({
-  "procedures/export.md": "---\ntype: procedure\ntitle: Export\nsummary: Export records\n---\n## Steps\n1. Export records\n",
-}), {
-  lint: { rules: [async () => []], disable: ["W101"] },
-  resolve: { tenant: { context: { entitlements: ["export"] } } },
-  renderer: async (resolved) => ({
-    text: resolved.goal.title, tokens: 1, omitted: [],
+const custom = await createKB(
+  memorySource({
+    "procedures/export.md":
+      "---\ntype: procedure\ntitle: Export\nsummary: Export records\n---\n## Steps\n1. Export records\n",
   }),
-});
+  {
+    lint: { rules: [async () => []], disable: ["W101"] },
+    resolve: { tenant: { context: { entitlements: ["export"] } } },
+    renderer: async (resolved) => ({
+      text: resolved.goal.title,
+      tokens: 1,
+      omitted: [],
+    }),
+  },
+);
 ```
 
 ## CLI and in-process runners
@@ -60,8 +66,8 @@ simp-resolve goal.export --kb ./kb --state state.ready=true --budget 1500
 import { runLint, runSearch, runResolve } from "@sontx/simplink-core";
 const lines: string[] = [];
 const code = await runLint(["./kb", "--format", "json"], {
-  stdout: line => lines.push(line),
-  stderr: line => console.error(line),
+  stdout: (line) => lines.push(line),
+  stderr: (line) => console.error(line),
   extensions: { lint: { disable: ["W101"] } },
 });
 ```
