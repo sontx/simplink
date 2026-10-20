@@ -1,0 +1,331 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+:root {
+  --radius: 0.625rem;
+  --background: #faf9fc;
+  --foreground: #302b3b;
+  --card: #ffffff;
+  --card-foreground: #302b3b;
+  --popover: #ffffff;
+  --popover-foreground: #31262c;
+  --primary: #db2777;
+  --primary-foreground: #ffffff;
+  --secondary: #fce7f3;
+  --secondary-foreground: #831843;
+  --muted: #fff1f5;
+  --muted-foreground: #75636c;
+  --accent: #fce7f3;
+  --accent-foreground: #9d174d;
+  --destructive: #dc2626;
+  --border: #e8e5ed;
+  --input: #e7d6df;
+  --ring: #ec4899;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Geist Variable", sans-serif;
+  --font-mono: "Cascadia Code", Consolas, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  button,
+  a:not([data-slot="button"]) {
+    touch-action: manipulation;
+  }
+  button {
+    cursor: pointer;
+  }
+  a:not([data-slot="button"]) {
+    color: var(--primary);
+    text-decoration: none;
+  }
+  a:not([data-slot="button"]):hover {
+    color: var(--accent-foreground);
+  }
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+  h1 {
+    font-size: 25px;
+    letter-spacing: -0.7px;
+    font-weight: 650;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 20px;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+  h3 {
+    font-size: 12px;
+    font-weight: 650;
+    margin: 25px 0 12px;
+  }
+  small {
+    font-size: 11px;
+  }
+  code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@layer components {
+  /* Node type tokens, read by badges, graph nodes and type dots. */
+  .goal,
+  .constraint {
+    --type-color: #c17889;
+    --type-bg: #fbf0f3;
+  }
+  .procedure {
+    --type-color: #5e8dbb;
+    --type-bg: #edf3fa;
+  }
+  .capability {
+    --type-color: #5b9d88;
+    --type-bg: #edf7f2;
+  }
+  .state {
+    --type-color: #b88b4d;
+    --type-bg: #fbf5e9;
+  }
+  /* React Flow renders these elements itself. */
+  .react-flow__controls {
+    box-shadow: 0 1px 6px #41344712 !important;
+    border: 1px solid #e9e3ed;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .react-flow__controls-button {
+    border-bottom-color: #f0eaf5 !important;
+  }
+  .react-flow__minimap {
+    background: #ffffffcc !important;
+    border: 1px solid #ebe5f0;
+    border-radius: 5px;
+  }
+  .react-flow__attribution {
+    font-size: 8px !important;
+  }
+  /* Rendered Markdown has no per-element classes. */
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+  .markdown :is(h1, h2, h3, h4) {
+    scroll-margin-top: 24px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .markdown h1 {
+    font-size: 32px;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+  }
+  .markdown h1 + p {
+    font-size: 17px;
+    color: var(--muted-foreground);
+  }
+  .markdown h2 {
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    margin: 40px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .markdown h3 {
+    font-size: 17px;
+    margin: 28px 0 8px;
+  }
+  .markdown a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--primary) 35%, transparent);
+    text-underline-offset: 3px;
+  }
+  .markdown a:hover {
+    text-decoration-color: currentColor;
+  }
+  .markdown ul,
+  .markdown ol {
+    padding-left: 24px;
+    list-style: revert;
+    margin: 12px 0;
+  }
+  .markdown li {
+    margin: 4px 0;
+  }
+  .markdown p {
+    margin: 14px 0;
+  }
+  .markdown strong {
+    font-weight: 600;
+  }
+  .markdown pre {
+    background: var(--background);
+    padding: 14px 16px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .markdown :not(pre) > code {
+    background: var(--background);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.875em;
+  }
+  .markdown blockquote {
+    border-left: 3px solid var(--ring);
+    background: var(--muted);
+    padding: 4px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 18px 0;
+  }
+  .markdown table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 14px;
+  }
+  .markdown :is(th, td) {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .markdown th {
+    background: var(--background);
+    font-weight: 600;
+  }
+  .markdown img {
+    max-width: 100%;
+    height: auto;
+  }
+  .markdown hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+  @media (max-width: 780px) {
+    .markdown h1 {
+      font-size: 26px;
+    }
+  }
+}

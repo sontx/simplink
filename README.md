@@ -9,8 +9,9 @@ resolution, search, and MCP access. Requires Node.js 20+ and pnpm 12.14.0.
 | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `@sontx/simplink-core` | Loading, schemas, linting, resolution, search, provider independent KB tools | `simp-lint`, `simp-resolve`, `simp-search`, `simp-docs` |
 | `@sontx/simplink-mcp`  | MCP server with stdio and HTTP transports; depends on core                   | `simp-mcp`, `simp-mcp-http`                             |
+| `@sontx/simplink-ui`   | Local graph manager, Markdown editing, and live docs preview                 | `simp-ui`                                               |
 
-Both packages are ESM and include TypeScript declarations. Core includes the JSON
+All packages are ESM and include TypeScript declarations. Core includes the JSON
 schemas and has no dependency on the MCP SDK.
 
 ```ts
@@ -32,7 +33,7 @@ pnpm build
 pnpm test
 ```
 
-Builds run in dependency order. The root test command builds first, then runs both
+Builds run in dependency order. The root test command builds first, then runs all
 package suites, including the compiled stdio server integration. Tests use the
 synthetic KB in `test/fixtures/kb`; no local knowledge base is required.
 
@@ -56,6 +57,38 @@ node packages/mcp/dist/http-bin.js --kb /path/to/kb --port 3000
 The Docker image serves HTTP on port 3000 and checks `/healthz`. Place your KB at
 root `kb/` before `docker build -t simplink .`; mount a replacement at `/app/kb`
 and restart the container to reload it.
+
+## Local KB manager
+
+After building, launch the browser UI against a knowledge base:
+
+```sh
+pnpm ui --kb test/fixtures/kb
+simp-ui --kb /path/to/kb --host 127.0.0.1 --port 4321
+```
+
+Open `http://127.0.0.1:4321`. Start with the graph, inspect relationships,
+create nodes, or open a node's Source tab to edit its Markdown file. Saves and
+relationship edits write directly to the selected KB and reload its lint results.
+Use a copy of the fixtures when experimenting. Reload picks up external edits.
+
+The Nodes table and Issues view provide alternate entry points. Docs previews
+`kb.docs()` in memory using either site or graph layout, including when lint
+errors would prevent `simp-docs` from exporting. Goal and procedure inspectors
+also show the resolved plan.
+
+For development, `pnpm dev:ui --kb /path/to/kb` runs the API on port 4321 and
+Vite on port 5173 with an API proxy. The default KB is the ignored root `kb/`.
+The server defaults to loopback and has no authentication; use it locally.
+
+The UI uses shadcn/ui with the Radix Nova preset. Add components with the CLI:
+
+```sh
+pnpm dlx shadcn@latest add <component> -c packages/ui
+```
+
+`packages/ui/components.json` configures component paths; theme tokens live in
+`packages/ui/web/src/index.css`.
 
 ## Export Markdown docs
 

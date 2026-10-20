@@ -13,6 +13,8 @@
     "gen:docs": "node packages/core/dist/docs-cli.js",
     "dev": "tsx packages/core/src/cli.ts kb",
     "start:http": "node packages/mcp/dist/http-bin.js --kb kb",
+    "ui": "node packages/ui/dist/server/bin.js",
+    "dev:ui": "pnpm --filter @sontx/simplink-ui dev",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -30,7 +32,7 @@
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,mts,cts}": [
-      "eslint --fix --max-warnings 0",
+      "eslint --fix --max-warnings 0 --no-warn-ignored",
       "prettier --write"
     ],
     "!(*.{js,mjs,cjs,ts,mts,cts})": "prettier --write --ignore-unknown"

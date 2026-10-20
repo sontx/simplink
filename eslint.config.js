@@ -8,6 +8,10 @@ export default tseslint.config(
   js.configs.recommended,
   tseslint.configs.recommended,
   {
+    files: ["packages/ui/web/**"],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     plugins: { "@stylistic": stylistic },
     languageOptions: { globals: globals.node },
     rules: {

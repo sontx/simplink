@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This pnpm monorepo contains `@sontx/simplink-core` and `@sontx/simplink-mcp`. The repository root is private.
+This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, and `@sontx/simplink-ui`. The repository root is private.
 
 - `packages/core/src/`: Loading, schemas, graphs, linting, resolution, rendering, search, and core CLI entry points; `index.ts` defines public exports.
 - `packages/core/src/source.ts`: Filesystem and in-memory document sources.
@@ -11,6 +11,7 @@ This pnpm monorepo contains `@sontx/simplink-core` and `@sontx/simplink-mcp`. Th
 - `packages/core/src/tools/core.ts`: Provider independent knowledge-base tool definitions and execution.
 - `packages/core/schemas/`: Bundled JSON schemas for knowledge-base document types.
 - `packages/mcp/src/`: MCP server, HTTP transport, executable entry points, and public `index.ts`. Import core through `@sontx/simplink-core`, never across package source directories.
+- `packages/ui/src/`: Local UI HTTP server and `simp-ui` executable. `packages/ui/web/` contains the Vite React graph manager and in-memory docs preview.
 - `packages/*/test/`: Package-owned tests; core fixture builders live in `packages/core/test/helpers.ts`.
 - `test/fixtures/kb/`: Shared synthetic knowledge base; tests must not depend on root `kb/`.
 - `packages/*/dist/`: Generated JavaScript and declarations; change source files instead.
@@ -26,6 +27,8 @@ Use Node.js 20 or newer and the package-manager version declared in `package.jso
 - `pnpm dev`: Run the lint CLI directly from source against `kb/`.
 - `pnpm lint:kb`: Run the compiled knowledge-base linter against `kb/`.
 - `pnpm start:http`: Start the compiled MCP HTTP server using `kb/`.
+- `pnpm ui --kb <path>`: Start the compiled local KB manager at `http://127.0.0.1:4321`.
+- `pnpm dev:ui --kb <path>`: Start the UI API and Vite development server.
 
 The repository does not include root `kb/`; provide a knowledge base for runtime commands. Tests use checked-in fixtures. To lint another directory, use `pnpm exec tsx packages/core/src/cli.ts <path>`.
 
