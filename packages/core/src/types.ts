@@ -7,6 +7,7 @@ export const NODE_TYPES = [
   "state",
   "constraint",
 ] as const;
+
 export type NodeType = (typeof NODE_TYPES)[number];
 
 export const FOLDER_TO_TYPE: Readonly<Record<string, NodeType>> = {
@@ -31,6 +32,7 @@ export const EDGE_KINDS = [
   /** Derived from procedure `choices[].options[].procedure`. */
   "choice_option",
 ] as const;
+
 export type EdgeKind = (typeof EDGE_KINDS)[number];
 
 export interface Availability {

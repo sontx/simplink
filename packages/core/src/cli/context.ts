@@ -4,6 +4,7 @@ export interface CliContext {
   stderr?: (line: string) => void;
   extensions?: KBExtensions;
 }
+
 export function integerOption(
   value: string | undefined,
   name: string,
@@ -19,6 +20,7 @@ export function integerOption(
     throw new Error(`--${name} expects an integer >= ${minimum}`);
   return n;
 }
+
 export function formatOption(
   value: string | undefined,
   formats: string[],

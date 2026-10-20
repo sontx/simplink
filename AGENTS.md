@@ -21,6 +21,7 @@ Use Node.js 20 or newer and the package-manager version declared in `package.jso
 
 - `pnpm install`: Install dependencies using `pnpm-lock.yaml`.
 - `pnpm build`: Build both packages and declarations in dependency order.
+- `pnpm lint`: Check JavaScript and TypeScript with ESLint (`pnpm lint:fix` applies automatic fixes).
 - `pnpm test`: Build both packages, then run their suites through `tsx` and Node's test runner.
 - `pnpm dev`: Run the lint CLI directly from source against `kb/`.
 - `pnpm lint:kb`: Run the compiled knowledge-base linter against `kb/`.
@@ -30,7 +31,7 @@ The repository does not include root `kb/`; provide a knowledge base for runtime
 
 ## Coding Style & Naming Conventions
 
-Follow existing TypeScript: two-space indentation, double quotes, semicolons, strict types, and camelCase functions and variables. Use PascalCase for types and interfaces. Keep modules focused and use descriptive kebab-case filenames for multiword modules. This is an ESM package with NodeNext resolution: use `.js` suffixes in relative TypeScript imports. No dedicated formatter or source-code linter is configured; `lint:kb` validates knowledge-base content.
+Follow existing TypeScript: two-space indentation, double quotes, semicolons, strict types, and camelCase functions and variables. Use PascalCase for types and interfaces. Keep modules focused and use descriptive kebab-case filenames for multiword modules. This is an ESM package with NodeNext resolution: use `.js` suffixes in relative TypeScript imports. ESLint checks source code, Prettier handles formatting, and `lint:kb` validates knowledge-base content.
 
 ## Testing Guidelines
 

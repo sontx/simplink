@@ -29,6 +29,7 @@ export interface KBStatus {
   errors: number;
   warnings: number;
 }
+
 export interface KBExtensions {
   validator?: ValidatorExtension;
   lint?: { rules?: LintRule[]; disable?: string[] };
@@ -39,6 +40,7 @@ export interface KBExtensions {
   >;
   renderer?: PlanRenderer;
 }
+
 export interface KB {
   graph: KBGraph;
   issues: Issue[];

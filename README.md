@@ -27,6 +27,7 @@ const server = createMcpServer(tools);
 
 ```sh
 pnpm install
+pnpm lint
 pnpm build
 pnpm test
 ```
@@ -34,6 +35,9 @@ pnpm test
 Builds run in dependency order. The root test command builds first, then runs both
 package suites, including the compiled stdio server integration. Tests use the
 synthetic KB in `test/fixtures/kb`; no local knowledge base is required.
+
+`pnpm lint` checks JavaScript and TypeScript with ESLint. Run `pnpm lint:fix`
+to apply automatic fixes. Prettier handles formatting via `pnpm format`.
 
 After building, run a package suite with
 `pnpm --filter @sontx/simplink-core test` or

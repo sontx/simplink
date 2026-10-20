@@ -12,7 +12,9 @@ export type AvailabilityPolicy = (
   node: KBNode,
   tenant?: TenantContext,
 ) => string[] | null;
+
 export type RankedCandidate = Omit<Alternative, "rank"> & { order: number };
+
 export type AlternativeComparator = (
   a: RankedCandidate,
   b: RankedCandidate,

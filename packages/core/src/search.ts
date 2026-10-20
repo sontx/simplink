@@ -172,26 +172,32 @@ export interface SearchMatch {
   score: number;
   matched?: Record<string, string[]>;
 }
+
 /** Engines should return enough candidates for core filtering and goal aggregation. */
 export type EngineSearchOptions = Pick<
   SearchOptions,
   "fuzzy" | "prefix" | "includeDeprecated"
 > & { candidateLimit?: number };
+
 export interface SearchEngine {
   search(query: string, opts: EngineSearchOptions): MaybePromise<SearchMatch[]>;
 }
+
 export type SearchEngineFactory = (
   graph: KBGraph,
 ) => MaybePromise<SearchEngine>;
+
 export interface MiniSearchEngineOptions {
   stopwords?: ReadonlySet<string>;
   fold?: (text: string) => string;
   boosts?: Partial<Record<keyof typeof FIELD_BOOST, number>>;
 }
+
 export interface AsyncKBSearch {
   search(query: string, opts?: SearchOptions): Promise<SearchResult>;
   goalsOf(id: string): Map<string, number>;
 }
+
 export function createMiniSearchEngine(
   graph: KBGraph,
   opts: MiniSearchEngineOptions = {},
@@ -227,6 +233,7 @@ export function createMiniSearchEngine(
     },
   };
 }
+
 export function rankResults(
   graph: KBGraph,
   query: string,
@@ -335,6 +342,7 @@ export function createKBSearch(
     goalsOf: (id) => goalsOf(graph, id),
   };
 }
+
 /** Builds a synchronous index over a graph snapshot. Rebuild when the KB changes. */
 export function createSearchIndex(
   graph: KBGraph,

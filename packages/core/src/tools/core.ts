@@ -267,7 +267,6 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
   const handlers: Record<string, (a: any, kb: KB) => MaybePromise<ToolResult>> =
     {
       search_kb: async (a, kb) => {
-        const { graph } = kb;
         const r = await kb.search(a.query, {
           types: a.types as NodeType[] | undefined,
           limit: a.limit,
@@ -289,7 +288,6 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
         });
       },
       resolve_goal: async (a, kb) => {
-        const { graph } = kb;
         const node = await requireNode(kb, a.goal_id, "goal");
         return {
           content: (
@@ -300,7 +298,6 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
         };
       },
       resolve_procedure: async (a, kb) => {
-        const { graph } = kb;
         const node = await requireNode(kb, a.procedure_id, "procedure");
         return {
           content: (

@@ -13,6 +13,7 @@ import {
 } from "./types.js";
 
 export type LintRule = (graph: KBGraph) => MaybePromise<Issue[]>;
+
 export interface LintOptions {
   validator?: ValidatorExtension;
   rules?: LintRule[];

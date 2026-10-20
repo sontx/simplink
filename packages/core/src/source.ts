@@ -6,6 +6,7 @@ export interface SourceFile {
   relPath: string;
   content: string;
 }
+
 export interface DocSource {
   name?: string;
   list(): MaybePromise<SourceFile[]>;
