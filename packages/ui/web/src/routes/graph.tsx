@@ -1,3 +1,4 @@
+import { enumDescription } from "../lib/enum-description.js";
 import { label } from "../lib/utils.js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -74,7 +75,7 @@ function Graph() {
         </p>
         <h3 className={heading}>Node types</h3>
         {types.map((type) => (
-          <label className={check} key={type}>
+          <label className={check} key={type} title={enumDescription(type)}>
             <Checkbox
               checked={(search.types?.split(",") ?? types).includes(type)}
               onCheckedChange={() => toggle("types", type, types)}
@@ -87,7 +88,7 @@ function Graph() {
         ))}
         <h3 className={heading}>Relationships</h3>
         {kinds.map((kind) => (
-          <label className={check} key={kind}>
+          <label className={check} key={kind} title={enumDescription(kind)}>
             <Checkbox
               checked={(search.kinds?.split(",") ?? kinds).includes(kind)}
               onCheckedChange={() => toggle("kinds", kind, kinds)}

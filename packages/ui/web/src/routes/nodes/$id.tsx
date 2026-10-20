@@ -1,3 +1,4 @@
+import { enumDescription } from "../../lib/enum-description.js";
 import { label } from "../../lib/utils.js";
 import { useState } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
@@ -163,7 +164,14 @@ function NodeContent() {
                   className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-[#eee7f3] py-2.75 text-[11px]"
                 >
                   <dt className="text-[#a293ae]">{label(key)}</dt>
-                  <dd className="m-0 wrap-anywhere text-[#786584]">
+                  <dd
+                    title={
+                      ["type", "status", "severity"].includes(key)
+                        ? enumDescription(String(value))
+                        : undefined
+                    }
+                    className="m-0 wrap-anywhere text-[#786584]"
+                  >
                     {typeof value === "object"
                       ? JSON.stringify(value)
                       : String(value)}
@@ -188,7 +196,7 @@ function NodeContent() {
                     className="flex flex-wrap items-center gap-2.5 py-2"
                     key={kind}
                   >
-                    <Badge>{label(kind)}</Badge>
+                    <Badge title={enumDescription(kind)}>{label(kind)}</Badge>
                     {edges?.map((edge, index) => {
                       const target = dir === "out" ? edge.to : edge.from;
                       return (

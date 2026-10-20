@@ -1,3 +1,4 @@
+import { enumDescription } from "../lib/enum-description.js";
 import { cn, label } from "../lib/utils.js";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -184,7 +185,12 @@ export function KBGraph({
           id: `${e.from}-${e.to}-${e.kind}-${i}`,
           source: e.from,
           target: e.to,
-          label: e.kind,
+          label: (
+            <tspan>
+              <title>{enumDescription(e.kind)}</title>
+              {e.kind}
+            </tspan>
+          ),
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: bad ? "#c44242" : "#a6a2b1",
@@ -265,6 +271,7 @@ export function KBGraph({
                   <Button
                     variant="outline"
                     key={kind}
+                    title={enumDescription(kind)}
                     disabled={patch.isPending}
                     onClick={() => patch.mutate(kind)}
                   >
@@ -288,7 +295,11 @@ export function KBGraph({
       <ContextMenuContent>
         {["goal", "procedure", "capability", "state", "constraint"].map(
           (type) => (
-            <ContextMenuItem key={type} onSelect={() => setCreate(type)}>
+            <ContextMenuItem
+              key={type}
+              title={enumDescription(type)}
+              onSelect={() => setCreate(type)}
+            >
               New {type} here…
             </ContextMenuItem>
           ),

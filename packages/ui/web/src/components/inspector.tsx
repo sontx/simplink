@@ -1,3 +1,4 @@
+import { enumDescription } from "../lib/enum-description.js";
 import { cn, label } from "../lib/utils.js";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -91,7 +92,10 @@ export function Inspector({ id }: { id: string }) {
         return (
           <section className="mb-3" key={kind}>
             <div className="my-1.5 flex items-center justify-between gap-3">
-              <strong className="text-[10px] font-medium text-[#9a8ba5]">
+              <strong
+                title={enumDescription(kind)}
+                className="text-[10px] font-medium text-[#9a8ba5]"
+              >
                 {label(kind)}
               </strong>
               <Popover

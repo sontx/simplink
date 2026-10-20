@@ -1,3 +1,4 @@
+import { enumDescription } from "../../lib/enum-description.js";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils.js";
 import { Badge as ShadcnBadge } from "./badge.js";
@@ -18,13 +19,16 @@ export { Textarea } from "./textarea.js";
 export function Badge({
   type,
   children,
+  title,
 }: {
+  title?: string;
   type?: string;
   children: ReactNode;
 }) {
   return (
     <ShadcnBadge
       variant="secondary"
+      title={title ?? (type ? enumDescription(type, "issue") : undefined)}
       // ponytail: colours come from the --type-* tokens set by the type class
       className={type && `${type} bg-(--type-bg) text-(--type-color)`}
     >

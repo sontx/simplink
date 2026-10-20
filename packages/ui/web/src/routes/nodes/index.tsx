@@ -1,3 +1,4 @@
+import { enumDescription } from "../../lib/enum-description.js";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -121,12 +122,12 @@ const columns = helper.columns([
   helper.accessor("status", {
     header: "Status",
     cell: ({ getValue }) => (
-      <>
+      <span title={enumDescription(getValue())}>
         <span
           className={`mr-1.5 inline-block size-1.25 rounded-full ${getValue() === "deprecated" ? "bg-[#c0a17a]" : "bg-[#82ad96]"}`}
         />
         {label(getValue())}
-      </>
+      </span>
     ),
   }),
   helper.accessor((n) => n.tags.join(", "), {
@@ -229,7 +230,11 @@ function Nodes() {
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 {NODE_TYPES.filter((type) => type !== "goal").map((type) => (
-                  <DropdownMenuItem key={type} onSelect={() => setCreate(type)}>
+                  <DropdownMenuItem
+                    key={type}
+                    title={enumDescription(type)}
+                    onSelect={() => setCreate(type)}
+                  >
                     Add {label(type).toLowerCase()}
                   </DropdownMenuItem>
                 ))}
@@ -252,14 +257,21 @@ function Nodes() {
             update({ type: value === "all" ? "" : value })
           }
         >
-          <SelectTrigger aria-label="Node type">
+          <SelectTrigger
+            aria-label="Node type"
+            title={enumDescription(s.type ?? "")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">All types</SelectItem>
               {NODE_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
+                <SelectItem
+                  key={type}
+                  value={type}
+                  title={enumDescription(type)}
+                >
                   {label(type)}
                 </SelectItem>
               ))}
@@ -272,14 +284,24 @@ function Nodes() {
             update({ status: value === "all" ? "" : value })
           }
         >
-          <SelectTrigger aria-label="Node status">
+          <SelectTrigger
+            aria-label="Node status"
+            title={enumDescription(s.status ?? "")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="deprecated">Deprecated</SelectItem>
+              <SelectItem value="active" title={enumDescription("active")}>
+                Active
+              </SelectItem>
+              <SelectItem
+                value="deprecated"
+                title={enumDescription("deprecated")}
+              >
+                Deprecated
+              </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>

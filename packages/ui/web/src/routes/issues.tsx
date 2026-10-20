@@ -1,3 +1,4 @@
+import { enumDescription } from "../lib/enum-description.js";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { kbQuery } from "../api.js";
@@ -42,14 +43,27 @@ function Issues() {
             })
           }
         >
-          <SelectTrigger aria-label="Severity">
+          <SelectTrigger
+            aria-label="Severity"
+            title={enumDescription(severity, "issue")}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">All severities</SelectItem>
-              <SelectItem value="error">Errors</SelectItem>
-              <SelectItem value="warning">Warnings</SelectItem>
+              <SelectItem
+                value="error"
+                title={enumDescription("error", "issue")}
+              >
+                Errors
+              </SelectItem>
+              <SelectItem
+                value="warning"
+                title={enumDescription("warning", "issue")}
+              >
+                Warnings
+              </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
