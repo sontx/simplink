@@ -76,7 +76,8 @@ test("resolver policies control satisfiers, ranking, messages and tenant context
   assert.equal("order" in resolved.alternatives[0], false);
   const a = resolved.alternatives[1];
   assert.ok(a.plan.some(s => s.kind === "run" && s.procedure.id === "procedure.c"));
-  assert.equal(a.plan.find(s => s.kind === "run" && s.procedure.id === "procedure.a")?.optional?.[0].fix, "procedure.c");
+  const runA = a.plan.find((s): s is core.RunStep => s.kind === "run" && s.procedure.id === "procedure.a");
+  assert.equal(runA?.optional?.[0].fix, "procedure.c");
   assert.equal(a.available, true);
 });
 
