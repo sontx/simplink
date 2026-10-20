@@ -6,26 +6,38 @@ import { createKBTools } from "@sontx/simplink-core";
 import { createMcpHttpHandler } from "./http.js";
 
 const env = process.env;
-const { values } = parseArgs({
-  options: {
-    kb: { type: "string", default: env.KB_DIR ?? "kb" },
-    host: { type: "string", default: env.HOST ?? "127.0.0.1" },
-    port: { type: "string", default: env.PORT ?? "3000" },
-    path: { type: "string", default: env.MCP_PATH ?? "/mcp" },
-    "max-body": { type: "string", default: env.MAX_BODY_BYTES ?? "1000000" },
-    "allowed-host": {
-      type: "string",
-      multiple: true,
-      default: env.ALLOWED_HOSTS?.split(",").filter(Boolean) ?? [],
-    },
-    "allowed-origin": {
-      type: "string",
-      multiple: true,
-      default: env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
-    },
-    help: { type: "boolean", short: "h", default: false },
-  },
-});
+const { values } = (() => {
+  try {
+    return parseArgs({
+      options: {
+        kb: { type: "string", default: env.KB_DIR ?? "kb" },
+        host: { type: "string", default: env.HOST ?? "127.0.0.1" },
+        port: { type: "string", default: env.PORT ?? "3000" },
+        path: { type: "string", default: env.MCP_PATH ?? "/mcp" },
+        "max-body": {
+          type: "string",
+          default: env.MAX_BODY_BYTES ?? "1000000",
+        },
+        "allowed-host": {
+          type: "string",
+          multiple: true,
+          default: env.ALLOWED_HOSTS?.split(",").filter(Boolean) ?? [],
+        },
+        "allowed-origin": {
+          type: "string",
+          multiple: true,
+          default: env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
+        },
+        help: { type: "boolean", short: "h", default: false },
+      },
+    });
+  } catch (error) {
+    process.stderr.write(
+      `${(error as Error).message}\nRun simp-mcp-http --help for usage.\n`,
+    );
+    process.exit(2);
+  }
+})();
 if (values.help) {
   const usage = `Usage: simp-mcp-http [--kb dir] [--host h] [--port n] [--path p] [--max-body bytes] [--allowed-host h]... [--allowed-origin o]...
 

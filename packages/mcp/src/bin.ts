@@ -8,12 +8,19 @@ import { createMcpServer } from "./server.js";
 // stdout carries the MCP protocol: log to stderr only.
 const log = (msg: string) => process.stderr.write(`[simp-mcp] ${msg}\n`);
 
-const { values } = parseArgs({
-  options: {
-    kb: { type: "string", default: process.env.KB_DIR ?? "kb" },
-    help: { type: "boolean", short: "h", default: false },
-  },
-});
+const { values } = (() => {
+  try {
+    return parseArgs({
+      options: {
+        kb: { type: "string", default: process.env.KB_DIR ?? "kb" },
+        help: { type: "boolean", short: "h", default: false },
+      },
+    });
+  } catch (error) {
+    log(`${(error as Error).message}\nRun simp-mcp --help for usage.`);
+    process.exit(2);
+  }
+})();
 if (values.help) {
   process.stdout.write(`Usage: simp-mcp [--kb dir]
 

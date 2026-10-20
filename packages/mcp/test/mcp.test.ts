@@ -83,3 +83,24 @@ test("server binaries print usage for --help and exit 0", async () => {
     }
   }
 });
+
+test("server binaries reject unknown options with exit 2 and a usage hint", async () => {
+  for (const [bin, name] of [
+    ["bin.js", "simp-mcp"],
+    ["http-bin.js", "simp-mcp-http"],
+  ] as const) {
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        fileURLToPath(new URL(`../dist/${bin}`, import.meta.url)),
+        "--bogus",
+      ]),
+      (error: { code?: number; stderr?: string }) => {
+        assert.equal(error.code, 2);
+        assert.match(error.stderr ?? "", /Unknown option '--bogus'/);
+        assert.match(error.stderr ?? "", new RegExp(`Run ${name} --help`));
+        assert.doesNotMatch(error.stderr ?? "", /\n\s+at /);
+        return true;
+      },
+    );
+  }
+});
