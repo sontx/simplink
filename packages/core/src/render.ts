@@ -44,23 +44,30 @@ const availabilityLabel = (a: AvailabilityInfo) =>
       ? "unknown (no tenant context)"
       : `unavailable — ${a.unavailableReasons.join("; ")}`;
 
-const whenLabel = (s: PlanStep) =>
+const defaultReference = (id: string) => `\`${id}\``;
+
+const whenLabel = (s: PlanStep, formatReference: (id: string) => string) =>
   s.when?.length
-    ? ` _(only if ${s.when.map((c) => `\`${c.state}\` is false`).join(" and ")})_`
+    ? ` _(only if ${s.when.map((c) => `${formatReference(c.state)} is false`).join(" and ")})_`
     : "";
 
-function renderChoose(c: ChooseStep, n: number, pad: string): string {
+function renderChoose(
+  c: ChooseStep,
+  n: number,
+  pad: string,
+  formatReference: (id: string) => string,
+): string {
   const head = `${pad}${n}. **CHOOSE** \`${c.choice}\` — ${c.question}${c.selected ? ` _(selected: ${c.selected})_` : ""}`;
   const opts = c.options.map((o) => {
     const blocking = o.constraints
       .filter((k) => k.severity === "blocking")
-      .map((k) => `\`${k.id}\``);
+      .map((k) => formatReference(k.id));
     return [
       `${pad}   - **${o.key}**: ${o.when} — ${availabilityLabel(o)}`,
       blocking.length
         ? `${pad}     Blocking constraints: ${blocking.join(", ")}`
         : "",
-      renderPlanSteps(o.plan, `${pad}     `),
+      renderPlanSteps(o.plan, `${pad}     `, formatReference),
     ]
       .filter(Boolean)
       .join("\n");
@@ -68,17 +75,21 @@ function renderChoose(c: ChooseStep, n: number, pad: string): string {
   return [head, ...opts].join("\n");
 }
 
-export function renderPlanSteps(plan: PlanStep[], pad = ""): string {
+export function renderPlanSteps(
+  plan: PlanStep[],
+  pad = "",
+  formatReference: (id: string) => string = defaultReference,
+): string {
   const stepNo = new Map<string, number>();
   plan.forEach((s, i) => s.kind === "run" && stepNo.set(s.procedure.id, i + 1));
   return plan
     .map((s, i) => {
       if (s.kind === "check") {
         const ifFalse = s.ifFalse
-          ? `run step ${stepNo.get(s.ifFalse) ?? "?"} (\`${s.ifFalse}\`)`
+          ? `run step ${stepNo.get(s.ifFalse) ?? "?"} (${formatReference(s.ifFalse)})`
           : "no known fix — ask the user";
         return [
-          `${pad}${i + 1}. **CHECK** \`${s.state.id}\` — ${s.state.title}${whenLabel(s)}`,
+          `${pad}${i + 1}. **CHECK** ${formatReference(s.state.id)} — ${s.state.title}${whenLabel(s, formatReference)}`,
           s.how && `${pad}   How: ${s.how}`,
           `${pad}   If false: ${ifFalse}`,
         ]
@@ -88,14 +99,14 @@ export function renderPlanSteps(plan: PlanStep[], pad = ""): string {
       const sub = s.steps.map((t: StepItem, j) =>
         typeof t === "string"
           ? `${pad}   ${j + 1}. ${t}`
-          : renderChoose(t, j + 1, `${pad}   `),
+          : renderChoose(t, j + 1, `${pad}   `, formatReference),
       );
       const optional = (s.optional ?? []).map(
         (o) =>
-          `${pad}   _Optional:_ \`${o.state.id}\` — ${o.state.title}${o.fix ? ` (if not true, consider \`${o.fix}\`)` : ""}`,
+          `${pad}   _Optional:_ ${formatReference(o.state.id)} — ${o.state.title}${o.fix ? ` (if not true, consider ${formatReference(o.fix)})` : ""}`,
       );
       return [
-        `${pad}${i + 1}. **RUN** \`${s.procedure.id}\` — ${s.procedure.title}${whenLabel(s)}`,
+        `${pad}${i + 1}. **RUN** ${formatReference(s.procedure.id)} — ${s.procedure.title}${whenLabel(s, formatReference)}`,
         ...sub,
         ...optional,
       ].join("\n");

@@ -2,6 +2,9 @@
 type: state
 title: Recipients follow the account
 summary: Recipients have followed the official account.
+docs:
+  path: troubleshooting/recipient-not-following.md
+  order: 30
 check: Check recipient follow status.
 satisfied_by: [procedure.zalo.request-follow]
 ---

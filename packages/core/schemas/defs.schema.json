@@ -120,6 +120,19 @@
         "sources": {
           "$ref": "#/$defs/stringList",
           "description": "Repo paths or doc URLs this node was derived from. Not indexed for search."
+        },
+        "docs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*/)*[a-z0-9]+(?:-[a-z0-9]+)*\\.md$",
+              "not": { "pattern": "(^|/)index\\.md$" },
+              "description": "Relative publication path. index.md is reserved for generated landing pages."
+            },
+            "order": { "type": "integer", "minimum": 0 }
+          }
         }
       }
     },

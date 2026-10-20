@@ -46,10 +46,14 @@ export * from "./source.js";
 
 export * from "./kb.js";
 
+export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
+
 export { runLint } from "./cli/lint.js";
 
 export { runSearch } from "./cli/search.js";
 
 export { runResolve } from "./cli/resolve.js";
+
+export { runDocs } from "./cli/docs.js";
 
 export type { CliContext } from "./cli/context.js";

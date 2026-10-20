@@ -1,4 +1,5 @@
 import { lintKB, type LintRule } from "./lint.js";
+import { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
 import type { ValidatorExtension } from "./schema.js";
 import type { DocSource } from "./source.js";
 import {
@@ -50,6 +51,7 @@ export interface KB {
   resolveGoal(id: string, opts?: ResolveOptions): ResolvedGoal;
   resolveProcedure(id: string, opts?: ResolveOptions): ResolvedGoal;
   render(resolved: ResolvedGoal, opts?: RenderOptions): Promise<RenderResult>;
+  docs(opts?: DocsOptions): DocPage[];
 }
 const BRAND = Symbol.for("simplink.kb");
 export function isKB(value: unknown): value is KB {
@@ -101,6 +103,8 @@ export async function createKB(
     search: (query, opts) => search.search(query, opts),
     resolveGoal: (id, opts) => resolveGoal(graph, id, options(opts)),
     resolveProcedure: (id, opts) => resolveProcedure(graph, id, options(opts)),
+    docs: (opts) =>
+      exportDocs(graph, { ...options(opts), layout: opts?.layout }),
     render: async (resolved, opts = {}) =>
       (extensions.renderer ?? renderResolvedGoal)(resolved, opts),
   };

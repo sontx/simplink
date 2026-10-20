@@ -2,6 +2,9 @@
 type: procedure
 title: Send Zalo broadcast
 summary: Deliver a message to an audience.
+docs:
+  path: guides/broadcasts/send-from-dashboard.md
+  order: 20
 availability:
   plans: [pro]
 uses: [capability.broadcast.schedule]

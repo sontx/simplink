@@ -2,6 +2,9 @@
 type: procedure
 title: Send a message
 summary: Select a recipient delivery method.
+docs:
+  path: guides/messaging/choose-a-recipient.md
+  order: 20
 preconditions: [state.channel.zalo-connected]
 optional_preconditions: [state.audience.segment-created]
 choices:

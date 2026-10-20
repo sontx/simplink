@@ -2,6 +2,9 @@
 type: procedure
 title: Deliver by phone
 summary: Address a recipient by phone number.
+docs:
+  path: guides/messaging/send-by-phone.md
+  order: 20
 preconditions: [state.zalo.template-approved]
 availability:
   plans: [enterprise]

@@ -13,6 +13,7 @@ const resolved = kb.resolveGoal(found.goals[0].id, {
   states: { "state.ready": true },
 });
 const rendered = await kb.render(resolved, { tokenBudget: 1500 });
+const pages = kb.docs(); // Reader-facing Markdown pages and directory indexes
 const node = kb.node("procedure.export");
 const tools = await createKBTools(kb);
 const result = await tools.call("search_kb", { query: "export records" });
@@ -54,12 +55,14 @@ const custom = await createKB(
 
 ## CLI and in-process runners
 
-The bins and paths remain `simp-lint`, `simp-search`, and `simp-resolve`; each supports `--help`.
+The bins are `simp-lint`, `simp-search`, `simp-resolve`, and `simp-docs`; each supports `--help`.
 
 ```sh
 simp-lint ./kb --format json
 simp-search export --kb ./kb --type procedure --limit 5
 simp-resolve goal.export --kb ./kb --state state.ready=true --budget 1500
+simp-docs --kb ./kb --out ./site
+simp-docs --kb ./kb --out ./graph-docs --layout graph
 ```
 
 ```ts
@@ -73,6 +76,27 @@ const code = await runLint(["./kb", "--format", "json"], {
 ```
 
 Runners take explicit argument arrays, return `Promise<number>`, and never change `process.exitCode` or terminate the host. Importing them performs no parsing or output. Callbacks receive line-oriented messages with no newline appended (a message can itself contain multiline JSON or Markdown); defaults are `console.log`/`console.error`. `runLint` applies validator/lint extensions; search and resolve use all facade extensions. Success returns 0; lint findings or the warning threshold return 1 in the linter; argument/loading/execution failures return 2 with stderr diagnostics. Search/resolve reject KBs with lint errors with code 2. Numeric limits/budgets must be positive finite integers; `max-warnings` must be -1 or nonnegative.
+
+`exportDocs(graph, opts?: DocsOptions)` and `kb.docs(opts?)` return `{ path, content }[]`
+without writing files. Site layout is the default: goals and supporting how-tos
+appear under `guides/`, constraints under `reference/`, and state checks under
+`troubleshooting/`, with a home page and directory indexes. `layout: "graph"`
+retains source paths and graph headings. `DocsOptions` also accepts resolve options;
+the facade merges its configured resolve defaults. Exports have no token-budget trimming.
+
+Optional node frontmatter `docs: { path: getting-started/connect.md, order: 0 }`
+controls publication paths and navigation order. Paths use lowercase kebab-case
+POSIX segments and a `.md` suffix; `index.md` is reserved for generated indexes.
+Order is a nonnegative integer. Node IDs and source paths do not change. Use
+wikilinks for internal KB links so relative links follow the chosen output paths.
+
+`runDocs` is the importable CLI runner. It passes extensions through the facade,
+rejects lint errors, duplicate routes, overlapping KB/output trees, escaping
+symlinks and hardlinked destinations before writing. Existing generated files
+are overwritten, unrelated files are preserved, and removed pages are not cleaned
+up. Write failures return 2 and can leave a partial export. Exported availability
+is recommendation context, not access control. Engine configuration, assets,
+and authored MDX/HTML compatibility remain the consuming site's responsibility.
 
 ## Migrating to 0.2.0
 

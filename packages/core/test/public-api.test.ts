@@ -49,6 +49,18 @@ test("built package supports async engines, renderer and policy through awaited 
     },
   );
   assert.equal((await kb.search("export")).hits[0].id, "goal.g");
+  assert.equal(core.exportDocs(kb.graph, { layout: "graph" }).length, 2);
+  assert.ok(kb.docs().some((page) => page.path === "index.md"));
+  assert.match(
+    kb.docs().find((page) => page.path === "guides/g.md")!.content,
+    /Availability: available/,
+  );
+  const help: string[] = [];
+  assert.equal(
+    await core.runDocs(["--help"], { stdout: (s) => help.push(s) }),
+    0,
+  );
+  assert.match(help[0], /simp-docs/);
   const tools = await core.createKBTools(kb);
   const result = await tools.call("resolve_goal", { goal_id: "goal.g" });
   assert.equal(result.content, "available:true");
