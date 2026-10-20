@@ -25,6 +25,23 @@ Existing standalone functions remain available: `loadDocs`, `lintKB`, `createVal
 
 ## Code extensions
 
+### Git sources
+
+```ts
+import { createKB, gitSource } from "@sontx/simplink-core";
+
+const kb = await createKB(
+  gitSource("https://github.com/org/knowledge.git", {
+    ref: "main",
+    directory: "kb",
+  }),
+);
+```
+
+`gitSource(repo, options?)` accepts a Git URL or local repository path. `ref` selects a branch or tag (default: the repository's default branch); `directory` selects a relative KB folder (default: repository root). Paths and node IDs are relative to that folder. Git must be installed; private repositories use existing Git credentials or SSH configuration, with interactive credential prompts disabled. Each load creates a fresh shallow clone and removes it afterward, including on failure. Clone operations time out after two minutes. Clone and read errors propagate to the caller. Recreate the KB to refresh its snapshot; caching, watching, submodules, Git LFS downloads, and writing back are not provided.
+
+### Other extensions
+
 Pass `KBExtensions` as the second argument to `createKB`, or as `createKBTools(input, { extensions })` when constructing from a path or source. Supplying extensions with an already constructed KB is rejected.
 
 - **Sources:** `fsSource(root)`, `memorySource(files, name?)`, or a `DocSource` with `list(): MaybePromise<SourceFile[]>`. Each file contains `relPath` and `content`. Paths must be relative and `/` separated, with no backslashes, empty, `.` or `..` segments, drive prefixes, or duplicates. All sources exclude non-Markdown files, hidden segments, and root documents, then sort paths before parsing. `memorySource` defaults to `<memory>`; `parseDoc` exposes the common YAML parser and its diagnostics.

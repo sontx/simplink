@@ -44,6 +44,8 @@ export {
 
 export * from "./source.js";
 
+export * from "./git-source.js";
+
 export * from "./kb.js";
 
 export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
