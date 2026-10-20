@@ -4,6 +4,7 @@
   "packageManager": "pnpm@12.14.0",
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/link-agent-skills.mjs",
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "pnpm lint . --fix",

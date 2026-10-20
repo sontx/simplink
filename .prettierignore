@@ -1,3 +1,4 @@
 **/*.gen.ts
 pnpm-lock.yaml
 **/dist/
+.agents/
