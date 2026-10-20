@@ -44,8 +44,9 @@ After building, run a package suite with
 `pnpm --filter @sontx/simplink-core test` or
 `pnpm --filter @sontx/simplink-mcp test`.
 
-Provide an ignored root `kb/` directory for `pnpm dev`, `pnpm lint:kb`, and
-`pnpm start:http`. To use another directory:
+Root `kb/` holds Simplink's own knowledge base, which describes how to use
+these packages. `pnpm dev`, `pnpm lint:kb`, and `pnpm start:http` use it by
+default; `kb/INVENTORY.md` tracks its coverage. To use another directory:
 
 ```sh
 pnpm exec tsx packages/core/src/cli.ts /path/to/kb
@@ -54,8 +55,8 @@ node packages/mcp/dist/bin.js --kb /path/to/kb
 node packages/mcp/dist/http-bin.js --kb /path/to/kb --port 3000
 ```
 
-The Docker image serves HTTP on port 3000 and checks `/healthz`. Place your KB at
-root `kb/` before `docker build -t simplink .`; mount a replacement at `/app/kb`
+The Docker image serves HTTP on port 3000 and checks `/healthz`. The image includes
+root `kb/`; replace it before `docker build -t simplink .` to serve another KB, or mount a replacement at `/app/kb`
 and restart the container to reload it.
 
 ## Local KB manager
@@ -90,7 +91,7 @@ errors would prevent `simp-docs` from exporting. Goal and procedure inspectors
 also show the resolved plan.
 
 For development, `pnpm dev:ui --kb /path/to/kb` runs the API on port 4321 and
-Vite on port 5173 with an API proxy. The default KB is the ignored root `kb/`.
+Vite on port 5173 with an API proxy. The default KB is root `kb/`.
 The server defaults to loopback and has no authentication; use it locally.
 
 The UI uses shadcn/ui with the Radix Nova preset. Add components with the CLI:

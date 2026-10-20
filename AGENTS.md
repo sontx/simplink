@@ -14,6 +14,7 @@ This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, and `
 - `packages/ui/src/`: Local UI HTTP server and `simp-ui` executable. `packages/ui/web/` contains the Vite React graph manager and in-memory docs preview.
 - `packages/*/test/`: Package-owned tests; core fixture builders live in `packages/core/test/helpers.ts`.
 - `test/fixtures/kb/`: Shared synthetic knowledge base; tests must not depend on root `kb/`.
+- `kb/`: Simplink's own product knowledge base; `kb/INVENTORY.md` tracks coverage. Run `pnpm lint:kb` after changing it or the features it documents.
 - `packages/*/dist/`: Generated JavaScript and declarations; change source files instead.
 
 ## Build, Test, and Development Commands
@@ -30,7 +31,7 @@ Use Node.js 20 or newer and the package-manager version declared in `package.jso
 - `pnpm ui --kb <path>`: Start the compiled local KB manager at `http://127.0.0.1:4321`.
 - `pnpm dev:ui --kb <path>`: Start the UI API and Vite development server.
 
-The repository does not include root `kb/`; provide a knowledge base for runtime commands. Tests use checked-in fixtures. To lint another directory, use `pnpm exec tsx packages/core/src/cli.ts <path>`.
+Runtime commands default to root `kb/`, the checked-in Simplink KB. Tests use checked-in fixtures. To lint another directory, use `pnpm exec tsx packages/core/src/cli.ts <path>`.
 
 ## Coding Style & Naming Conventions
 
