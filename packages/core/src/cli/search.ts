@@ -3,6 +3,12 @@ import { createKB } from "../kb.js";
 import { NODE_TYPES, type NodeType } from "../types.js";
 import { type CliContext, integerOption, formatOption } from "./context.js";
 
+/**
+ * Runs the search CLI without terminating the host process.
+ * @param argv - Command arguments excluding the Node executable and script path; use --help for supported options.
+ * @param ctx - Output callbacks (default console) and KB extensions.
+ * @returns Process-style exit code; failures are written to stderr.
+ */
 export async function runSearch(
   argv: string[],
   ctx: CliContext = {},

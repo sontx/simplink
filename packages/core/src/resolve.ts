@@ -2,26 +2,46 @@ import { choiceMarker, getChoices } from "./graph.js";
 import { orderedItems, section } from "./markdown.js";
 import type { ChoiceDef, EdgeKind, KBGraph, KBNode } from "./types.js";
 
+/**
+ * Caller plan, permissions, and product-specific context supplied to availability policies.
+ */
 export interface TenantContext {
+  /** Product-specific values available to custom policies. */
   context?: Readonly<Record<string, unknown>>;
+  /** Current tenant plan identifier. */
   plan?: string;
+  /** Permissions granted to the current tenant or user. */
   permissions?: string[];
 }
 
+/**
+ * Returns unavailability reasons, an empty array when available, or null when availability is unknown.
+ */
 export type AvailabilityPolicy = (
   node: KBNode,
   tenant?: TenantContext,
 ) => string[] | null;
 
+/**
+ * An alternative before ranking, with its zero-based declaration order.
+ */
 export type RankedCandidate = Omit<Alternative, "rank"> & { order: number };
 
+/**
+ * Sort comparator for alternatives; a negative value places the first candidate earlier.
+ */
 export type AlternativeComparator = (
   a: RankedCandidate,
   b: RankedCandidate,
 ) => number;
 
+/**
+ * State knowledge, branch selections, tenant context, and policy overrides for plan resolution.
+ */
 export interface ResolveOptions {
+  /** Availability policy; defaults to defaultAvailability. */
   availability?: AvailabilityPolicy;
+  /** Alternative comparator; defaults to defaultRank. */
   rank?: AlternativeComparator;
   /** Known state values. Missing = unknown → a check step is emitted. */
   states?: Record<string, boolean>;
@@ -33,96 +53,169 @@ export interface ResolveOptions {
   maxDepth?: number;
 }
 
+/**
+ * Compact node metadata embedded in a resolved plan.
+ */
 export interface NodeRef {
+  /** Stable node or definition identifier. */
   id: string;
+  /** Human-readable title. */
   title: string;
+  /** Short description of the node. */
   summary: string;
 }
 
 /** All listed states must be false for the step to apply. */
 export interface Condition {
+  /** Required state reference. */
   state: string;
+  /** Required state value for this condition. */
   is: false;
 }
 
+/**
+ * A state check emitted when a required precondition is unknown.
+ */
 export interface CheckStep {
+  /** Discriminator identifying the relationship or plan step. */
   kind: "check";
+  /** Required state reference. */
   state: NodeRef;
+  /** Instructions for checking the state. */
   how: string;
   /** Procedure to run when the state is false. */
   ifFalse: string | null;
+  /** Human-readable condition for choosing this option. */
   when?: Condition[];
 }
 
+/**
+ * Constraint metadata and its blocking or advisory severity.
+ */
 export interface ConstraintRef extends NodeRef {
+  /** Severity of the diagnostic or constraint. */
   severity: "blocking" | "warning";
 }
 
+/**
+ * Availability decision and the reasons an alternative or branch is unavailable.
+ */
 export interface AvailabilityInfo {
   /** null = gated by plan/permissions but no tenant given. */
   available: boolean | null;
+  /** Reasons availability was denied; empty when available or unknown. */
   unavailableReasons: string[];
 }
 
+/**
+ * A branch option with its resolved sub-plan and availability.
+ */
 export interface ChoiceOption extends AvailabilityInfo {
+  /** Stable option key used to select this branch. */
   key: string;
+  /** Human-readable condition for choosing this option. */
   when: string;
+  /** Procedure referenced or executed by this entry. */
   procedure: NodeRef;
   /** Fully resolved sub-plan for this branch (checks, fixes, the option procedure). */
   plan: PlanStep[];
+  /** Capabilities used by this plan. */
   capabilities: NodeRef[];
+  /** Constraints applicable to this plan. */
   constraints: ConstraintRef[];
+  /** Warnings associated with this result. */
   warnings: string[];
 }
 
+/**
+ * A decision embedded in procedure steps, optionally narrowed to a selected branch.
+ */
 export interface ChooseStep {
+  /** Discriminator identifying the relationship or plan step. */
   kind: "choose";
+  /** Choice identifier within the procedure. */
   choice: string;
+  /** Question presented when selecting a branch. */
   question: string;
   /** Set when the caller pre-selected an option; options then holds only that one. */
   selected?: string;
+  /** Available branch options. */
   options: ChoiceOption[];
 }
 
 /** A step line, or a branching point at that position. */
 export type StepItem = string | ChooseStep;
 
+/**
+ * An advisory state check and suggested fix that is never inserted into the required plan.
+ */
 export interface OptionalPrecondition {
+  /** Required state reference. */
   state: NodeRef;
+  /** Instructions for checking the state. */
   how: string;
   /** Suggested procedure if the state is not true. Never added to the plan. */
   fix: string | null;
 }
 
+/**
+ * A procedure execution with steps, optional checks, and conditional applicability.
+ */
 export interface RunStep {
+  /** Discriminator identifying the relationship or plan step. */
   kind: "run";
+  /** Procedure referenced or executed by this entry. */
   procedure: NodeRef;
+  /** Why this procedure appears in the plan. */
   reason: "main" | "requires" | "precondition";
+  /** Ordered procedure instructions and embedded choices. */
   steps: StepItem[];
+  /** Advisory preconditions that do not add required steps. */
   optional?: OptionalPrecondition[];
+  /** Failure-handling guidance extracted from the procedure body. */
   failureHandling?: string;
+  /** Human-readable condition for choosing this option. */
   when?: Condition[];
 }
 
+/**
+ * A state check or procedure execution in a resolved plan.
+ */
 export type PlanStep = CheckStep | RunStep;
 
+/**
+ * One ranked procedure plan for achieving the requested goal.
+ */
 export interface Alternative extends AvailabilityInfo {
+  /** One-based rank among alternatives. */
   rank: number;
+  /** Procedure referenced or executed by this entry. */
   procedure: NodeRef;
+  /** Whether the alternative procedure is deprecated. */
   deprecated: boolean;
+  /** Ordered checks and procedure executions for this alternative or branch. */
   plan: PlanStep[];
+  /** Capabilities used by this plan. */
   capabilities: NodeRef[];
+  /** Constraints applicable to this plan. */
   constraints: ConstraintRef[];
   /** Preconditions skipped because the caller reported them true. */
   satisfiedStates: string[];
+  /** Warnings associated with this result. */
   warnings: string[];
 }
 
+/**
+ * Resolved goal or procedure with ranked alternatives and traversal warnings.
+ */
 export interface ResolvedGoal {
   /** "procedure" when produced by resolveProcedure (goal then holds the procedure). */
   subject: "goal" | "procedure";
+  /** Requested goal metadata, or procedure metadata for a procedure result. */
   goal: NodeRef & { whenToUse: string[] };
+  /** Procedure plans in rank order. */
   alternatives: Alternative[];
+  /** Warnings associated with this result. */
   warnings: string[];
 }
 
@@ -510,6 +603,9 @@ class PlanBuilder {
 const prepWork = (a: Omit<Alternative, "rank">) =>
   a.plan.filter((s) => s.kind === "check" || s.reason !== "main").length;
 
+/**
+ * Ranks by availability, active status, preparation work, plan length, then declaration order.
+ */
 export const defaultRank: AlternativeComparator = (a, b) =>
   availabilityRank(a.available) - availabilityRank(b.available) ||
   Number(a.deprecated) - Number(b.deprecated) ||
@@ -520,6 +616,11 @@ export const defaultRank: AlternativeComparator = (a, b) =>
 /**
  * Resolves a goal into ranked alternatives, one per goal procedure.
  * Ranking: availability → not deprecated → least prep work → fewest steps → declaration order.
+ * @param g - Loaded graph snapshot.
+ * @param goalId - Identifier of a goal node.
+ * @param opts - Known states, branch selections, tenant context, and policy overrides.
+ * @returns Ranked procedure alternatives and resolution warnings.
+ * @throws If the identifier is absent or is not a goal.
  * Assumes the KB passed `simp-lint` (no dependency cycles); guards exist but only warn.
  */
 export function resolveGoal(
@@ -553,7 +654,14 @@ export function resolveGoal(
   };
 }
 
-/** Resolves a single procedure (e.g. a fix procedure found by search) as a one-alternative result. */
+/**
+ * Resolves a single procedure as a one-alternative result.
+ * @param g - Loaded graph snapshot.
+ * @param procedureId - Identifier of a procedure node.
+ * @param opts - Known states, branch selections, tenant context, and policy overrides.
+ * @returns The procedure plan with subject set to procedure.
+ * @throws If the identifier is absent or is not a procedure.
+ */
 export function resolveProcedure(
   g: KBGraph,
   procedureId: string,

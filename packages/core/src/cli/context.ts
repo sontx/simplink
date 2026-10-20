@@ -1,7 +1,13 @@
 import type { KBExtensions } from "../kb.js";
+/**
+ * Output callbacks and KB extensions for embedding CLI runners.
+ */
 export interface CliContext {
+  /** Receives normal output; defaults to console.log. */
   stdout?: (line: string) => void;
+  /** Receives diagnostics; defaults to console.error. */
   stderr?: (line: string) => void;
+  /** KB customization used by the runner. */
   extensions?: KBExtensions;
 }
 

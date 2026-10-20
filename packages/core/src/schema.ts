@@ -8,26 +8,43 @@ import { NODE_TYPES, type NodeType } from "./types.js";
 // ajv ships CJS; under NodeNext the class may sit on .default.
 const Ajv2020 = ajv2020.default.default ?? ajv2020.default;
 
-/** Works from both src/ (tsx) and dist/ (built). */
+/** Absolute path to the bundled JSON schema directory, usable from source and built modules. */
 export const SCHEMA_DIR = fileURLToPath(
   new URL("../schemas/", import.meta.url),
 );
 
+/**
+ * A frontmatter validation finding without a document path.
+ */
 export interface SchemaFinding {
+  /** Stable diagnostic code. */
   code: string;
+  /** Human-readable diagnostic explanation. */
   message: string;
 }
 
+/**
+ * Replacement frontmatter validator; return findings or an empty array, synchronously or asynchronously.
+ */
 export type ValidatorExtension = (
   type: NodeType,
   data: unknown,
 ) => import("./types.js").MaybePromise<SchemaFinding[]>;
 
+/**
+ * Synchronous frontmatter validator returning findings, or an empty array for valid data.
+ */
 export type FrontmatterValidator = (
   type: NodeType,
   data: unknown,
 ) => SchemaFinding[];
 
+/**
+ * Loads and compiles the bundled JSON schemas for all node types.
+ * @param schemaDir - Schema directory; defaults to SCHEMA_DIR.
+ * @returns A reusable synchronous frontmatter validator.
+ * @throws If schemas cannot be read or compiled, or a required node schema is missing.
+ */
 export function createValidator(schemaDir = SCHEMA_DIR): FrontmatterValidator {
   const ajv = new Ajv2020({ allErrors: true, verbose: true, strict: true });
   for (const file of readdirSync(schemaDir).filter((f) =>

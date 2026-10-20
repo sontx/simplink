@@ -8,6 +8,9 @@ import type {
   StepItem,
 } from "./resolve.js";
 
+/**
+ * Token budget and section customization for plan rendering.
+ */
 export interface RenderOptions {
   /** Approximate token budget (chars / 4). Default 2000. */
   tokenBudget?: number;
@@ -18,22 +21,35 @@ export interface RenderOptions {
   ) => RenderSection[];
 }
 
+/**
+ * Rendered plan text, estimated token count, and omitted section names.
+ */
 export interface RenderResult {
+  /** Rendered Markdown including any omission notice. */
   text: string;
+  /** Approximate token count, calculated as the ceiling of character count divided by four. */
   tokens: number;
   /** Section names dropped to fit the budget. */
   omitted: string[];
 }
 
+/**
+ * Custom synchronous or asynchronous renderer used by the KB facade.
+ */
 export type PlanRenderer = (
   resolved: ResolvedGoal,
   opts: RenderOptions,
 ) => MaybePromise<RenderResult>;
 
+/**
+ * A named Markdown section with a retention priority.
+ */
 export interface RenderSection {
+  /** Section label used to report omissions. */
   name: string;
   /** Lower = kept first. Priority 0 is always kept. */
   priority: number;
+  /** Markdown content of this section. */
   text: string;
 }
 
@@ -75,6 +91,13 @@ function renderChoose(
   return [head, ...opts].join("\n");
 }
 
+/**
+ * Renders checks, procedure runs, and nested choices as a Markdown ordered list.
+ * @param plan - Ordered resolved steps.
+ * @param pad - Indentation prefix; defaults to an empty string.
+ * @param formatReference - Formats node identifiers; defaults to inline code.
+ * @returns Markdown for the supplied steps.
+ */
 export function renderPlanSteps(
   plan: PlanStep[],
   pad = "",
@@ -182,7 +205,14 @@ export function buildRenderSections(r: ResolvedGoal): RenderSection[] {
   return sections;
 }
 
-/** Priority-zero content is always retained, even when it exceeds budget. */
+/**
+ * Fits sections by increasing priority, preserving original order in the output.
+ * Priority-zero content is always retained, even when it exceeds budget.
+ * Stops at the first nonzero-priority section that does not fit.
+ * @param sections - Named Markdown sections to consider.
+ * @param budget - Approximate token limit; omission notices may increase the final count.
+ * @returns Combined text, estimated token count, and omitted section names.
+ */
 export function fitSections(
   sections: RenderSection[],
   budget: number,
@@ -206,6 +236,12 @@ export function fitSections(
   return { text, tokens: estimateTokens(text), omitted };
 }
 
+/**
+ * Renders a resolved goal or procedure as Markdown within an approximate token budget.
+ * @param r - Resolution result.
+ * @param opts - Budget and section overrides; the budget defaults to 2000.
+ * @returns Text, estimated tokens, and omitted section names. Priority-zero sections may exceed the budget.
+ */
 export function renderResolvedGoal(
   r: ResolvedGoal,
   opts: RenderOptions = {},

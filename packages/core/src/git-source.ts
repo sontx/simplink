@@ -7,6 +7,9 @@ import { fsSource, type DocSource } from "./source.js";
 
 const exec = promisify(execFile);
 
+/**
+ * Git revision, repository subdirectory, and optional persistent checkout settings.
+ */
 export interface GitSourceOptions {
   /** Branch or tag; defaults to the repository's default branch. */
   ref?: string;
@@ -16,7 +19,12 @@ export interface GitSourceOptions {
   checkout?: string;
 }
 
-/** Load Git documents from a temporary snapshot or a persistent local checkout. */
+/** Creates a lazy Git document source requiring the git executable.
+ * @param repo - Clone URL or local repository path.
+ * @param options - Revision, relative KB directory, and optional persistent checkout.
+ * @returns A source that clones on list; temporary clones are cleaned up after reading.
+ * Existing persistent checkouts are reused without fetching or resetting local edits.
+ * @throws Source listing rejects for Git failures, a mismatched checkout origin, or a directory escaping the repository. */
 export function gitSource(
   repo: string,
   options: GitSourceOptions = {},

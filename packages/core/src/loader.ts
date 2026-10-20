@@ -2,20 +2,29 @@ import matter from "gray-matter";
 import { fsSource, type DocSource } from "./source.js";
 import { FOLDER_TO_TYPE, type NodeType } from "./types.js";
 
+/**
+ * Parsed source document before schema validation; parse failures are preserved as diagnostics.
+ */
 export interface RawDoc {
+  /** Source path relative to the KB root, using POSIX separators. */
   relPath: string;
   /** Undefined when the top-level folder is not a known type folder. */
   folderType?: NodeType;
   /** Undefined when the path cannot produce a valid id. */
   derivedId?: string;
+  /** Parsed YAML frontmatter. */
   data: Record<string, unknown>;
+  /** Markdown body without YAML frontmatter. */
   body: string;
+  /** YAML or missing-frontmatter diagnostic; omitted when parsing succeeds. */
   parseError?: string;
 }
 
 const ID_SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-/** kb/procedures/broadcast/send-zalo.md -> procedure.broadcast.send-zalo */
+/** Derives a node type and identifier from a relative POSIX document path.
+ * @param relPath - Path relative to the KB root, e.g. procedures/broadcast/send-zalo.md.
+ * @returns Folder type and dot-separated identifier; invalid paths leave one or both undefined. */
 export function deriveId(relPath: string): {
   folderType?: NodeType;
   derivedId?: string;
@@ -28,7 +37,10 @@ export function deriveId(relPath: string): {
   return { folderType, derivedId: [folderType, ...rest].join(".") };
 }
 
-/** Parse one document, preserving YAML diagnostics for linting. */
+/** Parses one document, preserving YAML diagnostics for linting.
+ * @param relPath - Relative POSIX source path used to derive the identifier.
+ * @param raw - Markdown text including frontmatter.
+ * @returns Parsed document; malformed or missing frontmatter sets parseError rather than throwing. */
 export function parseDoc(relPath: string, raw: string): RawDoc {
   const ids = deriveId(relPath);
   try {
@@ -53,7 +65,10 @@ export function parseDoc(relPath: string, raw: string): RawDoc {
   }
 }
 
-/** Source paths are relative POSIX paths, even on Windows. */
+/** Loads and parses visible Markdown documents in deterministic path order.
+ * @param input - Filesystem root or custom document source.
+ * @returns Parsed documents; root-level and hidden files are excluded.
+ * @throws If any source path is invalid or duplicated, or source loading fails. */
 export async function loadDocs(input: string | DocSource): Promise<RawDoc[]> {
   const files = await (
     typeof input === "string" ? fsSource(input) : input

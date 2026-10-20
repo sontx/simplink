@@ -37,6 +37,11 @@ function findRequiresCycles(g: KBGraph): string[][] {
   return [...cycles.values()];
 }
 
+/**
+ * Checks graph references, dependency cycles, document structure, and authoring conventions.
+ * @param g - Graph with adjacency indexes, normally produced by buildGraph.
+ * @returns Graph diagnostics; does not perform frontmatter schema validation.
+ */
 export function lintGraph(g: KBGraph): Issue[] {
   const issues: Issue[] = [];
   const at = (n: KBNode, code: string, msg: string) =>

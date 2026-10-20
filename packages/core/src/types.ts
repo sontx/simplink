@@ -1,5 +1,11 @@
+/**
+ * A synchronous value or an asynchronous result, used by extension hooks.
+ */
 export type MaybePromise<T> = T | Promise<T>;
 
+/**
+ * Supported knowledge-base document types.
+ */
 export const NODE_TYPES = [
   "goal",
   "procedure",
@@ -8,8 +14,14 @@ export const NODE_TYPES = [
   "constraint",
 ] as const;
 
+/**
+ * A supported knowledge-base document type.
+ */
 export type NodeType = (typeof NODE_TYPES)[number];
 
+/**
+ * Maps top-level document folder names to their node types.
+ */
 export const FOLDER_TO_TYPE: Readonly<Record<string, NodeType>> = {
   goals: "goal",
   procedures: "procedure",
@@ -33,39 +45,70 @@ export const EDGE_KINDS = [
   "choice_option",
 ] as const;
 
+/**
+ * A frontmatter relationship kind, including derived choice-option edges.
+ */
 export type EdgeKind = (typeof EDGE_KINDS)[number];
 
+/**
+ * Plan and permission requirements declared by a document.
+ */
 export interface Availability {
+  /** Allowed plan identifiers; an empty or omitted list imposes no plan restriction. */
   plans?: string[];
+  /** Required permission identifiers. */
   permissions?: string[];
 }
 
+/**
+ * A normalized knowledge-base document with its original frontmatter and Markdown body.
+ */
 export interface KBNode {
+  /** Stable node or definition identifier. */
   id: string;
+  /** Document node type. */
   type: NodeType;
   /** Path relative to the KB root, POSIX separators. */
   path: string;
+  /** Human-readable title. */
   title: string;
+  /** Short description of the node. */
   summary: string;
+  /** Alternative phrases used to discover the node. */
   aliases: string[];
+  /** Searchable classification tags. */
   tags: string[];
+  /** Active or deprecated document status. */
   status: "active" | "deprecated";
+  /** Declared plan and permission requirements. */
   availability?: Availability;
   /** Raw frontmatter, for type-specific fields (when_to_use, check, severity, ...). */
   data: Record<string, unknown>;
+  /** Markdown body without YAML frontmatter. */
   body: string;
 }
 
+/**
+ * A directed relationship between node identifiers; its target may be missing.
+ */
 export interface KBEdge {
+  /** Source node identifier. */
   from: string;
+  /** Target node identifier; the node may be absent. */
   to: string;
+  /** Discriminator identifying the relationship or plan step. */
   kind: EdgeKind;
   /** "body" = derived from a [[wikilink]]. */
   source: "frontmatter" | "body";
 }
 
+/**
+ * A graph snapshot with node lookup and incoming/outgoing adjacency indexes. Rebuild after mutation.
+ */
 export interface KBGraph {
+  /** Nodes keyed by their identifiers. */
   nodes: Map<string, KBNode>;
+  /** Directed graph relationships. */
   edges: KBEdge[];
   /** Outgoing edges per node (includes dangling targets). */
   out: Map<string, KBEdge[]>;
@@ -73,15 +116,32 @@ export interface KBGraph {
   in: Map<string, KBEdge[]>;
 }
 
+/**
+ * Severity of a validation or lint diagnostic.
+ */
 export type Severity = "error" | "warning";
 
+/**
+ * A validation or lint diagnostic associated with a document path.
+ */
 export interface Issue {
+  /** Stable diagnostic code. */
   code: string;
+  /** Severity of the diagnostic or constraint. */
   severity: Severity;
+  /** Document path relative to the knowledge-base root. */
   path: string;
+  /** Human-readable diagnostic explanation. */
   message: string;
 }
 
+/**
+ * Creates a diagnostic; codes starting with E are errors and all other codes are warnings.
+ * @param code - Diagnostic identifier.
+ * @param path - Document path relative to the KB root.
+ * @param message - Human-readable explanation.
+ * @returns The diagnostic with its inferred severity.
+ */
 export const issue = (code: string, path: string, message: string): Issue => ({
   code,
   severity: code.startsWith("E") ? "error" : "warning",
@@ -89,14 +149,26 @@ export const issue = (code: string, path: string, message: string): Issue => ({
   message,
 });
 
+/**
+ * A named procedure branch in a document choice definition.
+ */
 export interface ChoiceOptionDef {
+  /** Stable option key used to select this branch. */
   key: string;
+  /** Human-readable condition for choosing this option. */
   when: string;
+  /** Procedure referenced or executed by this entry. */
   procedure: string;
 }
 
+/**
+ * A procedure decision and the branches available to answer it.
+ */
 export interface ChoiceDef {
+  /** Stable node or definition identifier. */
   id: string;
+  /** Question presented when selecting a branch. */
   question: string;
+  /** Available branch options. */
   options: ChoiceOptionDef[];
 }

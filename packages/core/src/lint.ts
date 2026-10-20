@@ -12,18 +12,34 @@ import {
   type KBNode,
 } from "./types.js";
 
+/**
+ * An additional graph lint rule returning diagnostics synchronously or asynchronously.
+ */
 export type LintRule = (graph: KBGraph) => MaybePromise<Issue[]>;
 
+/**
+ * Frontmatter validation and graph lint customization.
+ */
 export interface LintOptions {
+  /** Replaces bundled schema validation while preserving path and graph checks. */
   validator?: ValidatorExtension;
+  /** Additional graph rules, awaited sequentially after built-in graph linting. */
   rules?: LintRule[];
+  /** Diagnostic codes to suppress. Error codes starting with E cannot be disabled. */
   disable?: string[];
 }
 
+/**
+ * Loaded graph and sorted diagnostics with error and warning totals.
+ */
 export interface LintResult {
+  /** Loaded graph snapshot. */
   graph: KBGraph;
+  /** Validation and lint diagnostics. */
   issues: Issue[];
+  /** Number of error diagnostics. */
   errorCount: number;
+  /** Number of warning diagnostics. */
   warningCount: number;
 }
 
@@ -58,6 +74,10 @@ function toNode(doc: RawDoc, id: string): KBNode {
  * Loads the KB, validates every file, builds the graph, and runs graph lint.
  * Files that fail path or YAML checks are excluded from the graph; files with
  * schema errors are still included so graph rules can report on them.
+ * @param root - Filesystem KB root or custom source.
+ * @param opts - Replacement validator, additional rules, and warning suppression.
+ * @returns Graph, sorted diagnostics, and severity counts.
+ * @throws If loading or an extension fails, or an error code is disabled.
  */
 export async function lintKB(
   root: string | DocSource,

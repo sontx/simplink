@@ -2,6 +2,12 @@ import { parseArgs } from "node:util";
 import { createKB } from "../kb.js";
 import { type CliContext, integerOption, formatOption } from "./context.js";
 
+/**
+ * Runs the resolve CLI without terminating the host process.
+ * @param argv - Command arguments excluding the Node executable and script path; use --help for supported options.
+ * @param ctx - Output callbacks (default console) and KB extensions.
+ * @returns Process-style exit code; failures are written to stderr.
+ */
 export async function runResolve(
   argv: string[],
   ctx: CliContext = {},

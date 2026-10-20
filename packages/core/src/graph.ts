@@ -8,7 +8,9 @@ import {
   type KBNode,
 } from "./types.js";
 
-/** [[id]], [[id|label]], [[id#heading]] */
+/** Extracts unique wikilink targets in first-occurrence order, ignoring code.
+ * @param body - Markdown containing [[id]], [[id|label]], or [[id#heading]] links.
+ * @returns Trimmed target identifiers without labels or fragments. */
 export function extractWikilinks(body: string): string[] {
   const ids = new Set<string>();
   for (const m of stripCode(body).matchAll(
@@ -47,6 +49,11 @@ export function getChoices(n: KBNode): ChoiceDef[] {
 export const choiceMarker = (step: string): string | null =>
   /^`?choice:([a-z0-9-]+)`?$/.exec(step.trim())?.[1] ?? null;
 
+/**
+ * Builds relationship edges and adjacency indexes from normalized nodes.
+ * @param nodes - Nodes keyed by identifier; retained by reference.
+ * @returns A snapshot including frontmatter, choice-option, and body wikilink edges.
+ */
 export function buildGraph(nodes: Map<string, KBNode>): KBGraph {
   const edges: KBEdge[] = [];
   for (const node of nodes.values()) {
@@ -102,6 +109,12 @@ const GOAL_PATH_KINDS: ReadonlySet<EdgeKind> = new Set([
 
 /** Graphs are snapshots; rebuild after mutation to invalidate traversal caches. */
 const GOAL_CACHE = new WeakMap<KBGraph, Map<string, Map<string, number>>>();
+/**
+ * Finds goals reachable through incoming intent relationships, up to four hops away.
+ * @param graph - Graph snapshot; rebuild after changes to invalidate traversal caches.
+ * @param start - Starting node identifier.
+ * @returns A cached map of goal identifiers to hop counts. Treat it as read-only.
+ */
 export function goalsOf(graph: KBGraph, start: string): Map<string, number> {
   let goalCache = GOAL_CACHE.get(graph);
   if (!goalCache) GOAL_CACHE.set(graph, (goalCache = new Map()));

@@ -22,9 +22,13 @@ const Ajv2020 = ajv2020.default.default ?? ajv2020.default;
 
 /** Provider-agnostic tool definition (maps 1:1 to MCP, Anthropic, and OpenAI tool formats). */
 export interface ToolDefinition {
+  /** Unique dispatch name. */
   name: string;
+  /** User- or model-facing description of the tool. */
   description: string;
+  /** JSON Schema used to validate arguments and apply defaults. */
   inputSchema: Record<string, unknown>;
+  /** Optional provider hints describing tool behavior. */
   annotations?: {
     readOnlyHint?: boolean;
     openWorldHint?: boolean;
@@ -32,20 +36,35 @@ export interface ToolDefinition {
   };
 }
 
+/**
+ * Provider-independent tool response with text content and an optional error flag.
+ */
 export interface ToolResult {
   /** Markdown (resolve_*) or compact JSON (everything else). */
   content: string;
+  /** True when content describes a tool failure. */
   isError?: boolean;
 }
 
+/**
+ * Tool definition paired with a handler receiving schema-validated arguments and a loaded KB.
+ */
 export interface KBToolSpec {
+  /** Public tool name, description, schema, and annotations. */
   definition: ToolDefinition;
+  /** Handles validated arguments; throw ToolError for an expected user-facing failure. */
   handler(args: unknown, kb: KB): MaybePromise<ToolResult>;
 }
 
+/**
+ * Tool definitions and validated asynchronous dispatch over a KB snapshot.
+ */
 export interface KBTools {
+  /** Independent definitions for the configured tools. */
   definitions: ToolDefinition[];
+  /** Validates a cloned argument value, applies schema defaults, and dispatches a tool. Unknown tools, invalid arguments, and handler failures return error results. */
   call(name: string, args: unknown): Promise<ToolResult>;
+  /** Status of the underlying KB snapshot. */
   status: KBStatus;
 }
 
@@ -200,8 +219,13 @@ const DEFAULT_DEFINITIONS: ToolDefinition[] = [
   },
 ];
 
+/**
+ * KB extensions, tool customization, and tenant argument visibility.
+ */
 export interface KBToolsOptions {
+  /** Extensions used when loading a new snapshot; forbidden when input is an existing KB. */
   extensions?: KBExtensions;
+  /** Transforms the default specs before validation; may add, remove, or replace tools. */
   tools?: (defaults: KBToolSpec[], kb: KB) => KBToolSpec[];
   /**
    * Expose `plan` / `permissions` on resolve_* tools (default true).
@@ -258,6 +282,9 @@ function groupEdges(
   return out;
 }
 
+/**
+ * Expected tool-handler failure whose message is returned directly as an error result.
+ */
 export class ToolError extends Error {}
 
 // ---------- factory ----------
@@ -391,11 +418,20 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
   }));
 }
 
+/**
+ * Default built-in tool definitions. Use buildDefinitions to obtain independent configurable copies.
+ */
 export const TOOL_DEFINITIONS: ToolDefinition[] = defaultToolSpecs().map(
   (spec) => spec.definition,
 );
 
-/** Loads once or reuses an existing snapshot, then serves validated async calls. */
+/**
+ * Loads once or reuses an existing snapshot, then serves validated asynchronous calls.
+ * @param input - Filesystem root, custom source, or existing branded KB.
+ * @param opts - Extensions, tool customization, and tenant argument visibility.
+ * @returns Tool definitions, dispatch, and snapshot status. Handler failures become error results.
+ * @throws If extensions accompany an existing KB, names are duplicated, schemas are invalid, or initialization fails.
+ */
 export async function createKBTools(
   input: string | DocSource | KB,
   opts: KBToolsOptions = {},

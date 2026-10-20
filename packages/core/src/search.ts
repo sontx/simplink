@@ -62,6 +62,9 @@ const STOPWORDS = new Set(
   ].map(fold),
 );
 
+/**
+ * Default relative field weights used by the MiniSearch engine.
+ */
 export const FIELD_BOOST = {
   title: 5,
   aliases: 4,
@@ -106,6 +109,9 @@ const toDoc = (n: KBNode): Doc => ({
   ),
 });
 
+/**
+ * Retrieval filters, matching controls, and limits for hits and surfaced goals.
+ */
 export interface SearchOptions {
   /** Restrict hits to these node types (goal surfacing still works). */
   types?: NodeType[];
@@ -124,10 +130,17 @@ export interface SearchOptions {
   minRelevance?: number;
 }
 
+/**
+ * A matching node with normalized relevance and related goal identifiers.
+ */
 export interface SearchHit {
+  /** Stable node or definition identifier. */
   id: string;
+  /** Document node type. */
   type: NodeType;
+  /** Human-readable title. */
   title: string;
+  /** Short description of the node. */
   summary: string;
   /** Raw positive retrieval score (BM25 with the default engine). */
   score: number;
@@ -139,9 +152,15 @@ export interface SearchHit {
   goals: string[];
 }
 
+/**
+ * A goal surfaced by a direct match or by graph traversal from matching nodes.
+ */
 export interface GoalHit {
+  /** Stable node or definition identifier. */
   id: string;
+  /** Human-readable title. */
   title: string;
+  /** Short description of the node. */
   summary: string;
   /** max(direct score, hit score × 0.6^hops) */
   score: number;
@@ -151,8 +170,13 @@ export interface GoalHit {
   via: { id: string; hops: number }[];
 }
 
+/**
+ * Query text, ranked node hits, and ranked goal entry points.
+ */
 export interface SearchResult {
+  /** Original search query. */
   query: string;
+  /** Ranked matching nodes. */
   hits: SearchHit[];
   /** Entry points for resolveGoal, ranked. */
   goals: GoalHit[];
@@ -161,15 +185,25 @@ export interface SearchResult {
 const HOP_DECAY = 0.6;
 const MAX_VIA = 5;
 
+/**
+ * Synchronous search over a graph snapshot.
+ */
 export interface KBSearch {
+  /** Returns ranked hits and surfaced goals for the query. */
   search(query: string, opts?: SearchOptions): SearchResult;
   /** Goals reachable from a node, with hop distance. */
   goalsOf(id: string): Map<string, number>;
 }
 
+/**
+ * Engine candidate with a positive finite score; higher scores indicate stronger matches.
+ */
 export interface SearchMatch {
+  /** Stable node or definition identifier. */
   id: string;
+  /** Positive finite retrieval score; larger means a stronger match. */
   score: number;
+  /** Matched terms mapped to the fields containing them, if provided by the engine. */
   matched?: Record<string, string[]>;
 }
 
@@ -179,25 +213,49 @@ export type EngineSearchOptions = Pick<
   "fuzzy" | "prefix" | "includeDeprecated"
 > & { candidateLimit?: number };
 
+/**
+ * Retrieval provider; core applies node filtering, relevance normalization, and goal aggregation.
+ */
 export interface SearchEngine {
+  /** Retrieves scored candidates. Return enough matches for core filtering and goal aggregation. */
   search(query: string, opts: EngineSearchOptions): MaybePromise<SearchMatch[]>;
 }
 
+/**
+ * Creates a retrieval engine for a graph snapshot, synchronously or asynchronously.
+ */
 export type SearchEngineFactory = (
   graph: KBGraph,
 ) => MaybePromise<SearchEngine>;
 
+/**
+ * Overrides for MiniSearch term normalization, stopwords, and field weights.
+ */
 export interface MiniSearchEngineOptions {
+  /** Replaces the default stopword set; entries are normalized with the configured fold function. */
   stopwords?: ReadonlySet<string>;
+  /** Normalizes indexed terms and query terms; defaults to the exported fold function. */
   fold?: (text: string) => string;
+  /** Per-field weight overrides merged with FIELD_BOOST. */
   boosts?: Partial<Record<keyof typeof FIELD_BOOST, number>>;
 }
 
+/**
+ * Asynchronous search facade over a pluggable retrieval engine.
+ */
 export interface AsyncKBSearch {
+  /** Retrieves and ranks results; provider failures reject the promise. */
   search(query: string, opts?: SearchOptions): Promise<SearchResult>;
+  /** Returns reachable goal identifiers and their hop distances; treat the cached map as read-only. */
   goalsOf(id: string): Map<string, number>;
 }
 
+/**
+ * Builds the default in-memory MiniSearch engine over a graph snapshot.
+ * @param graph - Documents to index; rebuild after changes.
+ * @param opts - Normalization, stopword, and field-weight overrides.
+ * @returns A synchronous retrieval engine producing raw scored matches.
+ */
 export function createMiniSearchEngine(
   graph: KBGraph,
   opts: MiniSearchEngineOptions = {},
@@ -234,6 +292,14 @@ export function createMiniSearchEngine(
   };
 }
 
+/**
+ * Filters and ranks engine candidates, then surfaces related goals through graph traversal.
+ * @param graph - Graph snapshot used to resolve candidate identifiers.
+ * @param query - Original query; blank queries return no results.
+ * @param matches - Retrieval candidates; invalid scores and unknown identifiers are discarded.
+ * @param opts - Filters, relevance threshold, and result limits.
+ * @returns Ranked hits and goal entry points.
+ */
 export function rankResults(
   graph: KBGraph,
   query: string,
@@ -326,6 +392,12 @@ const engineOptions = (opts: SearchOptions): EngineSearchOptions => ({
   prefix: opts.prefix,
   includeDeprecated: opts.includeDeprecated,
 });
+/**
+ * Wraps a retrieval engine with asynchronous ranking and goal surfacing.
+ * @param graph - Graph snapshot corresponding to the engine.
+ * @param engine - Synchronous or asynchronous retrieval provider.
+ * @returns Search facade; engine failures reject search calls.
+ */
 export function createKBSearch(
   graph: KBGraph,
   engine: SearchEngine,

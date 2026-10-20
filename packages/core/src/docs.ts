@@ -11,11 +11,19 @@ import {
 import { renderPlanSteps } from "./render.js";
 import { EDGE_KINDS, type KBGraph, type ChoiceDef } from "./types.js";
 
+/**
+ * An exported Markdown page returned in memory for the caller to persist.
+ */
 export interface DocPage {
+  /** Relative output path of the generated Markdown page. */
   path: string;
+  /** Full generated Markdown content. */
   content: string;
 }
 
+/**
+ * Documentation layout and plan resolution options.
+ */
 export interface DocsOptions extends ResolveOptions {
   /** Site is reader-facing; graph preserves the original one-page-per-node layout. */
   layout?: "site" | "graph";
@@ -135,6 +143,12 @@ function choiceWarnings(plan: PlanStep[]): string[] {
 }
 
 /** Export a lint-clean graph as standalone Markdown pages, without modifying it. */
+/**
+ * Generates documentation pages in memory without writing files.
+ * @param graph - Graph snapshot to document.
+ * @param opts - Layout and plan resolution options; layout defaults to site.
+ * @returns Markdown pages with relative output paths.
+ */
 export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
   if (
     opts.layout !== undefined &&
