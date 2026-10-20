@@ -34,6 +34,6 @@ sources:
 
 ## Failure handling
 
-- To run in Docker, place the KB at the repository's `kb/` folder, run `docker build -t simplink .`, and publish port 3000. Mount a replacement KB at `/app/kb` and restart the container to reload it.
+- To run the server in a container, follow [[procedure.mcp.deploy-docker]].
 - A 405 response on the MCP path means the client used `GET` or `DELETE`; this stateless server accepts only `POST`.
 - Edits to KB files need a server restart.

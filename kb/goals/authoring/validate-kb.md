@@ -12,7 +12,7 @@ aliases:
 when_to_use:
   - Người dùng thấy thông báo "KB has lint error(s)" và muốn sửa.
   - User wants to check that their KB files are valid before publishing or serving them.
-  - User wants a CI build to fail when the KB is invalid.
+  - User sees error codes such as E006 or E007 and wants to know what they mean.
 procedures:
   - procedure.authoring.lint-kb
   - procedure.ui.repair-issues

@@ -32,5 +32,5 @@ sources:
 ## Failure handling
 
 - If the log shows `KB has lint errors`, run `simp-lint` on the KB, fix the errors, and restart the client.
-- `simp-mcp` accepts only `--kb` and `--help`; any other option exits with an `Unknown option` error.
+- `simp-mcp` accepts only `--kb` and `--help`. Any other option or argument prints the reason and `Run simp-mcp --help for usage.`, then exits with code 2.
 - Do not wrap the command in a script that prints to stdout; stdout carries the MCP protocol.

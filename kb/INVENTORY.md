@@ -20,6 +20,8 @@ Aliases and goal `when_to_use` will include Vietnamese with diacritics and Engli
 | state.authoring.no-lint-errors        | state      | Knowledge base has no lint errors             | verified | packages/core/src/cli/lint.ts; packages/core/src/kb.ts:26           | Check error count; satisfied by lint-kb including fixes.                                        |
 | constraint.authoring.document-format  | constraint | Follow node paths and frontmatter schemas     | verified | packages/core/src/loader.ts; packages/core/schemas/                 | Blocking: valid paths, type folders, fields, and references. Bundled schemas are authoritative. |
 | constraint.authoring.graph-rules      | constraint | Keep executable graph dependencies valid      | verified | packages/core/src/lint-graph.ts                                     | Blocking rules and warning rules must be distinguished in the body.                             |
+| goal.authoring.check-in-ci            | goal       | Check the KB automatically in CI or tests     | verified | packages/core/src/cli/lint.ts; packages/core/README.md              | Added 2026-10-20; took the CI situation from goal.authoring.validate-kb.                        |
+| procedure.authoring.lint-in-ci        | procedure  | Fail CI builds on KB errors with simp-lint    | verified | packages/core/src/cli/lint.ts; packages/core/src/cli/resolve.ts     | --max-warnings, --format json, optional resolve and docs smoke tests.                           |
 
 ## Area: Search and resolve user goals
 
@@ -50,6 +52,7 @@ Aliases and goal `when_to_use` will include Vietnamese with diacritics and Engli
 | state.integration.kb-loaded                | state      | An application has loaded a KB snapshot             | skipped  | packages/core/src/kb.ts:45; packages/core/src/kb.ts:70                                   | Skipped: no procedure depends on it; the status checks are steps in embed-kb and load-git-kb.       |
 | constraint.integration.snapshot-lifecycle  | constraint | Recreate snapshots after source changes             | verified | packages/core/README.md; packages/core/src/kb.ts                                         | No automatic refresh; existing persistent Git checkouts preserve local edits and are not pulled.    |
 | constraint.integration.source-contract     | constraint | Meet document-source and Git checkout requirements  | verified | packages/core/src/source.ts; packages/core/src/git-source.ts                             | Relative source paths; Git installed, credentials configured, matching origin, contained directory. |
+| procedure.integration.run-cli-runners      | procedure  | Run KB checks in tests with the CLI runners         | verified | packages/core/README.md; packages/core/src/cli/lint.ts                                   | Alternative procedure of goal.authoring.check-in-ci.                                                |
 
 ## Area: Export reader documentation
 
@@ -73,6 +76,8 @@ Aliases and goal `when_to_use` will include Vietnamese with diacritics and Engli
 | state.mcp.tools-connected      | state      | An MCP client can list and call KB tools         | verified | packages/mcp/src/server.ts; packages/core/src/tools/core.ts                            | Verify tool discovery and a known-node query; satisfied by both transport procedures.                                   |
 | constraint.mcp.http-boundary   | constraint | Configure the HTTP transport boundary explicitly | verified | packages/mcp/src/http.ts:13; packages/mcp/src/http.ts:53; packages/mcp/src/http-bin.ts | No built-in authentication; MCP POST only, health GET, optional Host/Origin checks; CLI hides tenant arguments.         |
 | constraint.mcp.loaded-snapshot | constraint | Check KB health even when the server starts      | verified | packages/mcp/src/bin.ts; packages/mcp/src/http-bin.ts                                  | Servers start with lint errors; health ok does not imply zero lint errors; restart to reload path-backed CLI snapshots. |
+| goal.mcp.deploy-docker         | goal       | Run the KB tools in a Docker container           | verified | Dockerfile; README.md                                                                  | Added 2026-10-20 after review.                                                                                          |
+| procedure.mcp.deploy-docker    | procedure  | Build and run the MCP HTTP server image          | verified | Dockerfile; .dockerignore; packages/mcp/src/http-bin.ts                                | Image defaults HOST=0.0.0.0, PORT=3000, KB_DIR=/app/kb; mount /app/kb to replace the KB.                                |
 
 ## Area: Manage a KB in the local UI
 
@@ -141,4 +146,4 @@ Each answer records the evidence found. "Decision needed" marks product choices 
 - `npx --no-install kb-lint --help` could not find a cached package. Current equivalents are the repository's `simp-lint`, `simp-search`, and `simp-resolve` binaries.
 - `tsx` execution encountered a sandbox `spawn EPERM`. Compiling core directly with `node node_modules/typescript/bin/tsc -b packages/core/tsconfig.json --force` succeeded; all three compiled CLI `--help` commands succeeded.
 - During drafting, use `node packages/core/dist/cli.js kb`, `node packages/core/dist/search-cli.js "<query>" --kb kb`, and `node packages/core/dist/resolve-cli.js <goal-id> --kb kb`.
-- Verification (2026-10-20): `simp-lint kb` reports 57 nodes, 0 errors, 0 warnings. 45 retrieval queries (3 per goal, Vietnamese and English, not copied from aliases) each put the expected goal in the top 3. Every goal plan was resolved and reviewed.
+- Verification (2026-10-20): `simp-lint kb` reports 62 nodes, 0 errors, 0 warnings. 51 retrieval queries (3 per goal, Vietnamese and English, not copied from aliases) each put the expected goal in the top 3. Every goal plan was resolved and reviewed.
