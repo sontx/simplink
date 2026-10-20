@@ -7,11 +7,6 @@ import {
   unlink,
   readdir,
 } from "node:fs/promises";
-import type {
-  IncomingMessage,
-  RequestListener,
-  ServerResponse,
-} from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -22,6 +17,12 @@ import {
   SCHEMA_DIR,
   type KB,
 } from "@sontx/simplink-core";
+import express, {
+  type Express,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { isNode, isSeq, parseDocument } from "yaml";
 
 class HttpError extends Error {
@@ -30,33 +31,6 @@ class HttpError extends Error {
     message: string,
   ) {
     super(message);
-  }
-}
-
-const sendJson = (res: ServerResponse, status: number, body: unknown) => {
-  res
-    .writeHead(status, { "content-type": "application/json" })
-    .end(JSON.stringify(body));
-};
-
-async function readJson(
-  req: IncomingMessage,
-): Promise<Record<string, unknown>> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of req) {
-    size += Buffer.byteLength(chunk);
-    if (size > 1024 * 1024)
-      throw new HttpError(413, "Request body exceeds 1 MB");
-    chunks.push(Buffer.from(chunk));
-  }
-  try {
-    const body: unknown = JSON.parse(Buffer.concat(chunks).toString() || "{}");
-    if (!body || typeof body !== "object" || Array.isArray(body))
-      throw new Error();
-    return body as Record<string, unknown>;
-  } catch {
-    throw new HttpError(400, "Expected a JSON object");
   }
 }
 
@@ -126,7 +100,7 @@ function editEdges(raw: string, kind: string, targets: string[]): string {
 }
 
 /** Local authoring API and bundled SPA. Reload the snapshot after each write. */
-export function createUiHandler(root: string): RequestListener {
+export function createUiHandler(root: string): Express {
   let kb: KB;
   let rootPath: string;
   let schema: Record<string, Record<string, string>>;
@@ -152,6 +126,11 @@ export function createUiHandler(root: string): RequestListener {
         relative !== ".." &&
         !path.isAbsolute(relative))
     );
+  };
+
+  const query = (req: Request, key: string) => {
+    const value = req.query[key];
+    return typeof value === "string" ? value : undefined;
   };
 
   async function safeFile(value: unknown): Promise<string> {
@@ -190,240 +169,247 @@ export function createUiHandler(root: string): RequestListener {
     }
   }
 
-  async function reload(res: ServerResponse) {
+  async function reload(res: Response) {
     // shortcut: rebuild the full KB after writes, use incremental loading when KBs become large.
     kb = await createKB(rootPath);
-    sendJson(res, 200, { status: kb.status, issues: kb.issues });
+    res.json({ status: kb.status, issues: kb.issues });
   }
 
-  async function handle(req: IncomingMessage, res: ServerResponse, url: URL) {
+  function docs(req: Request) {
+    const layout = query(req, "layout") ?? "site";
+    if (layout !== "site" && layout !== "graph")
+      throw new HttpError(400, "Invalid docs layout");
+    return kb.docs({ layout });
+  }
+
+  const app = express();
+  app.disable("x-powered-by");
+
+  app.use((req, _res, next) => {
+    if (req.path.startsWith("/api/") || req.method !== "GET") {
+      const port = req.socket.localPort;
+      if (
+        ![
+          "127.0.0.1",
+          "localhost",
+          `127.0.0.1:${port}`,
+          `localhost:${port}`,
+        ].includes(req.headers.host ?? "")
+      )
+        throw new HttpError(403, "API requests require a local Host header");
+    }
+    if (
+      req.method !== "GET" &&
+      req.headers["content-type"]?.split(";")[0].trim().toLowerCase() !==
+        "application/json"
+    )
+      throw new HttpError(415, "Mutations require application/json");
+    next();
+  });
+
+  // Serialize mutations so each write reloads the KB before the next one starts.
+  app.use((req, res, next) => {
+    if (req.method === "GET") return next();
+    writes = writes.then(
+      () =>
+        new Promise<void>((resolve) => {
+          res.on("close", resolve);
+          next();
+        }),
+    );
+  });
+
+  app.use(express.json({ limit: "1mb" }), (req, _res, next) => {
+    req.body ??= {};
+    if (Array.isArray(req.body))
+      throw new HttpError(400, "Expected a JSON object");
+    next();
+  });
+
+  app.use(async (_req, _res, next) => {
     await ready;
-    const route = url.pathname;
-    if (req.method === "GET") {
-      if (route === "/api/kb")
-        return sendJson(res, 200, {
-          status: kb.status,
-          issues: kb.issues,
-          nodes: [...kb.graph.nodes.values()].map(
-            ({ id, type, path, title, summary, status, tags }) => ({
-              id,
-              type,
-              path,
-              title,
-              summary,
-              status,
-              tags,
-            }),
-          ),
-          edges: kb.graph.edges,
-        });
-      if (route === "/api/schema") return sendJson(res, 200, schema);
-      if (route === "/api/search")
-        return sendJson(
-          res,
-          200,
-          await kb.search(url.searchParams.get("q") ?? ""),
-        );
-      if (route === "/api/docs" || route === "/api/docs/page") {
-        const layout = url.searchParams.get("layout") ?? "site";
-        if (layout !== "site" && layout !== "graph")
-          throw new HttpError(400, "Invalid docs layout");
-        const pages = kb.docs({ layout });
-        if (route === "/api/docs")
-          return sendJson(
-            res,
-            200,
-            pages.map((page) => page.path),
-          );
-        const page = pages.find(
-          (page) => page.path === url.searchParams.get("path"),
-        );
-        if (!page) throw new HttpError(404, "Page not found");
-        return sendJson(res, 200, page);
-      }
-      const nodeRoute = /^\/api\/(nodes|resolve)\/([^/]+)$/.exec(route);
-      if (nodeRoute) {
-        const id = decodeURIComponent(nodeRoute[2]);
-        const node = kb.node(id);
-        if (!node && nodeRoute[1] === "nodes") {
-          const [type, ...segments] = id.split(".");
-          const folder = Object.keys(FOLDER_TO_TYPE).find(
-            (key) => FOLDER_TO_TYPE[key] === type,
-          );
-          if (!folder || !segments.length)
-            throw new HttpError(404, "Node not found");
-          const relPath = `${folder}/${segments.join("/")}.md`;
-          const raw = await readFile(await safeFile(relPath), "utf8");
-          const parsed = parseDoc(relPath, raw);
-          return sendJson(res, 200, {
-            node: {
-              id,
-              type,
-              path: relPath,
-              title:
-                typeof parsed.data.title === "string" ? parsed.data.title : id,
-              summary:
-                typeof parsed.data.summary === "string"
-                  ? parsed.data.summary
-                  : "",
-              tags: [],
-              aliases: [],
-              status: "active",
-              data: parsed.data,
-              body: parsed.body,
-            },
-            out: [],
-            in: [],
-            raw,
-          });
-        }
-        if (!node) throw new HttpError(404, "Node not found");
-        if (nodeRoute[1] === "nodes")
-          return sendJson(res, 200, {
-            node,
-            out: kb.graph.out.get(id) ?? [],
-            in: kb.graph.in.get(id) ?? [],
-            raw: await readFile(await safeFile(node.path), "utf8"),
-          });
-        if (node.type !== "goal" && node.type !== "procedure")
-          throw new HttpError(400, "Only goals and procedures have plans");
-        const resolved =
-          node.type === "goal" ? kb.resolveGoal(id) : kb.resolveProcedure(id);
-        return sendJson(res, 200, {
-          resolved,
-          rendered: await kb.render(resolved),
-        });
-      }
-      if (route.startsWith("/api/")) throw new HttpError(404, "Not found");
-      const target = path.resolve(webRoot, "." + decodeURIComponent(route));
-      if (!inside(webRoot, target))
-        throw new HttpError(400, "Invalid asset path");
-      let asset = target;
-      let content: Buffer;
-      try {
-        content = await readFile(asset);
-      } catch (error) {
-        if (
-          !["ENOENT", "EISDIR"].includes(
-            (error as NodeJS.ErrnoException).code ?? "",
-          )
-        )
-          throw error;
-        asset = path.join(webRoot, "index.html");
-        content = await readFile(asset);
-      }
-      const types: Record<string, string> = {
-        ".html": "text/html",
-        ".js": "text/javascript",
-        ".css": "text/css",
-        ".svg": "image/svg+xml",
-        ".png": "image/png",
-        ".ico": "image/x-icon",
-        ".woff2": "font/woff2",
-        ".json": "application/json",
-      };
-      res
-        .writeHead(200, {
-          "content-type":
-            types[path.extname(asset)] ?? "application/octet-stream",
-        })
-        .end(content);
+    next();
+  });
+
+  app.get("/api/kb", (_req, res) => {
+    res.json({
+      status: kb.status,
+      issues: kb.issues,
+      nodes: [...kb.graph.nodes.values()].map(
+        ({ id, type, path, title, summary, status, tags }) => ({
+          id,
+          type,
+          path,
+          title,
+          summary,
+          status,
+          tags,
+        }),
+      ),
+      edges: kb.graph.edges,
+    });
+  });
+
+  app.get("/api/schema", (_req, res) => {
+    res.json(schema);
+  });
+
+  app.get("/api/search", async (req, res) => {
+    res.json(await kb.search(query(req, "q") ?? ""));
+  });
+
+  app.get("/api/docs", (req, res) => {
+    res.json(docs(req).map((page) => page.path));
+  });
+
+  app.get("/api/docs/page", (req, res) => {
+    const page = docs(req).find((page) => page.path === query(req, "path"));
+    if (!page) throw new HttpError(404, "Page not found");
+    res.json(page);
+  });
+
+  app.get("/api/nodes/:id", async (req, res) => {
+    const { id } = req.params;
+    const node = kb.node(id);
+    if (node) {
+      res.json({
+        node,
+        out: kb.graph.out.get(id) ?? [],
+        in: kb.graph.in.get(id) ?? [],
+        raw: await readFile(await safeFile(node.path), "utf8"),
+      });
       return;
     }
-    const body = await readJson(req);
-    if (route === "/api/reload" && req.method === "POST") return reload(res);
-    if (route === "/api/files") {
-      const file = await safeFile(
-        req.method === "DELETE" ? url.searchParams.get("path") : body.path,
-      );
-      if (req.method === "DELETE") await unlink(file);
-      else if (req.method === "PUT" || req.method === "POST") {
-        if (typeof body.content !== "string")
-          throw new HttpError(400, "Expected string content");
-        await mkdir(path.dirname(file), { recursive: true });
-        await writeFile(file, body.content, {
-          flag: req.method === "POST" ? "wx" : "w",
-        });
-      } else throw new HttpError(405, "Method not allowed");
-      return reload(res);
-    }
-    const edgeRoute = /^\/api\/nodes\/([^/]+)\/edges$/.exec(route);
-    if (edgeRoute && req.method === "PATCH") {
-      const node = kb.node(decodeURIComponent(edgeRoute[1]));
-      if (!node) throw new HttpError(404, "Node not found");
-      const { kind, targets } = body;
-      const targetType =
-        typeof kind === "string" && Object.hasOwn(schema[node.type], kind)
-          ? schema[node.type][kind]
-          : undefined;
-      if (
-        !targetType ||
-        !Array.isArray(targets) ||
-        new Set(targets).size !== targets.length ||
-        !targets.every(
-          (target) =>
-            typeof target === "string" &&
-            !!kb.node(target) &&
-            (targetType === "node" || kb.node(target)?.type === targetType),
-        )
-      )
-        throw new HttpError(400, "Invalid relationship kind or targets");
-      const file = await safeFile(node.path);
-      await writeFile(
-        file,
-        editEdges(await readFile(file, "utf8"), kind as string, targets),
-      );
-      return reload(res);
-    }
-    throw new HttpError(404, "Not found");
-  }
+    // Invalid documents are missing from the graph, so read them from disk for repair.
+    const [type, ...segments] = id.split(".");
+    const folder = Object.keys(FOLDER_TO_TYPE).find(
+      (key) => FOLDER_TO_TYPE[key] === type,
+    );
+    if (!folder || !segments.length) throw new HttpError(404, "Node not found");
+    const relPath = `${folder}/${segments.join("/")}.md`;
+    const raw = await readFile(await safeFile(relPath), "utf8");
+    const parsed = parseDoc(relPath, raw);
+    res.json({
+      node: {
+        id,
+        type,
+        path: relPath,
+        title: typeof parsed.data.title === "string" ? parsed.data.title : id,
+        summary:
+          typeof parsed.data.summary === "string" ? parsed.data.summary : "",
+        tags: [],
+        aliases: [],
+        status: "active",
+        data: parsed.data,
+        body: parsed.body,
+      },
+      out: [],
+      in: [],
+      raw,
+    });
+  });
 
-  return (req, res) => {
-    const run = async () => {
-      try {
-        const url = new URL(req.url ?? "/", "http://localhost");
-        if (url.pathname.startsWith("/api/") || req.method !== "GET") {
-          const port = req.socket.localPort;
-          if (
-            ![
-              "127.0.0.1",
-              "localhost",
-              `127.0.0.1:${port}`,
-              `localhost:${port}`,
-            ].includes(req.headers.host ?? "")
-          )
-            throw new HttpError(
-              403,
-              "API requests require a local Host header",
-            );
-        }
-        if (req.method !== "GET") {
-          if (
-            req.headers["content-type"]?.split(";")[0].trim().toLowerCase() !==
-            "application/json"
-          )
-            throw new HttpError(415, "Mutations require application/json");
-        }
-        await handle(req, res, url);
-      } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code;
-        const status =
-          error instanceof HttpError
-            ? error.status
-            : code === "ENOENT"
-              ? 404
-              : code === "EEXIST"
-                ? 409
-                : error instanceof URIError
-                  ? 400
-                  : 500;
-        sendJson(res, status, {
-          error:
-            status === 500 ? "Internal server error" : (error as Error).message,
-        });
-      }
-    };
-    if (req.method === "GET") void run();
-    else writes = writes.then(run, run);
-  };
+  app.get("/api/resolve/:id", async (req, res) => {
+    const { id } = req.params;
+    const node = kb.node(id);
+    if (!node) throw new HttpError(404, "Node not found");
+    if (node.type !== "goal" && node.type !== "procedure")
+      throw new HttpError(400, "Only goals and procedures have plans");
+    const resolved =
+      node.type === "goal" ? kb.resolveGoal(id) : kb.resolveProcedure(id);
+    res.json({ resolved, rendered: await kb.render(resolved) });
+  });
+
+  app.post("/api/reload", (_req, res) => reload(res));
+
+  app
+    .route("/api/files")
+    .delete(async (req, res) => {
+      await unlink(await safeFile(query(req, "path")));
+      await reload(res);
+    })
+    .all(async (req, res) => {
+      if (req.method !== "PUT" && req.method !== "POST")
+        throw new HttpError(405, "Method not allowed");
+      const file = await safeFile(req.body.path);
+      if (typeof req.body.content !== "string")
+        throw new HttpError(400, "Expected string content");
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, req.body.content, {
+        flag: req.method === "POST" ? "wx" : "w",
+      });
+      await reload(res);
+    });
+
+  app.patch("/api/nodes/:id/edges", async (req, res) => {
+    const node = kb.node(req.params.id);
+    if (!node) throw new HttpError(404, "Node not found");
+    const { kind, targets } = req.body;
+    const targetType =
+      typeof kind === "string" && Object.hasOwn(schema[node.type], kind)
+        ? schema[node.type][kind]
+        : undefined;
+    if (
+      !targetType ||
+      !Array.isArray(targets) ||
+      new Set(targets).size !== targets.length ||
+      !targets.every(
+        (target) =>
+          typeof target === "string" &&
+          !!kb.node(target) &&
+          (targetType === "node" || kb.node(target)?.type === targetType),
+      )
+    )
+      throw new HttpError(400, "Invalid relationship kind or targets");
+    const file = await safeFile(node.path);
+    await writeFile(
+      file,
+      editEdges(await readFile(file, "utf8"), kind, targets),
+    );
+    await reload(res);
+  });
+
+  app.use("/api", () => {
+    throw new HttpError(404, "Not found");
+  });
+
+  app.use((req, _res, next) => {
+    if (decodeURIComponent(req.path).split(/[\\/]/).includes(".."))
+      throw new HttpError(400, "Invalid asset path");
+    next();
+  });
+  app.use(express.static(webRoot));
+  app.get("/{*path}", (_req, res, next) =>
+    res.sendFile(path.join(webRoot, "index.html"), next),
+  );
+  app.use(() => {
+    throw new HttpError(404, "Not found");
+  });
+
+  app.use(
+    // Express recognizes error handlers by their four parameters.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      const { code, status: known } = error as {
+        code?: string;
+        status?: number;
+      };
+      const status =
+        typeof known === "number" && known < 500
+          ? known
+          : code === "ENOENT"
+            ? 404
+            : code === "EEXIST"
+              ? 409
+              : error instanceof URIError
+                ? 400
+                : 500;
+      res.status(status).json({
+        error:
+          status === 500 ? "Internal server error" : (error as Error).message,
+      });
+    },
+  );
+
+  return app;
 }
