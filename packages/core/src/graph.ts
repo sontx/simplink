@@ -1,5 +1,5 @@
 import { stripCode } from "./markdown.js";
-import { EDGE_KINDS, type ChoiceDef, type KBEdge, type KBGraph, type KBNode } from "./types.js";
+import { EDGE_KINDS, type ChoiceDef, type EdgeKind, type KBEdge, type KBGraph, type KBNode } from "./types.js";
 
 /** [[id]], [[id|label]], [[id#heading]] */
 export function extractWikilinks(body: string): string[] {
@@ -56,3 +56,43 @@ export function buildGraph(nodes: Map<string, KBNode>): KBGraph {
 }
 
 export { stripCode };
+
+/**
+ * Reverse edges walked to surface goals from a non-goal hit.
+ * Excludes satisfied_by/produces (fix procedures are not the user's intent) and related (noisy).
+ */
+const GOAL_PATH_KINDS: ReadonlySet<EdgeKind> = new Set([
+  "procedures",
+  "requires",
+  "choice_option",
+  "preconditions",
+  "optional_preconditions",
+  "uses",
+  "constrained_by",
+]);
+
+/** Graphs are snapshots; rebuild after mutation to invalidate traversal caches. */
+const GOAL_CACHE = new WeakMap<KBGraph, Map<string, Map<string, number>>>();
+export function goalsOf(graph: KBGraph, start: string): Map<string, number> {
+  let goalCache = GOAL_CACHE.get(graph);
+  if (!goalCache) GOAL_CACHE.set(graph, goalCache = new Map());
+  const cached = goalCache.get(start);
+  if (cached) return cached;
+  const found = new Map<string, number>();
+  const seen = new Set([start]);
+  let frontier = [start];
+  for (let hops = 1; hops <= 4 && frontier.length; hops++) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      for (const e of graph.in.get(id) ?? []) {
+        if (!GOAL_PATH_KINDS.has(e.kind) || seen.has(e.from)) continue;
+        seen.add(e.from);
+        if (graph.nodes.get(e.from)?.type === "goal") found.set(e.from, hops);
+        else next.push(e.from);
+      }
+    }
+    frontier = next;
+  }
+  goalCache.set(start, found);
+  return found;
+}

@@ -5,6 +5,9 @@
 This pnpm monorepo contains `@sontx/simplink-core` and `@sontx/simplink-mcp`. The repository root is private.
 
 - `packages/core/src/`: Loading, schemas, graphs, linting, resolution, rendering, search, and core CLI entry points; `index.ts` defines public exports.
+- `packages/core/src/source.ts`: Filesystem and in-memory document sources.
+- `packages/core/src/kb.ts`: Loaded KB facade and code-configured extensions.
+- `packages/core/src/cli/`: Importable CLI runners and output context; bin wrappers remain in `src/`.
 - `packages/core/src/tools/core.ts`: Provider independent knowledge-base tool definitions and execution.
 - `packages/core/schemas/`: Bundled JSON schemas for knowledge-base document types.
 - `packages/mcp/src/`: MCP server, HTTP transport, executable entry points, and public `index.ts`. Import core through `@sontx/simplink-core`, never across package source directories.

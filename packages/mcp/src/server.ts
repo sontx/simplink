@@ -9,7 +9,7 @@ export const SERVER_INSTRUCTIONS =
   "Call resolve_* again with known states/choices to get a shorter plan. Use get_node / get_related only for details the plan omits.";
 
 /** MCP server exposing the KB tools. Transport-agnostic: connect stdio, in-memory, or HTTP. */
-export function createMcpServer(tools: KBTools, version = "0.1.0"): Server {
+export function createMcpServer(tools: KBTools, version = "0.2.0"): Server {
   const server = new Server(
     { name: "simp-graph", version },
     { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
@@ -25,7 +25,7 @@ export function createMcpServer(tools: KBTools, version = "0.1.0"): Server {
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
-    const r = tools.call(req.params.name, req.params.arguments ?? {});
+    const r = await tools.call(req.params.name, req.params.arguments ?? {});
     return { content: [{ type: "text" as const, text: r.content }], ...(r.isError ? { isError: true } : {}) };
   });
 

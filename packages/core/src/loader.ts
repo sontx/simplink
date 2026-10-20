@@ -1,6 +1,5 @@
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
 import matter from "gray-matter";
+import { fsSource, type DocSource } from "./source.js";
 import { FOLDER_TO_TYPE, type NodeType } from "./types.js";
 
 export interface RawDoc {
@@ -16,17 +15,6 @@ export interface RawDoc {
 
 const ID_SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-async function walk(dir: string): Promise<string[]> {
-  const out: string[] = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith(".")) continue;
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await walk(full)));
-    else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
-  }
-  return out;
-}
-
 /** kb/procedures/broadcast/send-zalo.md -> procedure.broadcast.send-zalo */
 export function deriveId(relPath: string): { folderType?: NodeType; derivedId?: string } {
   const [folder, ...rest] = relPath.replace(/\.md$/, "").split("/");
@@ -37,26 +25,32 @@ export function deriveId(relPath: string): { folderType?: NodeType; derivedId?: 
   return { folderType, derivedId: [folderType, ...rest].join(".") };
 }
 
-/** Reads every .md file under the KB root except files directly in the root (e.g. index.md). */
-export async function loadDocs(root: string): Promise<RawDoc[]> {
-  const files = (await walk(root)).sort();
-  const docs: RawDoc[] = [];
-  for (const abs of files) {
-    const relPath = path.relative(root, abs).split(path.sep).join("/");
-    if (!relPath.includes("/")) continue;
-    const raw = await readFile(abs, "utf8");
-    const ids = deriveId(relPath);
-    try {
-      // Empty options object disables gray-matter's content cache.
-      const parsed = matter(raw, {});
-      if (!raw.trimStart().startsWith("---")) {
-        docs.push({ relPath, ...ids, data: {}, body: parsed.content, parseError: "missing frontmatter block" });
-        continue;
-      }
-      docs.push({ relPath, ...ids, data: parsed.data ?? {}, body: parsed.content });
-    } catch (err) {
-      docs.push({ relPath, ...ids, data: {}, body: "", parseError: (err as Error).message.split("\n")[0] });
-    }
+/** Parse one document, preserving YAML diagnostics for linting. */
+export function parseDoc(relPath: string, raw: string): RawDoc {
+  const ids = deriveId(relPath);
+  try {
+    const parsed = matter(raw, {});
+    return { relPath, ...ids, data: parsed.data ?? {}, body: parsed.content,
+      ...(!raw.trimStart().startsWith("---") ? { parseError: "missing frontmatter block" } : {}) };
+  } catch (err) {
+    return { relPath, ...ids, data: {}, body: "", parseError: (err as Error).message.split("\n")[0] };
   }
-  return docs;
+}
+
+/** Source paths are relative POSIX paths, even on Windows. */
+export async function loadDocs(input: string | DocSource): Promise<RawDoc[]> {
+  const files = await (typeof input === "string" ? fsSource(input) : input).list();
+  const seen = new Set<string>();
+  for (const { relPath } of files) {
+    if (!relPath || relPath.includes("\\") || /^[A-Za-z]:/.test(relPath) ||
+        relPath.split("/").some(s => !s || s === "." || s === "..")) {
+      throw new Error(`Invalid source path "${relPath}": expected a relative /-separated path`);
+    }
+    if (seen.has(relPath)) throw new Error(`Duplicate source path "${relPath}"`);
+    seen.add(relPath);
+  }
+  return files.filter(f => f.relPath.endsWith(".md") && f.relPath.includes("/") &&
+    !f.relPath.split("/").some(s => s.startsWith(".")))
+    .sort((a, b) => a.relPath < b.relPath ? -1 : a.relPath > b.relPath ? 1 : 0)
+    .map(f => parseDoc(f.relPath, f.content));
 }

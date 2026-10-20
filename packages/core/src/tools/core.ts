@@ -1,10 +1,11 @@
 import * as ajv2020 from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv/dist/2020.js";
-import { lintKB } from "../lint.js";
-import { renderResolvedGoal } from "../render.js";
-import { resolveGoal, resolveProcedure, type ResolveOptions } from "../resolve.js";
-import { createSearchIndex, type KBSearch } from "../search.js";
-import { EDGE_KINDS, NODE_TYPES, type EdgeKind, type KBGraph, type NodeType } from "../types.js";
+import { createKB, isKB, type KB, type KBExtensions, type KBStatus } from "../kb.js";
+import type { DocSource } from "../source.js";
+import type { ResolveOptions } from "../resolve.js";
+import type { MaybePromise } from "../types.js";
+export type { KBStatus } from "../kb.js";
+import { EDGE_KINDS, NODE_TYPES, type EdgeKind, type NodeType } from "../types.js";
 
 const Ajv2020 = ajv2020.default.default ?? ajv2020.default;
 
@@ -22,17 +23,14 @@ export interface ToolResult {
   isError?: boolean;
 }
 
-export interface KBStatus {
-  root: string;
-  nodes: number;
-  edges: number;
-  errors: number;
-  warnings: number;
+export interface KBToolSpec {
+  definition: ToolDefinition;
+  handler(args: unknown, kb: KB): MaybePromise<ToolResult>;
 }
 
 export interface KBTools {
   definitions: ToolDefinition[];
-  call(name: string, args: unknown): ToolResult;
+  call(name: string, args: unknown): Promise<ToolResult>;
   status: KBStatus;
 }
 
@@ -57,7 +55,7 @@ const resolveProps = {
 const idProp = (what: string) => ({ type: "string", minLength: 1, description: `${what} id, e.g. from search_kb results.` });
 const readOnly = { readOnlyHint: true, openWorldHint: false };
 
-export const TOOL_DEFINITIONS: ToolDefinition[] = [
+const DEFAULT_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_kb",
     description:
@@ -142,16 +140,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 ];
 
 export interface KBToolsOptions {
+  extensions?: KBExtensions;
+  tools?: (defaults: KBToolSpec[], kb: KB) => KBToolSpec[];
   /**
    * Expose `plan` / `permissions` on resolve_* tools (default true).
-   * When false they are removed from the schemas (and rejected if sent); availability is then null where gated.
+   * When false they are removed from the schemas (and rejected if sent); configured tenant defaults still apply.
    */
   tenantContext?: boolean;
 }
 
 /** Tool definitions for the given options (copies; TOOL_DEFINITIONS is never mutated). */
 export function buildDefinitions(opts: KBToolsOptions = {}): ToolDefinition[] {
-  const defs: ToolDefinition[] = structuredClone(TOOL_DEFINITIONS);
+  const defs: ToolDefinition[] = structuredClone(DEFAULT_DEFINITIONS);
   if (opts.tenantContext === false) {
     for (const d of defs.filter((d) => d.name.startsWith("resolve_"))) {
       const props = d.inputSchema.properties as Record<string, unknown>;
@@ -177,38 +177,34 @@ function groupEdges(edges: { kind: EdgeKind; id: string }[]): Record<string, str
   return out;
 }
 
-class ToolError extends Error {}
+export class ToolError extends Error {}
 
 // ---------- factory ----------
 
-/** Loads and indexes the KB once, then serves tool calls from memory. */
-export async function createKBTools(root: string, opts: KBToolsOptions = {}): Promise<KBTools> {
-  const definitions = buildDefinitions(opts);
-  const { graph, errorCount, warningCount } = await lintKB(root);
-  const search = createSearchIndex(graph);
-  const status: KBStatus = { root, nodes: graph.nodes.size, edges: graph.edges.length, errors: errorCount, warnings: warningCount };
-
-  const ajv = new Ajv2020({ allErrors: true, strict: false, useDefaults: true });
-  const validators = new Map<string, ValidateFunction>(definitions.map((d) => [d.name, ajv.compile(d.inputSchema)]));
-
-  const handlers: Record<string, (a: any) => ToolResult> = {
-    search_kb: (a) => {
-      const r = search.search(a.query, { types: a.types as NodeType[] | undefined, limit: a.limit });
+/** Default specs are independent copies and can be replaced or removed before validation. */
+export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
+  const handlers: Record<string, (a: any, kb: KB) => MaybePromise<ToolResult>> = {
+    search_kb: async (a, kb) => {
+      const { graph } = kb;
+      const r = await kb.search(a.query, { types: a.types as NodeType[] | undefined, limit: a.limit });
       return json({
         goals: r.goals.map((g) => ({ id: g.id, title: g.title, relevance: r2(g.relevance) })),
         hits: r.hits.map((h) => ({ id: h.id, type: h.type, title: h.title, summary: h.summary, relevance: r2(h.relevance), goals: h.goals })),
       });
     },
-    resolve_goal: (a) => {
-      const node = requireNode(graph, search, a.goal_id, "goal");
-      return renderPlan(resolveGoal(graph, node, resolveOpts(a)), a.token_budget);
+    resolve_goal: async (a, kb) => {
+      const { graph } = kb;
+      const node = await requireNode(kb, a.goal_id, "goal");
+      return { content: (await kb.render(kb.resolveGoal(node, resolveOpts(a)), { tokenBudget: a.token_budget })).text };
     },
-    resolve_procedure: (a) => {
-      const node = requireNode(graph, search, a.procedure_id, "procedure");
-      return renderPlan(resolveProcedure(graph, node, resolveOpts(a)), a.token_budget);
+    resolve_procedure: async (a, kb) => {
+      const { graph } = kb;
+      const node = await requireNode(kb, a.procedure_id, "procedure");
+      return { content: (await kb.render(kb.resolveProcedure(node, resolveOpts(a)), { tokenBudget: a.token_budget })).text };
     },
-    get_node: (a) => {
-      const id = requireNode(graph, search, a.id);
+    get_node: async (a, kb) => {
+      const { graph } = kb;
+      const id = await requireNode(kb, a.id);
       const n = graph.nodes.get(id)!;
       const fields = Object.fromEntries(Object.entries(n.data).filter(([k]) => !COMMON_KEYS.has(k)));
       const body = n.body.trim();
@@ -229,8 +225,9 @@ export async function createKBTools(root: string, opts: KBToolsOptions = {}): Pr
         body_truncated: max > 0 && body.length > max ? true : undefined,
       });
     },
-    get_related: (a) => {
-      const id = requireNode(graph, search, a.id);
+    get_related: async (a, kb) => {
+      const { graph } = kb;
+      const id = await requireNode(kb, a.id);
       const kinds = a.kinds ? new Set<EdgeKind>(a.kinds) : null;
       const dist = new Map([[id, 0]]);
       const edges = new Map<string, [string, EdgeKind, string]>();
@@ -270,8 +267,27 @@ export async function createKBTools(root: string, opts: KBToolsOptions = {}): Pr
     },
   };
 
-  const call = (name: string, args: unknown): ToolResult => {
-    const handler = handlers[name];
+  return buildDefinitions(opts).map(definition => ({ definition, handler: handlers[definition.name] }));
+}
+
+export const TOOL_DEFINITIONS: ToolDefinition[] = defaultToolSpecs().map(spec => spec.definition);
+
+/** Loads once or reuses an existing snapshot, then serves validated async calls. */
+export async function createKBTools(input: string | DocSource | KB, opts: KBToolsOptions = {}): Promise<KBTools> {
+  if (isKB(input) && opts.extensions !== undefined) throw new Error("extensions cannot be supplied with an existing KB");
+  const kb = isKB(input) ? input : await createKB(input, opts.extensions);
+  const { status } = kb;
+  const specs = opts.tools ? opts.tools(defaultToolSpecs(opts), kb) : defaultToolSpecs(opts);
+  const handlers = new Map<string, KBToolSpec["handler"]>();
+  for (const spec of specs) {
+    if (handlers.has(spec.definition.name)) throw new Error(`Duplicate tool name "${spec.definition.name}"`);
+    handlers.set(spec.definition.name, spec.handler);
+  }
+  const definitions = specs.map(spec => structuredClone(spec.definition));
+  const ajv = new Ajv2020({ allErrors: true, strict: false, useDefaults: true });
+  const validators = new Map<string, ValidateFunction>(definitions.map(d => [d.name, ajv.compile(d.inputSchema)]));
+  const call = async (name: string, args: unknown): Promise<ToolResult> => {
+    const handler = handlers.get(name);
     const validate = validators.get(name);
     if (!handler || !validate) return fail(`Unknown tool "${name}". Available: ${definitions.map((d) => d.name).join(", ")}`);
     const input = structuredClone(args ?? {});
@@ -280,7 +296,7 @@ export async function createKBTools(root: string, opts: KBToolsOptions = {}): Pr
       return fail(`Invalid arguments for ${name}: ${msg}`);
     }
     try {
-      const result = handler(input);
+      const result = await handler(input, kb);
       if (status.errors && !result.isError)
         result.content = `[KB has ${status.errors} lint error(s); results may be incomplete]\n${result.content}`;
       return result;
@@ -297,16 +313,16 @@ function resolveOpts(a: any): ResolveOptions {
   return {
     states: a.states,
     choices: a.choices,
-    tenant: a.plan || a.permissions ? { plan: a.plan, permissions: a.permissions } : undefined,
+    tenant: a.plan !== undefined || a.permissions !== undefined ? {
+      ...(a.plan !== undefined ? { plan: a.plan } : {}),
+      ...(a.permissions !== undefined ? { permissions: a.permissions } : {}),
+    } : undefined,
   };
 }
 
-function renderPlan(r: ReturnType<typeof resolveGoal>, budget: number): ToolResult {
-  return { content: renderResolvedGoal(r, { tokenBudget: budget }).text };
-}
-
 /** Returns the id if it exists (and has the expected type), else throws a ToolError with suggestions. */
-function requireNode(graph: KBGraph, search: KBSearch, id: string, type?: NodeType): string {
+async function requireNode(kb: KB, id: string, type?: NodeType): Promise<string> {
+  const { graph } = kb;
   const n = graph.nodes.get(id);
   if (n && (!type || n.type === type)) return id;
   if (n && type) {
@@ -314,8 +330,7 @@ function requireNode(graph: KBGraph, search: KBSearch, id: string, type?: NodeTy
     throw new ToolError(`"${id}" is a ${n.type}, not a ${type}.${hint}`);
   }
   const query = id.split(".").slice(1).join(" ").replace(/-/g, " ") || id;
-  const similar = search
-    .search(query, { types: type ? [type] : undefined, limit: 3 })
+  const similar = (await kb.search(query, { types: type ? [type] : undefined, limit: 3 }))
     .hits.map((h) => h.id);
   throw new ToolError(`Node "${id}" not found.${similar.length ? ` Did you mean: ${similar.join(", ")}?` : " Use search_kb to find ids."}`);
 }

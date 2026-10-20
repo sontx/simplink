@@ -1,9 +1,12 @@
+import type { MaybePromise } from "./types.js";
 import { estimateTokens } from "./markdown.js";
 import type { AvailabilityInfo, ChooseStep, PlanStep, ResolvedGoal, StepItem } from "./resolve.js";
 
 export interface RenderOptions {
   /** Approximate token budget (chars / 4). Default 2000. */
   tokenBudget?: number;
+  /** Default renderer only. Priority-zero sections may exceed the token budget. */
+  sections?: (defaults: RenderSection[], resolved: ResolvedGoal) => RenderSection[];
 }
 
 export interface RenderResult {
@@ -13,7 +16,9 @@ export interface RenderResult {
   omitted: string[];
 }
 
-interface Section {
+export type PlanRenderer = (resolved: ResolvedGoal, opts: RenderOptions) => MaybePromise<RenderResult>;
+
+export interface RenderSection {
   name: string;
   /** Lower = kept first. Priority 0 is always kept. */
   priority: number;
@@ -33,7 +38,7 @@ function renderChoose(c: ChooseStep, n: number, pad: string): string {
     return [
       `${pad}   - **${o.key}**: ${o.when} — ${availabilityLabel(o)}`,
       blocking.length ? `${pad}     Blocking constraints: ${blocking.join(", ")}` : "",
-      renderPlan(o.plan, `${pad}     `),
+      renderPlanSteps(o.plan, `${pad}     `),
     ]
       .filter(Boolean)
       .join("\n");
@@ -41,7 +46,7 @@ function renderChoose(c: ChooseStep, n: number, pad: string): string {
   return [head, ...opts].join("\n");
 }
 
-function renderPlan(plan: PlanStep[], pad = ""): string {
+export function renderPlanSteps(plan: PlanStep[], pad = ""): string {
   const stepNo = new Map<string, number>();
   plan.forEach((s, i) => s.kind === "run" && stepNo.set(s.procedure.id, i + 1));
   return plan
@@ -62,10 +67,9 @@ function renderPlan(plan: PlanStep[], pad = ""): string {
 }
 
 /** Renders a resolved goal as Markdown for LLM context, trimming low-priority sections to fit the budget. */
-export function renderResolvedGoal(r: ResolvedGoal, opts: RenderOptions = {}): RenderResult {
-  const budget = opts.tokenBudget ?? 2000;
+export function buildRenderSections(r: ResolvedGoal): RenderSection[] {
   const [best, ...others] = r.alternatives;
-  const sections: Section[] = [];
+  const sections: RenderSection[] = [];
   const add = (name: string, priority: number, text: string) => text && sections.push({ name, priority, text });
 
   add("goal", 0, `# ${r.subject === "procedure" ? "Procedure" : "Goal"}: ${r.goal.title} (\`${r.goal.id}\`)\n${r.goal.summary}`);
@@ -77,7 +81,7 @@ export function renderResolvedGoal(r: ResolvedGoal, opts: RenderOptions = {}): R
     add(
       "plan",
       0,
-      `## ${r.subject === "procedure" ? "Plan" : "Recommended"}: ${best.procedure.title} (\`${best.procedure.id}\`)\nAvailability: ${availabilityLabel(best)}${satisfied}\n\n### Plan\n${renderPlan(best.plan)}`,
+      `## ${r.subject === "procedure" ? "Plan" : "Recommended"}: ${best.procedure.title} (\`${best.procedure.id}\`)\nAvailability: ${availabilityLabel(best)}${satisfied}\n\n### Plan\n${renderPlanSteps(best.plan)}`,
     );
     // Blocking constraints are never trimmed.
     add("constraints", best.constraints.some((c) => c.severity === "blocking") ? 0 : 1, best.constraints.length ? `## Constraints\n${best.constraints.map((c) => `- [${c.severity}] ${c.title} (\`${c.id}\`): ${c.summary}`).join("\n")}` : "");
@@ -98,8 +102,13 @@ export function renderResolvedGoal(r: ResolvedGoal, opts: RenderOptions = {}): R
     );
   }
 
+  return sections;
+}
+
+/** Priority-zero content is always retained, even when it exceeds budget. */
+export function fitSections(sections: RenderSection[], budget: number): RenderResult {
   // Keep strictly by priority: stop at the first section that does not fit. Output keeps original order.
-  const kept = new Set<Section>();
+  const kept = new Set<RenderSection>();
   let used = 0;
   for (const s of [...sections].sort((a, b) => a.priority - b.priority)) {
     const cost = estimateTokens(s.text) + 1;
@@ -111,4 +120,9 @@ export function renderResolvedGoal(r: ResolvedGoal, opts: RenderOptions = {}): R
   let text = sections.filter((s) => kept.has(s)).map((s) => s.text).join("\n\n");
   if (omitted.length) text += `\n\n_Omitted for budget: ${omitted.join(", ")}. Use getNode(id) for details._`;
   return { text, tokens: estimateTokens(text), omitted };
+}
+
+export function renderResolvedGoal(r: ResolvedGoal, opts: RenderOptions = {}): RenderResult {
+  const defaults = buildRenderSections(r);
+  return fitSections(opts.sections ? opts.sections(defaults, r) : defaults, opts.tokenBudget ?? 2000);
 }

@@ -9,7 +9,7 @@ test("MCP server identifies itself with the simp name", async () => {
   const tools: KBTools = {
     definitions: [],
     status: { root: "", nodes: 0, edges: 0, errors: 0, warnings: 0 },
-    call: () => ({ content: "" }),
+    call: async () => ({ content: "" }),
   };
   const server = createMcpServer(tools);
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -18,5 +18,6 @@ test("MCP server identifies itself with the simp name", async () => {
   await client.connect(clientTransport);
 
   assert.equal(client.getServerVersion()?.name, "simp-graph");
+  assert.equal(client.getServerVersion()?.version, "0.2.0");
   await client.close();
 });

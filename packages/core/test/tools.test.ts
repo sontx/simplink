@@ -102,6 +102,6 @@ test("KB with lint errors still serves, with a warning prefix", async () => {
   await writeFile(path.join(dir, "goals/g.md"), "---\ntype: goal\ntitle: Export data\nsummary: x\n---\n");
   const t = await createKBTools(dir);
   assert.ok(t.status.errors > 0);
-  const r = t.call("search_kb", { query: "export" });
+  const r = await t.call("search_kb", { query: "export" });
   assert.match(r.content, /^\[KB has \d+ lint error\(s\)/);
 });

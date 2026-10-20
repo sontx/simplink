@@ -3,11 +3,18 @@ import { orderedItems, section } from "./markdown.js";
 import type { ChoiceDef, EdgeKind, KBGraph, KBNode } from "./types.js";
 
 export interface TenantContext {
+  context?: Readonly<Record<string, unknown>>;
   plan?: string;
   permissions?: string[];
 }
 
+export type AvailabilityPolicy = (node: KBNode, tenant?: TenantContext) => string[] | null;
+export type RankedCandidate = Omit<Alternative, "rank"> & { order: number };
+export type AlternativeComparator = (a: RankedCandidate, b: RankedCandidate) => number;
+
 export interface ResolveOptions {
+  availability?: AvailabilityPolicy;
+  rank?: AlternativeComparator;
   /** Known state values. Missing = unknown → a check step is emitted. */
   states?: Record<string, boolean>;
   /** Used for availability and ranking. Omit → availability is null where gated. */
@@ -120,7 +127,7 @@ const targetIds = (n: KBNode, kind: string): string[] => {
 };
 
 /** Reasons a node is unavailable for the tenant; null when it is gated but no tenant was given. */
-function gateReasons(n: KBNode, tenant?: TenantContext): string[] | null {
+export function defaultAvailability(n: KBNode, tenant?: TenantContext): string[] | null {
   const plans = n.availability?.plans ?? [];
   const perms = n.availability?.permissions ?? [];
   if (!plans.length && !perms.length) return [];
@@ -189,7 +196,7 @@ class PlanBuilder {
 
   private pickSatisfier(s: KBNode | undefined): KBNode | undefined {
     const sats = s ? this.targets(s, "satisfied_by") : [];
-    return sats.find((x) => gateReasons(x, this.opts.tenant)?.length === 0) ?? sats[0];
+    return sats.find((x) => (this.opts.availability ?? defaultAvailability)(x, this.opts.tenant)?.length === 0) ?? sats[0];
   }
 
   addProcedure(p: KBNode, reason: RunStep["reason"], when: Condition[], depth: number): void {
@@ -363,14 +370,17 @@ class PlanBuilder {
   }
 
   summary(): Summary {
-    const gated = [...this.runProcedures, ...this.capabilities.values()].map((n) => gateReasons(n, this.opts.tenant));
+    const gated = [...this.runProcedures, ...this.capabilities.values()].map((n) => (this.opts.availability ?? defaultAvailability)(n, this.opts.tenant));
     // "X requires plan: e" + "Y requires plan: e" → "requires plan: e (X, Y)"
     const grouped = new Map<string, string[]>();
+    const ungrouped: string[] = [];
     for (const r of gated.flatMap((r) => r ?? [])) {
-      const [id, need] = r.split(" requires ");
+      const match = /^(\S+) requires (.+)$/.exec(r);
+      if (!match) { ungrouped.push(r); continue; }
+      const [, id, need] = match;
       grouped.set(need, [...new Set([...(grouped.get(need) ?? []), id])]);
     }
-    const reasons = [...grouped].map(([need, ids]) => `requires ${need} (${ids.join(", ")})`);
+    const reasons = [...grouped].map(([need, ids]) => `requires ${need} (${ids.join(", ")})`).concat(ungrouped);
     let available: boolean | null = reasons.length ? false : gated.some((r) => r === null) ? null : true;
 
     for (const cg of this.choiceGates) {
@@ -410,6 +420,11 @@ class PlanBuilder {
 const prepWork = (a: Omit<Alternative, "rank">) =>
   a.plan.filter((s) => s.kind === "check" || s.reason !== "main").length;
 
+export const defaultRank: AlternativeComparator = (a, b) =>
+  availabilityRank(a.available) - availabilityRank(b.available) ||
+  Number(a.deprecated) - Number(b.deprecated) || prepWork(a) - prepWork(b) ||
+  a.plan.length - b.plan.length || a.order - b.order;
+
 /**
  * Resolves a goal into ranked alternatives, one per goal procedure.
  * Ranking: availability → not deprecated → least prep work → fewest steps → declaration order.
@@ -428,22 +443,15 @@ export function resolveGoal(g: KBGraph, goalId: string, opts: ResolveOptions = {
     }
     const b = new PlanBuilder(g, opts);
     b.addProcedure(p, "main", [], 0);
-    return [{ order, alt: b.toAlternative(p) }];
+    return [{ order, ...b.toAlternative(p) }];
   });
 
-  alts.sort(
-    (x, y) =>
-      availabilityRank(x.alt.available) - availabilityRank(y.alt.available) ||
-      Number(x.alt.deprecated) - Number(y.alt.deprecated) ||
-      prepWork(x.alt) - prepWork(y.alt) ||
-      x.alt.plan.length - y.alt.plan.length ||
-      x.order - y.order,
-  );
+  alts.sort(opts.rank ?? defaultRank);
 
   return {
     subject: "goal",
     goal: { ...ref(goal), whenToUse: targetIds(goal, "when_to_use") },
-    alternatives: alts.map(({ alt }, i) => ({ rank: i + 1, ...alt })),
+    alternatives: alts.map(({ order, ...alt }, i) => ({ rank: i + 1, ...alt })),
     warnings,
   };
 }

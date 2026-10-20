@@ -1,3 +1,5 @@
+export type MaybePromise<T> = T | Promise<T>;
+
 export const NODE_TYPES = ["goal", "procedure", "capability", "state", "constraint"] as const;
 export type NodeType = (typeof NODE_TYPES)[number];
 

@@ -16,6 +16,8 @@ export interface SchemaFinding {
   message: string;
 }
 
+export type ValidatorExtension = (type: NodeType, data: unknown) => import("./types.js").MaybePromise<SchemaFinding[]>;
+
 export type FrontmatterValidator = (type: NodeType, data: unknown) => SchemaFinding[];
 
 export function createValidator(schemaDir = SCHEMA_DIR): FrontmatterValidator {

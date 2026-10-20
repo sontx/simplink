@@ -1,8 +1,17 @@
 import { loadDocs, type RawDoc } from "./loader.js";
-import { createValidator } from "./schema.js";
+import type { DocSource } from "./source.js";
+import type { MaybePromise } from "./types.js";
+import { createValidator, type ValidatorExtension } from "./schema.js";
 import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
 import { FOLDER_TO_TYPE, issue, type Issue, type KBGraph, type KBNode } from "./types.js";
+
+export type LintRule = (graph: KBGraph) => MaybePromise<Issue[]>;
+export interface LintOptions {
+  validator?: ValidatorExtension;
+  rules?: LintRule[];
+  disable?: string[];
+}
 
 export interface LintResult {
   graph: KBGraph;
@@ -37,8 +46,11 @@ function toNode(doc: RawDoc, id: string): KBNode {
  * Files that fail path or YAML checks are excluded from the graph; files with
  * schema errors are still included so graph rules can report on them.
  */
-export async function lintKB(root: string): Promise<LintResult> {
-  const validate = createValidator();
+export async function lintKB(root: string | DocSource, opts: LintOptions = {}): Promise<LintResult> {
+  for (const code of opts.disable ?? []) {
+    if (code.startsWith("E")) throw new Error(`Cannot disable error code ${code}; only warnings may be disabled`);
+  }
+  const validate = opts.validator ?? createValidator();
   const issues: Issue[] = [];
   const nodes = new Map<string, KBNode>();
 
@@ -60,7 +72,7 @@ export async function lintKB(root: string): Promise<LintResult> {
       add("E003", `type "${String(doc.data.type)}" does not match folder type "${doc.folderType}"`);
     if (doc.data.id !== undefined && doc.data.id !== doc.derivedId)
       add("E002", `id "${String(doc.data.id)}" does not match path-derived id "${doc.derivedId}"`);
-    for (const f of validate(doc.folderType, doc.data)) add(f.code, f.message);
+    for (const f of await validate(doc.folderType, doc.data)) add(f.code, f.message);
 
     const existing = nodes.get(doc.derivedId);
     if (existing) {
@@ -72,6 +84,9 @@ export async function lintKB(root: string): Promise<LintResult> {
 
   const graph = buildGraph(nodes);
   issues.push(...lintGraph(graph));
+  for (const rule of opts.rules ?? []) issues.push(...await rule(graph));
+  const disabled = new Set(opts.disable);
+  for (let i = issues.length - 1; i >= 0; i--) if (disabled.has(issues[i].code)) issues.splice(i, 1);
   issues.sort(
     (a, b) => a.path.localeCompare(b.path) || (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1) || a.code.localeCompare(b.code),
   );
