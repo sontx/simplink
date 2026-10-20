@@ -399,7 +399,9 @@ export function createUiHandler(root: string): Express {
   });
   app.use(express.static(webRoot));
   app.get("/{*path}", (_req, res, next) =>
-    res.sendFile(path.join(webRoot, "index.html"), next),
+    res.sendFile(path.join(webRoot, "index.html"), (error) => {
+      if (error) next(error);
+    }),
   );
   app.use(() => {
     throw new HttpError(404, "Not found");
