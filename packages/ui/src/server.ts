@@ -193,7 +193,12 @@ export function createUiHandler(root: string): Express {
     const layout = query(req, "layout") ?? "site";
     if (layout !== "site" && layout !== "graph")
       throw new HttpError(400, "Invalid docs layout");
-    return kb.docs({ layout });
+    try {
+      return kb.docs({ layout });
+    } catch (error) {
+      // Docs export rejects KB content (invalid or duplicate docs paths); show why instead of a 500.
+      throw new HttpError(422, (error as Error).message);
+    }
   }
 
   const app = express();

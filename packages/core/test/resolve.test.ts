@@ -116,6 +116,10 @@ test("renderer keeps priority-0 sections and trims the rest in priority order", 
     "capabilities",
     "failure-handling",
   ]);
+  assert.match(
+    tight.text,
+    /_Omitted for budget: alternatives, capabilities, failure-handling\. Use get_node for details\._$/,
+  );
 });
 
 test("non-goal id throws", async () => {

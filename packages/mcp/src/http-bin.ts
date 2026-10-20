@@ -23,8 +23,25 @@ const { values } = parseArgs({
       multiple: true,
       default: env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
     },
+    help: { type: "boolean", short: "h", default: false },
   },
 });
+if (values.help) {
+  const usage = `Usage: simp-mcp-http [--kb dir] [--host h] [--port n] [--path p] [--max-body bytes] [--allowed-host h]... [--allowed-origin o]...
+
+Serves the KB tools over stateless Streamable HTTP, plus GET /healthz.
+  --kb              KB directory (default: $KB_DIR or kb)
+  --host            listen address (default: $HOST or 127.0.0.1)
+  --port            listen port (default: $PORT or 3000)
+  --path            MCP endpoint path (default: $MCP_PATH or /mcp)
+  --max-body        max request body in bytes (default: $MAX_BODY_BYTES or 1000000)
+  --allowed-host    accepted Host header, repeatable (default: $ALLOWED_HOSTS, comma-separated)
+  --allowed-origin  accepted Origin header, repeatable (default: $ALLOWED_ORIGINS, comma-separated)
+No authentication: run behind a gateway that authenticates requests.
+`;
+  process.stdout.write(usage);
+  process.exit(0);
+}
 
 const log = (entry: Record<string, unknown>) =>
   process.stdout.write(

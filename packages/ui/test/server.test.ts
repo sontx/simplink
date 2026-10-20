@@ -342,3 +342,38 @@ test("UI API reads, edits and resolves a KB while protecting disk writes", async
     400,
   );
 });
+
+test("UI docs API explains docs export failures instead of returning 500", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "simplink-ui-docs-"));
+  await cp(
+    fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url)),
+    root,
+    { recursive: true },
+  );
+  for (const name of ["first", "second"])
+    await writeFile(
+      path.join(root, "constraints", `${name}.md`),
+      `---\ntype: constraint\ntitle: ${name}\nsummary: ${name}\nseverity: warning\ndocs:\n  path: reference/shared.md\n---\n`,
+    );
+  const server = createServer(createUiHandler(root));
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(async () => {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+    await rm(root, { recursive: true, force: true });
+  });
+  const address = server.address();
+  assert(address && typeof address !== "string");
+  const response = await fetch(
+    `http://127.0.0.1:${address.port}/api/docs?layout=site`,
+  );
+  assert.equal(response.status, 422);
+  assert.deepEqual(await response.json(), {
+    error: "Duplicate docs path: reference/shared.md",
+  });
+  const graph = await fetch(
+    `http://127.0.0.1:${address.port}/api/docs?layout=graph`,
+  );
+  assert.equal(graph.status, 200);
+});

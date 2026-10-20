@@ -237,7 +237,7 @@ function Docs() {
             {paths?.length === 0 && (
               <div className="px-6.25 py-17.5 text-center text-muted-foreground">
                 <h2>{t("No documentation pages")}</h2>
-                <p>{t("Add docs.path to nodes or select the graph layout.")}</p>
+                <p>{t("Add nodes, or fix the files listed in Issues.")}</p>
               </div>
             )}
             {(prev || next) && (

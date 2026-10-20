@@ -1,4 +1,6 @@
+import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -6,6 +8,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createKBTools } from "@sontx/simplink-core";
 import { createMcpServer, SERVER_INSTRUCTIONS } from "@sontx/simplink-mcp";
+
+const execFileAsync = promisify(execFile);
 
 const text = (r: any) =>
   (r.content as { type: string; text: string }[])[0].text;
@@ -63,4 +67,19 @@ test("MCP stdio: built server binary end-to-end", async () => {
   });
   assert.match(text(r), /## Recommended: Send Zalo broadcast/);
   await client.close();
+});
+
+test("server binaries print usage for --help and exit 0", async () => {
+  for (const [bin, usage] of [
+    ["bin.js", /^Usage: simp-mcp \[--kb dir\]/],
+    ["http-bin.js", /^Usage: simp-mcp-http \[--kb dir\]/],
+  ] as const) {
+    for (const flag of ["--help", "-h"]) {
+      const { stdout } = await execFileAsync(process.execPath, [
+        fileURLToPath(new URL(`../dist/${bin}`, import.meta.url)),
+        flag,
+      ]);
+      assert.match(stdout, usage);
+    }
+  }
 });

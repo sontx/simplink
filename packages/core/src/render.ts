@@ -202,7 +202,7 @@ export function fitSections(
     .map((s) => s.text)
     .join("\n\n");
   if (omitted.length)
-    text += `\n\n_Omitted for budget: ${omitted.join(", ")}. Use getNode(id) for details._`;
+    text += `\n\n_Omitted for budget: ${omitted.join(", ")}. Use get_node for details._`;
   return { text, tokens: estimateTokens(text), omitted };
 }
 

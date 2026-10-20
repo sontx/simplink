@@ -9,8 +9,19 @@ import { createMcpServer } from "./server.js";
 const log = (msg: string) => process.stderr.write(`[simp-mcp] ${msg}\n`);
 
 const { values } = parseArgs({
-  options: { kb: { type: "string", default: process.env.KB_DIR ?? "kb" } },
+  options: {
+    kb: { type: "string", default: process.env.KB_DIR ?? "kb" },
+    help: { type: "boolean", short: "h", default: false },
+  },
 });
+if (values.help) {
+  process.stdout.write(`Usage: simp-mcp [--kb dir]
+
+Serves the KB tools over MCP stdio.
+  --kb  KB directory (default: $KB_DIR or kb)
+`);
+  process.exit(0);
+}
 const root = path.resolve(values.kb!);
 
 const tools = await createKBTools(root);

@@ -158,8 +158,8 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Breadcrumb: "Đường dẫn điều hướng",
   "Rendering page…": "Đang hiển thị trang…",
   "No documentation pages": "Chưa có trang tài liệu",
-  "Add docs.path to nodes or select the graph layout.":
-    "Thêm docs.path vào nút hoặc chọn bố cục đồ thị.",
+  "Add nodes, or fix the files listed in Issues.":
+    "Thêm nút hoặc sửa các tệp được liệt kê trong mục Vấn đề.",
   Previous: "Trước",
   Next: "Sau",
   "On this page": "Trên trang này",
