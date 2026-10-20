@@ -409,8 +409,11 @@ export function createUiHandler(root: string): Express {
 
   app.use(
     // Express recognizes error handlers by their four parameters.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    (error: unknown, _req: Request, res: Response, next: NextFunction) => {
+      if (res.headersSent) {
+        next(error);
+        return;
+      }
       const { code, status: known } = error as {
         code?: string;
         status?: number;

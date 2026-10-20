@@ -12,7 +12,47 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import type { NextFunction, Request, Response } from "express";
 import { createUiHandler } from "../src/server.js";
+
+test("UI forwards errors after a response has started without sending JSON", async (t) => {
+  const root = fileURLToPath(
+    new URL("../../../test/fixtures/kb/", import.meta.url),
+  );
+  const app = createUiHandler(root);
+  const failure = new Error("File transfer failed");
+  let forwarded: unknown;
+  t.mock.method(
+    app.response,
+    "sendFile",
+    function (this: Response, ...args: unknown[]) {
+      this.write("partial page");
+      (args[1] as (error: Error) => void)(failure);
+      return this;
+    },
+  );
+  app.use(
+    // Express recognizes error handlers by their four parameters.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      forwarded = error;
+      res.end();
+    },
+  );
+  const server = createServer(app);
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(
+    () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      ),
+  );
+  const address = server.address();
+  assert(address && typeof address !== "string");
+  const response = await fetch(`http://127.0.0.1:${address.port}/nested/page`);
+  assert.equal(await response.text(), "partial page");
+  assert.equal(forwarded, failure);
+});
 
 test("UI API reads, edits and resolves a KB while protecting disk writes", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "simplink-ui-"));
