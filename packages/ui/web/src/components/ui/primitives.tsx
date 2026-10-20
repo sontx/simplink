@@ -1,4 +1,4 @@
-import { enumDescription } from "../../lib/enum-description.js";
+import { usePreferences } from "../preferences.js";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils.js";
 import { Badge as ShadcnBadge } from "./badge.js";
@@ -25,6 +25,7 @@ export function Badge({
   type?: string;
   children: ReactNode;
 }) {
+  const { enumDescription } = usePreferences();
   return (
     <ShadcnBadge
       variant="secondary"
@@ -79,7 +80,7 @@ export function Dialog({
 
 export function ErrorMessage({ error }: { error: unknown }) {
   return error ? (
-    <div role="alert" className="bg-[#fff0f2] p-3">
+    <div role="alert" className="bg-destructive/10 p-3">
       {error instanceof Error ? error.message : String(error)}
     </div>
   ) : null;
@@ -106,7 +107,7 @@ export function Page({
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-3.5 text-[9px] font-[650] tracking-[1.7px] text-[#9b94a6]">
+    <div className="mb-3.5 text-[9px] font-[650] tracking-[1.7px] text-muted-foreground">
       {children}
     </div>
   );

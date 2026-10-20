@@ -1,5 +1,4 @@
-import { enumDescription } from "../lib/enum-description.js";
-import { label } from "../lib/utils.js";
+import { usePreferences } from "../components/preferences.js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { kbQuery } from "../api.js";
@@ -37,12 +36,14 @@ export const Route = createFileRoute("/graph")({
   component: Graph,
 });
 
-const muted = "text-[#938c9f]";
+const muted = "text-muted-foreground";
 const heading = "mt-6 mb-2.75";
 const check =
-  "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-[#81758d] max-[780px]:text-[10px]";
+  "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground max-[780px]:text-[10px]";
 
 function Graph() {
+  const { t, label, enumDescription } = usePreferences();
+
   const { data: kb } = useQuery(kbQuery);
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -59,21 +60,22 @@ function Graph() {
       ).join(","),
     });
   };
-  if (!kb) return <Page>Loading graph…</Page>;
+  if (!kb) return <Page>{t("Loading graph…")}</Page>;
   const orphans = kb.nodes.filter(
     (n) => n.type !== "goal" && !kb.edges.some((e) => e.to === n.id),
   );
   return (
     <div className="flex h-full min-h-132.5 max-[780px]:min-h-full max-[780px]:flex-wrap">
-      <aside className="w-55 shrink-0 overflow-auto border-r border-[#ebe7f0] bg-card px-5.5 py-6.75 max-[1100px]:w-46.25 max-[1100px]:px-3.75 max-[1100px]:py-6.25 max-[780px]:w-37.5 max-[780px]:px-3 max-[780px]:py-5 max-[780px]:text-[10px]">
-        <Eyebrow>EXPLORER</Eyebrow>
+      <aside className="w-55 shrink-0 overflow-auto border-r border-border bg-card px-5.5 py-6.75 max-[1100px]:w-46.25 max-[1100px]:px-3.75 max-[1100px]:py-6.25 max-[780px]:w-37.5 max-[780px]:px-3 max-[780px]:py-5 max-[780px]:text-[10px]">
+        <Eyebrow>{t("EXPLORER")}</Eyebrow>
         <h1 className="mb-2 text-[17px] tracking-[-0.4px] max-[780px]:text-sm">
-          Knowledge graph
+          {t("Knowledge graph")}
         </h1>
-        <p className="text-[10px] text-[#938c9f] max-[780px]:text-[9px]">
-          {kb.nodes.length} nodes · {kb.edges.length} relationships
+        <p className="text-[10px] text-muted-foreground max-[780px]:text-[9px]">
+          {kb.nodes.length} {t("nodes")} · {kb.edges.length}{" "}
+          {t("relationships")}
         </p>
-        <h3 className={heading}>Node types</h3>
+        <h3 className={heading}>{t("Node types")}</h3>
         {types.map((type) => (
           <label className={check} key={type} title={enumDescription(type)}>
             <Checkbox
@@ -86,7 +88,7 @@ function Graph() {
             {label(type)}
           </label>
         ))}
-        <h3 className={heading}>Relationships</h3>
+        <h3 className={heading}>{t("Relationships")}</h3>
         {kinds.map((kind) => (
           <label className={check} key={kind} title={enumDescription(kind)}>
             <Checkbox
@@ -96,7 +98,7 @@ function Graph() {
             {label(kind)}
           </label>
         ))}
-        <h3 className={heading}>Depth</h3>
+        <h3 className={heading}>{t("Depth")}</h3>
         <ToggleGroup
           className="mt-2 mb-4"
           type="single"
@@ -105,14 +107,14 @@ function Graph() {
           onValueChange={(value) =>
             value && update({ depth: value === "all" ? "all" : Number(value) })
           }
-          aria-label="Graph depth"
+          aria-label={t("Graph depth")}
         >
           {[1, 2, 3, "all"].map((depth) => (
             <ToggleGroupItem
               className="data-[state=on]:text-primary"
               key={depth}
               value={String(depth)}
-              aria-label={`Depth ${depth}`}
+              aria-label={t("Depth {depth}", { depth })}
             >
               {label(String(depth))}
             </ToggleGroupItem>
@@ -125,7 +127,7 @@ function Graph() {
               update({ deprecated: checked === true || undefined })
             }
           />
-          Show deprecated
+          {t("Show deprecated")}
         </label>
         <label className={check}>
           <Checkbox
@@ -134,10 +136,11 @@ function Graph() {
               update({ issuesOnly: checked === true || undefined })
             }
           />
-          Only with issues
+          {t("Only with issues")}
         </label>
         <h3 className={heading}>
-          Orphans <span className={muted}>{orphans.length}</span>
+          {t("Orphans")}
+          <span className={muted}>{orphans.length}</span>
         </h3>
         <div className="flex flex-col gap-1.25">
           {orphans.map((n) => (
@@ -154,7 +157,9 @@ function Graph() {
             </Button>
           ))}
           {!orphans.length && (
-            <small className={muted}>Every node has an entry point.</small>
+            <small className={muted}>
+              {t("Every node has an entry point.")}
+            </small>
           )}
         </div>
       </aside>
@@ -175,17 +180,19 @@ function Graph() {
         <Inspector key={search.focus} id={search.focus} />
       ) : (
         <aside
-          className={`${inspectorClass} text-[#a79caf] min-[1100px]:pt-9.5 max-[780px]:hidden`}
+          className={`${inspectorClass} text-muted-foreground min-[1100px]:pt-9.5 max-[780px]:hidden`}
         >
-          <Eyebrow>NODE INSPECTOR</Eyebrow>
-          <h2 className="mt-5.5 mb-2.5 text-[18px] tracking-[-0.4px] text-[#796c85]">
-            Explore a connection
+          <Eyebrow>{t("NODE INSPECTOR")}</Eyebrow>
+          <h2 className="mt-5.5 mb-2.5 text-[18px] tracking-[-0.4px] text-muted-foreground">
+            {t("Explore a connection")}
           </h2>
           <p className="text-xs leading-[1.7]">
-            Select a node to inspect its relationships and edit its source.
+            {t(
+              "Select a node to inspect its relationships and edit its source.",
+            )}
           </p>
           <small className="mt-5 block leading-[1.7]">
-            Right-click the canvas to create a node.
+            {t("Right-click the canvas to create a node.")}
           </small>
         </aside>
       )}

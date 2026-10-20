@@ -1,5 +1,4 @@
-import { enumDescription } from "../../lib/enum-description.js";
-import { label } from "../../lib/utils.js";
+import { usePreferences } from "../../components/preferences.js";
 import { useState } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,7 +29,7 @@ export const Route = createFileRoute("/nodes/$id")({
   component: NodePage,
 });
 
-const muted = "text-[#938c9f]";
+const muted = "text-muted-foreground";
 const actions = "mt-4.5 flex flex-wrap items-center gap-2.25";
 
 function NodePage() {
@@ -39,6 +38,8 @@ function NodePage() {
 }
 
 function NodeContent() {
+  const { t, label, enumDescription } = usePreferences();
+
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -81,14 +82,14 @@ function NodeContent() {
       !remove.isPending &&
       !remove.isSuccess &&
       current.pathname !== next.pathname &&
-      !window.confirm("Discard unsaved changes?"),
+      !window.confirm(t("Discard unsaved changes?")),
     enableBeforeUnload: dirty && !remove.isPending && !remove.isSuccess,
   });
   if (!detail)
     return (
       <Page>
         <ErrorMessage error={error} />
-        {!error && "Loading node…"}
+        {!error && t("Loading node…")}
       </Page>
     );
   const { node } = detail;
@@ -115,7 +116,7 @@ function NodeContent() {
   return (
     <Page>
       <Link to="/nodes" className={`text-[11px] ${muted}`}>
-        ← All nodes
+        {t("← All nodes")}
       </Link>
       <div className="mt-5.5 mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:items-start max-[780px]:gap-2.5">
         <div>
@@ -126,12 +127,12 @@ function NodeContent() {
         <div className="flex flex-wrap items-center gap-2.25 max-[780px]:justify-end">
           <Button variant="outline" asChild>
             <Link to="/graph" search={{ focus: id }}>
-              View in graph
+              {t("View in graph")}
             </Link>
           </Button>
           {["goal", "procedure"].includes(node.type) && (
             <Button variant="outline" onClick={() => setPlan(true)}>
-              Plan
+              {t("Plan")}
             </Button>
           )}
         </div>
@@ -156,21 +157,21 @@ function NodeContent() {
           className="grid grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)] gap-11.25 max-[1100px]:grid-cols-1 max-[780px]:gap-3.75"
         >
           <div>
-            <h3 className="text-[13px]">Frontmatter</h3>
-            <dl className="mb-7.5 border-t border-[#e9e1ee]">
+            <h3 className="text-[13px]">{t("Frontmatter")}</h3>
+            <dl className="mb-7.5 border-t border-border">
               {Object.entries(node.data).map(([key, value]) => (
                 <div
                   key={key}
-                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-[#eee7f3] py-2.75 text-[11px]"
+                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-[11px]"
                 >
-                  <dt className="text-[#a293ae]">{label(key)}</dt>
+                  <dt className="text-muted-foreground">{label(key)}</dt>
                   <dd
                     title={
                       ["type", "status", "severity"].includes(key)
                         ? enumDescription(String(value))
                         : undefined
                     }
-                    className="m-0 wrap-anywhere text-[#786584]"
+                    className="m-0 wrap-anywhere text-muted-foreground"
                   >
                     {typeof value === "object"
                       ? JSON.stringify(value)
@@ -180,10 +181,10 @@ function NodeContent() {
               ))}
             </dl>
             <Markdown content={node.body} />
-            <h3 className="text-[13px]">Relationships</h3>
+            <h3 className="text-[13px]">{t("Relationships")}</h3>
             {["out", "in"].map((dir) => (
               <section key={dir}>
-                <h4>{dir === "out" ? "Outgoing" : "Incoming"}</h4>
+                <h4>{dir === "out" ? t("Outgoing") : t("Incoming")}</h4>
                 {Object.entries(
                   detail[dir as "out" | "in"].reduce<
                     Record<string, typeof detail.out>
@@ -213,12 +214,12 @@ function NodeContent() {
                   </div>
                 ))}
                 {!detail[dir as "out" | "in"].length && (
-                  <small className={muted}>None</small>
+                  <small className={muted}>{t("None")}</small>
                 )}
               </section>
             ))}
           </div>
-          <div className="mt-6 flex h-105 overflow-hidden rounded-[7px] border border-[#e8e0ee] max-[1100px]:mt-0 [&_.react-flow__minimap]:hidden">
+          <div className="mt-6 flex h-105 overflow-hidden rounded-[7px] border border-border max-[1100px]:mt-0 [&_.react-flow__minimap]:hidden">
             {kb && (
               <KBGraph
                 kb={kb}
@@ -233,18 +234,18 @@ function NodeContent() {
           </div>
         </TabsContent>
         <TabsContent value="source">
-          <div className="flex items-center justify-between gap-3 text-[#9787a4]">
+          <div className="flex items-center justify-between gap-3 text-muted-foreground">
             <code>{node.path}</code>
             <span className={muted}>
               {dirty
-                ? "Unsaved changes"
+                ? t("Unsaved changes")
                 : saved
-                  ? "Saved to disk"
-                  : "Markdown source"}
+                  ? t("Saved to disk")
+                  : t("Markdown source")}
             </span>
           </div>
           <Textarea
-            aria-label="Markdown source"
+            aria-label={t("Markdown source")}
             disabled={save.isPending}
             className="mt-4 h-[52dvh] min-h-80 bg-card p-5 font-mono text-xs leading-[1.8] [tab-size:2]"
             spellCheck={false}
@@ -262,10 +263,10 @@ function NodeContent() {
               disabled={save.isPending || !dirty}
               onClick={() => save.mutate()}
             >
-              {save.isPending ? "Saving…" : "Save file"}
+              {save.isPending ? t("Saving…") : t("Save file")}
             </Button>
             <Button variant="destructive" onClick={() => setDeleting(true)}>
-              Delete file
+              {t("Delete file")}
             </Button>
           </div>
           {issues.map((i, index) => (
@@ -275,11 +276,11 @@ function NodeContent() {
           ))}
         </TabsContent>
         <TabsContent value="docs">
-          <h2>Published documentation</h2>
+          <h2>{t("Published documentation")}</h2>
           {docPath ? (
             <>
               <p className={muted}>
-                This node contributes to the following live page.
+                {t("This node contributes to the following live page.")}
               </p>
               <Button variant="default" asChild>
                 <Link
@@ -287,14 +288,15 @@ function NodeContent() {
                   params={{ _splat: docPath }}
                   search={{ layout: "site" }}
                 >
-                  Open {docPath}
+                  {t("Open {path}", { path: docPath })}
                 </Link>
               </Button>
             </>
           ) : (
             <p className={muted}>
-              This node has no docs.path. Add a docs path in Source to include
-              it in the site preview.
+              {t(
+                "This node has no docs.path. Add a docs path in Source to include it in the site preview.",
+              )}
             </p>
           )}
           <p>
@@ -303,17 +305,19 @@ function NodeContent() {
               params={{ _splat: node.path }}
               search={{ layout: "graph" }}
             >
-              Browse graph documentation →
+              {t("Browse graph documentation →")}
             </Link>
           </p>
         </TabsContent>
       </Tabs>
       {deleting && (
-        <Dialog open onOpenChange={setDeleting} title="Delete this file?">
-          <p>{node.path} will be permanently deleted.</p>
+        <Dialog open onOpenChange={setDeleting} title={t("Delete this file?")}>
+          <p>{t("{path} will be permanently deleted.", { path: node.path })}</p>
           <p>
-            {detail.in.length} nodes reference this node. Their relationships
-            will become dangling.
+            {t(
+              "{count} nodes reference this node. Their relationships will become dangling.",
+              { count: detail.in.length },
+            )}
           </p>
           <ErrorMessage error={remove.error} />
           <Button
@@ -322,7 +326,7 @@ function NodeContent() {
             disabled={remove.isPending}
             onClick={() => remove.mutate()}
           >
-            Delete file
+            {t("Delete file")}
           </Button>
         </Dialog>
       )}

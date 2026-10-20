@@ -1,4 +1,4 @@
-import { label } from "../lib/utils.js";
+import { usePreferences } from "../components/preferences.js";
 import { useEffect, useState } from "react";
 import {
   createRootRouteWithContext,
@@ -28,8 +28,18 @@ import {
   Search,
   RefreshCw,
   Network,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { api, kbQuery, searchQuery } from "../api.js";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from "../components/ui/select.js";
 import {
   Badge,
   Button,
@@ -40,17 +50,24 @@ import {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
     component: Shell,
-    errorComponent: ({ error }) => (
-      <Page>
-        <h1>Unable to load workspace</h1>
-        <ErrorMessage error={error} />
-        <a href="/">Try again</a>
-      </Page>
-    ),
+    errorComponent: WorkspaceError,
   },
 );
 
+function WorkspaceError({ error }: { error: unknown }) {
+  const { t } = usePreferences();
+  return (
+    <Page>
+      <h1>{t("Unable to load workspace")}</h1>
+      <ErrorMessage error={error} />
+      <a href="/">{t("Try again")}</a>
+    </Page>
+  );
+}
+
 function Shell() {
+  const { t, label, language, theme, setLanguage, setTheme } = usePreferences();
+
   const { data: kb, error } = useQuery(kbQuery);
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -76,31 +93,75 @@ function Shell() {
       <header className="flex h-17 shrink-0 items-center gap-6.25 border-b bg-card px-6.25 max-[1100px]:gap-3.75 max-[780px]:h-14.5 max-[780px]:gap-2.5 max-[780px]:px-3.25">
         <Link
           to="/graph"
-          className="flex items-center gap-2.25 text-[23px] font-bold tracking-[-1px] text-[#382d43] max-[780px]:text-xl"
+          className="flex items-center gap-2.25 text-[23px] font-bold tracking-[-1px] text-foreground max-[780px]:text-xl"
         >
           <Network size={23} className="text-primary" />
           simplink
-          <span className="ml-1.5 border-l pl-3.5 text-[10px] font-normal tracking-[0.2px] text-[#a49aaa] max-[1100px]:hidden">
-            workspace
+          <span className="ml-1.5 border-l pl-3.5 text-[10px] font-normal tracking-[0.2px] text-muted-foreground max-[1100px]:hidden">
+            {t("workspace")}
           </span>
         </Link>
         <Button
           variant="outline"
-          className="ml-5 w-72 justify-start bg-background text-muted-foreground max-[1100px]:ml-0 max-[1100px]:w-56 max-[780px]:w-auto"
+          className="ml-5 w-72 justify-start bg-background text-muted-foreground max-[1100px]:ml-0 max-[1100px]:w-56 max-[900px]:w-auto"
+          aria-label={t("Search nodes…")}
           onClick={() => setOpen(true)}
         >
           <Search size={15} />
-          <span className="max-[780px]:hidden">Search nodes…</span>
-          <Kbd className="ml-auto max-[780px]:hidden">⌘K</Kbd>
+          <span className="max-[900px]:hidden">{t("Search nodes…")}</span>
+          <Kbd className="ml-auto max-[900px]:hidden">⌘K</Kbd>
         </Button>
-        <div className="ml-auto flex gap-2.25 max-[1100px]:gap-0.75">
+        <div className="ml-auto flex gap-2.25 max-[1100px]:gap-0.75 max-[900px]:hidden">
           <Badge type={kb?.status.errors ? "error" : "success"}>
-            ● {kb?.status.errors ?? 0} errors
+            ● {kb?.status.errors ?? 0} {t("errors")}
           </Badge>
-          <Badge type="warning">△ {kb?.status.warnings ?? 0} warnings</Badge>
+          <Badge type="warning">
+            △ {kb?.status.warnings ?? 0} {t("warnings")}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 max-[900px]:ml-auto">
+          <Select
+            value={language}
+            onValueChange={(value) => setLanguage(value === "vi" ? "vi" : "en")}
+          >
+            <SelectTrigger
+              aria-label={t("Language")}
+              className="max-[480px]:max-w-24"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="en">
+                  <span lang="en">English</span>
+                </SelectItem>
+                <SelectItem value="vi">
+                  <span lang="vi">Tiếng Việt</span>
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={t(
+              theme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme",
+            )}
+            title={t(
+              theme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme",
+            )}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun /> : <Moon />}
+          </Button>
         </div>
         <Button
           variant="outline"
+          aria-label={t("Reload")}
           disabled={reload.isPending}
           onClick={() => reload.mutate()}
         >
@@ -108,7 +169,7 @@ function Shell() {
             size={14}
             className={reload.isPending ? "animate-spin" : ""}
           />
-          <span className="max-[780px]:hidden">Reload</span>
+          <span className="max-[780px]:hidden">{t("Reload")}</span>
         </Button>
       </header>
       <div className="flex min-h-0 flex-1">
@@ -123,16 +184,16 @@ function Shell() {
               key={label}
               to={to}
               params={to === "/docs/$" ? { _splat: "" } : undefined}
-              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-[10px] text-[#a199ab] transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
+              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
             >
               <Icon size={19} className="max-[780px]:w-4.25" />
-              <span>{label}</span>
+              <span>{t(label)}</span>
             </Link>
           ))}
-          <div className="mt-auto text-center text-[8px] leading-loose tracking-[1px] text-[#aaa1b5] max-[780px]:hidden">
-            LOCAL KB
+          <div className="mt-auto text-center text-[8px] leading-loose tracking-[1px] text-muted-foreground max-[780px]:hidden">
+            {t("LOCAL KB")}
             <span className="block text-[10px] tracking-normal">
-              {kb?.status.nodes ?? 0} nodes
+              {kb?.status.nodes ?? 0} {t("nodes")}
             </span>
           </div>
         </nav>
@@ -141,21 +202,21 @@ function Shell() {
           <Outlet />
         </div>
       </div>
-      <Dialog open={open} onOpenChange={setOpen} title="Search knowledge">
+      <Dialog open={open} onOpenChange={setOpen} title={t("Search knowledge")}>
         <Command shouldFilter={false}>
           <CommandInput
             value={q}
             onValueChange={setQ}
-            placeholder="Search titles and aliases…"
+            placeholder={t("Search titles and aliases…")}
             autoFocus
           />
           <CommandList>
             <CommandEmpty>
               {results.isFetching
-                ? "Searching…"
+                ? t("Searching…")
                 : q
-                  ? "No nodes found."
-                  : "Type to search your knowledge base."}
+                  ? t("No nodes found.")
+                  : t("Type to search your knowledge base.")}
             </CommandEmpty>
             {results.data?.hits.map((hit) => (
               <CommandItem

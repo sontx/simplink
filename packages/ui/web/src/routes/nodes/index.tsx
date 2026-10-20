@@ -1,4 +1,4 @@
-import { enumDescription } from "../../lib/enum-description.js";
+import { usePreferences } from "../../components/preferences.js";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -26,7 +26,6 @@ import {
   Plus,
 } from "lucide-react";
 import { kbQuery, type NodeSummary } from "../../api.js";
-import { label } from "../../lib/utils.js";
 import {
   Badge,
   Button,
@@ -93,59 +92,67 @@ const features = tableFeatures({
   sortFns: { alphanumeric: sortFn_alphanumeric },
 });
 const helper = createColumnHelper<typeof features, NodeRow>();
-const columns = helper.columns([
-  helper.accessor("id", {
-    header: "ID",
-    cell: ({ getValue }) => (
-      <Link
-        to="/nodes/$id"
-        params={{ id: getValue() }}
-        className="font-mono text-xs"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {getValue()}
-      </Link>
-    ),
-  }),
-  helper.accessor("type", {
-    header: "Type",
-    cell: ({ getValue }) => (
-      <Badge type={getValue()}>{label(getValue())}</Badge>
-    ),
-  }),
-  helper.accessor("title", {
-    header: "Title",
-    cell: ({ getValue }) => (
-      <span className="block max-w-80 truncate font-medium">{getValue()}</span>
-    ),
-  }),
-  helper.accessor("status", {
-    header: "Status",
-    cell: ({ getValue }) => (
-      <span title={enumDescription(getValue())}>
-        <span
-          className={`mr-1.5 inline-block size-1.25 rounded-full ${getValue() === "deprecated" ? "bg-[#c0a17a]" : "bg-[#82ad96]"}`}
-        />
-        {label(getValue())}
-      </span>
-    ),
-  }),
-  helper.accessor((n) => n.tags.join(", "), {
-    id: "tags",
-    header: "Tags",
-    cell: ({ getValue }) => (
-      <span className="text-muted-foreground">{getValue() || "—"}</span>
-    ),
-  }),
-  helper.accessor("in", { header: "In" }),
-  helper.accessor("out", { header: "Out" }),
-  helper.accessor("issues", {
-    header: "Issues",
-    cell: ({ getValue }) => getValue() || "—",
-  }),
-]);
 
 function Nodes() {
+  const { t, label, enumDescription } = usePreferences();
+
+  const columns = useMemo(
+    () =>
+      helper.columns([
+        helper.accessor("id", {
+          header: () => t("ID"),
+          cell: ({ getValue }) => (
+            <Link
+              to="/nodes/$id"
+              params={{ id: getValue() }}
+              className="font-mono text-xs"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {getValue()}
+            </Link>
+          ),
+        }),
+        helper.accessor("type", {
+          header: () => t("Type"),
+          cell: ({ getValue }) => (
+            <Badge type={getValue()}>{label(getValue())}</Badge>
+          ),
+        }),
+        helper.accessor("title", {
+          header: () => t("Title"),
+          cell: ({ getValue }) => (
+            <span className="block max-w-80 truncate font-medium">
+              {getValue()}
+            </span>
+          ),
+        }),
+        helper.accessor("status", {
+          header: () => t("Status"),
+          cell: ({ getValue }) => (
+            <span title={enumDescription(getValue())}>
+              <span
+                className={`mr-1.5 inline-block size-1.25 rounded-full ${getValue() === "deprecated" ? "bg-[#c0a17a]" : "bg-[#82ad96]"}`}
+              />
+              {label(getValue())}
+            </span>
+          ),
+        }),
+        helper.accessor((n) => n.tags.join(", "), {
+          id: "tags",
+          header: () => t("Tags"),
+          cell: ({ getValue }) => (
+            <span className="text-muted-foreground">{getValue() || "—"}</span>
+          ),
+        }),
+        helper.accessor("in", { header: () => t("In") }),
+        helper.accessor("out", { header: () => t("Out") }),
+        helper.accessor("issues", {
+          header: () => t("Issues"),
+          cell: ({ getValue }) => getValue() || "—",
+        }),
+      ]),
+    [t, label, enumDescription],
+  );
   const { data: kb } = useQuery(kbQuery);
   const s = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -198,7 +205,7 @@ function Nodes() {
     initialState: { pagination: { pageIndex: 0, pageSize: 20 } },
   });
 
-  if (!kb) return <Page>Loading nodes…</Page>;
+  if (!kb) return <Page>{t("Loading nodes…")}</Page>;
   const { pageIndex, pageSize } = table.state.pagination;
   const first = rows.length ? pageIndex * pageSize + 1 : 0;
   const last = Math.min((pageIndex + 1) * pageSize, rows.length);
@@ -207,22 +214,23 @@ function Nodes() {
     <Page>
       <div className="mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:gap-2.5">
         <div>
-          <Eyebrow>LIBRARY</Eyebrow>
+          <Eyebrow>{t("LIBRARY")}</Eyebrow>
           <h1 className="mt-1.25 mb-2 max-[780px]:text-[22px]">
-            Nodes <span className="text-[#938c9f]">{rows.length}</span>
+            {t("Nodes")}
+            <span className="text-muted-foreground">{rows.length}</span>
           </h1>
         </div>
         <ButtonGroup>
           <Button variant="outline" onClick={() => setCreate("goal")}>
             <Plus />
-            Add goal
+            {t("Add goal")}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 size="icon"
                 variant="outline"
-                aria-label="Add other node types"
+                aria-label={t("Add other node types")}
               >
                 <ChevronDown />
               </Button>
@@ -235,7 +243,7 @@ function Nodes() {
                     title={enumDescription(type)}
                     onSelect={() => setCreate(type)}
                   >
-                    Add {label(type).toLowerCase()}
+                    {t("Add {type}", { type: label(type).toLowerCase() })}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuGroup>
@@ -246,8 +254,8 @@ function Nodes() {
       <div className="my-6.25 flex gap-2.5 max-[780px]:flex-wrap">
         <Input
           className="sm:mr-auto sm:max-w-sm"
-          aria-label="Filter nodes"
-          placeholder="Filter by title or ID…"
+          aria-label={t("Filter nodes")}
+          placeholder={t("Filter by title or ID…")}
           value={s.q}
           onChange={(e) => update({ q: e.target.value })}
         />
@@ -258,14 +266,14 @@ function Nodes() {
           }
         >
           <SelectTrigger
-            aria-label="Node type"
+            aria-label={t("Node type")}
             title={enumDescription(s.type ?? "")}
           >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="all">{t("All types")}</SelectItem>
               {NODE_TYPES.map((type) => (
                 <SelectItem
                   key={type}
@@ -285,22 +293,22 @@ function Nodes() {
           }
         >
           <SelectTrigger
-            aria-label="Node status"
+            aria-label={t("Node status")}
             title={enumDescription(s.status ?? "")}
           >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t("All statuses")}</SelectItem>
               <SelectItem value="active" title={enumDescription("active")}>
-                Active
+                {t("Active")}
               </SelectItem>
               <SelectItem
                 value="deprecated"
                 title={enumDescription("deprecated")}
               >
-                Deprecated
+                {t("Deprecated")}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
@@ -311,12 +319,12 @@ function Nodes() {
             update({ tag: value === "all" ? "" : value.slice(4) })
           }
         >
-          <SelectTrigger aria-label="Tag">
+          <SelectTrigger aria-label={t("Tag")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="all">All tags</SelectItem>
+              <SelectItem value="all">{t("All tags")}</SelectItem>
               {[...new Set(kb.nodes.flatMap((n) => n.tags))]
                 .sort()
                 .map((tag) => (
@@ -384,7 +392,7 @@ function Nodes() {
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No nodes match these filters.
+                  {t("No nodes match these filters.")}
                 </TableCell>
               </TableRow>
             )}
@@ -393,16 +401,16 @@ function Nodes() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4 py-4 text-sm text-muted-foreground">
         <span>
-          {first}–{last} of {rows.length}
+          {t("{first}–{last} of {total}", { first, last, total: rows.length })}
         </span>
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
-            <span>Rows per page</span>
+            <span>{t("Rows per page")}</span>
             <Select
               value={String(pageSize)}
               onValueChange={(value) => table.setPageSize(Number(value))}
             >
-              <SelectTrigger size="sm" aria-label="Rows per page">
+              <SelectTrigger size="sm" aria-label={t("Rows per page")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -417,13 +425,16 @@ function Nodes() {
             </Select>
           </div>
           <span>
-            Page {pageIndex + 1} of {Math.max(table.getPageCount(), 1)}
+            {t("Page {page} of {total}", {
+              page: pageIndex + 1,
+              total: Math.max(table.getPageCount(), 1),
+            })}
           </span>
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="First page"
+              aria-label={t("First page")}
               disabled={!table.getCanPreviousPage()}
               onClick={() => table.setPageIndex(0)}
             >
@@ -432,7 +443,7 @@ function Nodes() {
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Previous page"
+              aria-label={t("Previous page")}
               disabled={!table.getCanPreviousPage()}
               onClick={() => table.previousPage()}
             >
@@ -441,7 +452,7 @@ function Nodes() {
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Next page"
+              aria-label={t("Next page")}
               disabled={!table.getCanNextPage()}
               onClick={() => table.nextPage()}
             >
@@ -450,7 +461,7 @@ function Nodes() {
             <Button
               variant="outline"
               size="icon-sm"
-              aria-label="Last page"
+              aria-label={t("Last page")}
               disabled={!table.getCanNextPage()}
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             >

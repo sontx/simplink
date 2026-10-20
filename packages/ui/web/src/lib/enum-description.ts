@@ -1,3 +1,5 @@
+import { translate, type Language } from "./i18n.js";
+
 const descriptions = new Map<string, string>(
   Object.entries({
     goal: "An outcome you want to achieve.",
@@ -26,8 +28,11 @@ const descriptions = new Map<string, string>(
 export function enumDescription(
   value: string,
   context?: "issue",
+  language: Language = "en",
 ): string | undefined {
-  return value === "warning" && context === "issue"
-    ? "A potential problem that should be reviewed."
-    : descriptions.get(value);
+  const description =
+    value === "warning" && context === "issue"
+      ? "A potential problem that should be reviewed."
+      : descriptions.get(value);
+  return description ? translate(language, description) : undefined;
 }

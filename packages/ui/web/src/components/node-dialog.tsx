@@ -1,3 +1,4 @@
+import { usePreferences } from "./preferences.js";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api.js";
@@ -8,7 +9,7 @@ import {
   Input,
   Textarea,
 } from "./ui/primitives.js";
-const field = "grid gap-1.75 text-xs text-[#877392]";
+const field = "grid gap-1.75 text-xs text-muted-foreground";
 const folders: Record<string, string> = {
   goal: "goals",
   procedure: "procedures",
@@ -25,6 +26,7 @@ export function NodeDialog({
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
+  const { t, label } = usePreferences();
   const [path, setPath] = useState("");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -48,7 +50,11 @@ export function NodeDialog({
     },
   });
   return (
-    <Dialog open onOpenChange={onClose} title={`New ${type}`}>
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title={t("New {type}", { type: label(type).toLowerCase() })}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -57,7 +63,7 @@ export function NodeDialog({
         className="grid gap-3.75"
       >
         <label className={field}>
-          Path within {folders[type]}
+          {t("Path within {folder}", { folder: folders[type] })}
           <Input
             value={path}
             onChange={(e) => setPath(e.target.value)}
@@ -70,7 +76,7 @@ export function NodeDialog({
           {folders[type]}/{path || "your-node"}.md
         </small>
         <label className={field}>
-          Title
+          {t("Title")}
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -78,7 +84,7 @@ export function NodeDialog({
           />
         </label>
         <label className={field}>
-          Summary
+          {t("Summary")}
           <Textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
@@ -87,7 +93,7 @@ export function NodeDialog({
         </label>
         <ErrorMessage error={create.error} />
         <Button variant="default" disabled={create.isPending}>
-          Create node
+          {t("Create node")}
         </Button>
       </form>
     </Dialog>

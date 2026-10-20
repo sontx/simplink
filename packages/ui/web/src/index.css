@@ -21,6 +21,7 @@
   --accent: #fce7f3;
   --accent-foreground: #9d174d;
   --destructive: #dc2626;
+  --warning: #946200;
   --border: #e8e5ed;
   --input: #e7d6df;
   --ring: #ec4899;
@@ -60,6 +61,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -84,24 +86,25 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #17131d;
+  --foreground: #f1eaf4;
+  --card: #211b28;
+  --card-foreground: #f1eaf4;
+  --popover: #282030;
+  --popover-foreground: #f1eaf4;
+  --primary: #f472b6;
+  --primary-foreground: #301021;
+  --secondary: #392334;
+  --secondary-foreground: #f9a8d4;
+  --muted: #2c2433;
+  --muted-foreground: #b8aabd;
+  --accent: #392334;
+  --accent-foreground: #f9a8d4;
   --destructive: oklch(0.704 0.191 22.216);
+  --warning: #e5b96c;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: #ec4899;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -203,19 +206,48 @@
     --type-color: #b88b4d;
     --type-bg: #fbf5e9;
   }
+  .dark .goal,
+  .dark .constraint {
+    --type-color: #e6a2b4;
+    --type-bg: #402734;
+  }
+  .dark .procedure {
+    --type-color: #95bde6;
+    --type-bg: #233347;
+  }
+  .dark .capability {
+    --type-color: #8dceb5;
+    --type-bg: #20392f;
+  }
+  .dark .state {
+    --type-color: #e5bd7d;
+    --type-bg: #3b3021;
+  }
+  .error {
+    --type-color: var(--destructive);
+    --type-bg: color-mix(in srgb, var(--destructive) 12%, var(--card));
+  }
+  .warning {
+    --type-color: var(--warning);
+    --type-bg: color-mix(in srgb, var(--warning) 12%, var(--card));
+  }
+  .success {
+    --type-color: var(--foreground);
+    --type-bg: var(--muted);
+  }
   /* React Flow renders these elements itself. */
   .react-flow__controls {
     box-shadow: 0 1px 6px #41344712 !important;
-    border: 1px solid #e9e3ed;
+    border: 1px solid var(--border);
     border-radius: 5px;
     overflow: hidden;
   }
   .react-flow__controls-button {
-    border-bottom-color: #f0eaf5 !important;
+    border-bottom-color: var(--border) !important;
   }
   .react-flow__minimap {
-    background: #ffffffcc !important;
-    border: 1px solid #ebe5f0;
+    background: var(--card) !important;
+    border: 1px solid var(--border);
     border-radius: 5px;
   }
   .react-flow__attribution {

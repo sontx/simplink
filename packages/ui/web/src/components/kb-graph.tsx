@@ -1,5 +1,5 @@
-import { enumDescription } from "../lib/enum-description.js";
-import { cn, label } from "../lib/utils.js";
+import { usePreferences } from "./preferences.js";
+import { cn } from "../lib/utils.js";
 import { useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
@@ -43,16 +43,18 @@ type GraphNode = Node<
 >;
 
 function KnowledgeNode({ data, selected }: NodeProps<GraphNode>) {
+  const { label } = usePreferences();
+
   return (
     <div
       className={cn(
         data.type,
-        "relative h-22.5 w-57.5 rounded-[7px] border bg-card px-3.75 py-3.25 shadow-[0_2px_7px_#44354c08] transition-[box-shadow,border-color] duration-200 [&_.react-flow__handle]:size-1.75 [&_.react-flow__handle]:border-2 [&_.react-flow__handle]:border-white [&_.react-flow__handle]:bg-[#b8a9c7]",
+        "relative h-22.5 w-57.5 rounded-[7px] border bg-card px-3.75 py-3.25 shadow-[0_2px_7px_#44354c08] transition-[box-shadow,border-color] duration-200 [&_.react-flow__handle]:size-1.75 [&_.react-flow__handle]:border-2 [&_.react-flow__handle]:border-card [&_.react-flow__handle]:bg-muted-foreground",
         data.ghost
-          ? "border-dashed border-[#cf6971] bg-[#fff8f8]"
+          ? "border-dashed border-border bg-destructive/10"
           : selected
             ? "border-l-3 border-primary"
-            : "border-l-3 border-[#e2dce9] border-l-(--type-color)",
+            : "border-l-3 border-border border-l-(--type-color)",
         selected &&
           "shadow-[0_0_0_3px_color-mix(in_oklab,var(--ring)_12%,transparent)]",
       )}
@@ -61,16 +63,16 @@ function KnowledgeNode({ data, selected }: NodeProps<GraphNode>) {
       <Badge type={data.type}>
         {label(data.ghost ? "missing" : data.type)}
       </Badge>
-      <strong className="mt-2 block max-w-48.75 truncate text-xs font-[550] text-[#665771]">
+      <strong className="mt-2 block max-w-48.75 truncate text-xs font-[550] text-foreground">
         {data.title}
       </strong>
       {data.count > 0 && (
         <span
           className={cn(
-            "absolute -top-1.75 -right-1.5 size-5.5 rounded-full border-2 border-white text-center text-[10px] leading-4.5",
+            "absolute -top-1.75 -right-1.5 size-5.5 rounded-full border-2 border-card text-center text-[10px] leading-4.5",
             data.error
-              ? "bg-[#c96b73] text-white"
-              : "bg-[#fff5de] text-[#b3832e]",
+              ? "bg-destructive text-white"
+              : "bg-warning/10 text-warning",
           )}
         >
           {data.count}
@@ -97,6 +99,7 @@ export function KBGraph({
   onFocus: (id: string) => void;
   editable?: boolean;
 }) {
+  const { t, label, enumDescription, theme } = usePreferences();
   const { data: schema } = useQuery(schemaQuery);
   const client = useQueryClient();
   const [connection, setConnection] = useState<Connection>();
@@ -188,22 +191,27 @@ export function KBGraph({
           label: (
             <tspan>
               <title>{enumDescription(e.kind)}</title>
-              {e.kind}
+              {label(e.kind)}
             </tspan>
           ),
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: bad ? "#c44242" : "#a6a2b1",
+            color: bad ? "var(--destructive)" : "var(--muted-foreground)",
           },
           style: {
-            stroke: bad ? "#c44242" : "#b2aebd",
+            stroke: bad ? "var(--destructive)" : "var(--muted-foreground)",
             strokeDasharray: !known.has(e.to) ? "5 4" : undefined,
           },
-          labelStyle: { fontSize: 10, fill: bad ? "#c44242" : "#757081" },
+          labelBgStyle: { fill: "var(--card)" },
+          labelStyle: {
+            pointerEvents: "all" as const,
+            fontSize: 10,
+            fill: bad ? "var(--destructive)" : "var(--muted-foreground)",
+          },
         };
       }),
     };
-  }, [kb, focus, depth, filters]);
+  }, [kb, focus, depth, filters, label, enumDescription]);
   const positionedNodes = useMemo(
     () =>
       nodes.map((node) => ({
@@ -227,6 +235,32 @@ export function KBGraph({
       <ContextMenuTrigger asChild disabled={!editable}>
         <div className="relative min-w-0 flex-1 bg-background">
           <ReactFlow
+            colorMode={theme}
+            ariaLabelConfig={{
+              "node.a11yDescription.default": t(
+                "Select a node with Enter or Space; move it with the arrow keys. Press Escape to cancel.",
+              ),
+              "node.a11yDescription.keyboardDisabled": t(
+                "Select a node with Enter or Space. Press Escape to cancel.",
+              ),
+              "node.a11yDescription.ariaLiveMessage": ({ direction, x, y }) =>
+                t("Moved node {direction}. Position: {x}, {y}.", {
+                  direction: t(direction),
+                  x,
+                  y,
+                }),
+              "edge.a11yDescription.default": t(
+                "Select a relationship with Enter or Space. Press Escape to cancel.",
+              ),
+              "controls.ariaLabel": t("Graph controls"),
+              "controls.zoomIn.ariaLabel": t("Zoom in"),
+              "controls.zoomOut.ariaLabel": t("Zoom out"),
+              "controls.fitView.ariaLabel": t("Fit view"),
+              "controls.interactive.ariaLabel": t("Toggle interactivity"),
+              "minimap.ariaLabel": t("Mini map"),
+              "handle.ariaLabel": t("Connection handle"),
+            }}
+            aria-label={t("Knowledge graph canvas")}
             onInit={setFlow}
             nodes={positionedNodes}
             onNodesChange={(changes) =>
@@ -241,7 +275,7 @@ export function KBGraph({
             onConnect={editable ? setConnection : undefined}
             minZoom={0.15}
           >
-            <Background gap={22} size={1} color="#dedbe5" />
+            <Background gap={22} size={1} color="var(--border)" />
             <Controls />
             <MiniMap
               pannable
@@ -252,15 +286,15 @@ export function KBGraph({
             />
           </ReactFlow>
           {nodes.length === 0 && (
-            <div className="pointer-events-none absolute inset-x-[20%] top-[45%] text-center text-xs text-[#978aa2]">
-              No nodes match these filters. Try another depth or type.
+            <div className="pointer-events-none absolute inset-x-[20%] top-[45%] text-center text-xs text-muted-foreground">
+              {t("No nodes match these filters. Try another depth or type.")}
             </div>
           )}
           {connection && (
             <Dialog
               open
               onOpenChange={() => setConnection(undefined)}
-              title="Connect nodes"
+              title={t("Connect nodes")}
             >
               <p>
                 {source?.title} → {target?.title}
@@ -279,7 +313,7 @@ export function KBGraph({
                   </Button>
                 ))
               ) : (
-                <p>No valid relationship kinds for these node types.</p>
+                <p>{t("No valid relationship kinds for these node types.")}</p>
               )}
             </Dialog>
           )}
@@ -300,7 +334,7 @@ export function KBGraph({
               title={enumDescription(type)}
               onSelect={() => setCreate(type)}
             >
-              New {type} here…
+              {t("New {type} here…", { type: label(type).toLowerCase() })}
             </ContextMenuItem>
           ),
         )}

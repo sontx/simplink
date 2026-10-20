@@ -1,3 +1,4 @@
+import { usePreferences } from "../../components/preferences.js";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -80,6 +81,8 @@ function outline(content: string) {
 }
 
 function Docs() {
+  const { t, label } = usePreferences();
+
   const { _splat } = Route.useParams();
   const { layout } = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -112,7 +115,7 @@ function Docs() {
 
   const renderFolder = (folder: Folder, depth: number) => (
     <ul className={depth >= 2 ? "ml-2.5 border-l pl-2" : undefined}>
-      {folder.index && <li>{pageLink(folder.index, "Overview")}</li>}
+      {folder.index && <li>{pageLink(folder.index, t("Overview"))}</li>}
       {folder.pages.map((p) => (
         <li key={p}>{pageLink(p)}</li>
       ))}
@@ -149,7 +152,7 @@ function Docs() {
     <div className="flex h-full min-h-125 bg-card">
       <aside className="w-65 shrink-0 overflow-auto border-r text-[13px] max-[780px]:w-47.5">
         <div className="sticky top-0 flex items-center justify-between gap-2 border-b bg-card px-4 pt-4.5 pb-3.5">
-          <span className="text-sm font-semibold">Documentation</span>
+          <span className="text-sm font-semibold">{t("Documentation")}</span>
           <Tabs
             value={layout}
             onValueChange={(value) =>
@@ -159,7 +162,7 @@ function Docs() {
               })
             }
           >
-            <TabsList aria-label="Docs layout">
+            <TabsList aria-label={t("Docs layout")}>
               {["site", "graph"].map((value) => (
                 <TabsTrigger key={value} value={value}>
                   {label(value)}
@@ -174,16 +177,18 @@ function Docs() {
         <div className="flex justify-center gap-12 px-12 pt-10 pb-16 max-[780px]:px-5 max-[780px]:pt-6 max-[780px]:pb-12">
           <main className="min-w-0 max-w-190 flex-1">
             {!!kb?.status.errors && (
-              <div className="mb-6 rounded-md border border-[#f0e0b6] bg-[#fff7e6] px-3.5 py-2.5 text-xs text-[#ae8746]">
-                {kb.status.errors} lint errors · Preview is available, but
-                simp-docs would refuse to export.
+              <div className="mb-6 rounded-md border border-border bg-warning/10 px-3.5 py-2.5 text-xs text-warning">
+                {t(
+                  "{count} lint errors · Preview is available, but simp-docs would refuse to export.",
+                  { count: kb.status.errors },
+                )}
               </div>
             )}
             {page.data && (
               <div className="mb-4 flex items-center justify-between gap-3">
                 <nav
                   className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
-                  aria-label="Breadcrumb"
+                  aria-label={t("Breadcrumb")}
                 >
                   {crumbs.map((name, i) => {
                     const index = [...crumbs.slice(0, i + 1), "index.md"].join(
@@ -218,7 +223,7 @@ function Docs() {
             )}
             <ErrorMessage error={error ?? page.error} />
             {page.isPending && path && (
-              <p className="text-[#938c9f]">Rendering page…</p>
+              <p className="text-muted-foreground">{t("Rendering page…")}</p>
             )}
             {page.data && (
               <Markdown
@@ -229,9 +234,9 @@ function Docs() {
               />
             )}
             {paths?.length === 0 && (
-              <div className="px-6.25 py-17.5 text-center text-[#a494b0]">
-                <h2>No documentation pages</h2>
-                <p>Add docs.path to nodes or select the graph layout.</p>
+              <div className="px-6.25 py-17.5 text-center text-muted-foreground">
+                <h2>{t("No documentation pages")}</h2>
+                <p>{t("Add docs.path to nodes or select the graph layout.")}</p>
               </div>
             )}
             {(prev || next) && (
@@ -244,7 +249,7 @@ function Docs() {
                     className={pagerLink}
                   >
                     <small className={pagerLabel}>
-                      <ChevronLeft size={12} /> Previous
+                      <ChevronLeft size={12} /> {t("Previous")}
                     </small>
                     {pageName(prev)}
                   </Link>
@@ -259,7 +264,8 @@ function Docs() {
                     className={cn(pagerLink, "text-right")}
                   >
                     <small className={cn(pagerLabel, "justify-end")}>
-                      Next <ChevronRight size={12} />
+                      {t("Next")}
+                      <ChevronRight size={12} />
                     </small>
                     {pageName(next)}
                   </Link>
@@ -269,7 +275,7 @@ function Docs() {
           </main>
           {toc.length > 1 && (
             <aside className="sticky top-0 flex w-50 shrink-0 flex-col gap-0.5 self-start text-xs max-[1100px]:hidden">
-              <div className={cn(navHeading, "mb-2")}>On this page</div>
+              <div className={cn(navHeading, "mb-2")}>{t("On this page")}</div>
               {toc.map((h) => (
                 <a
                   key={h.id}
