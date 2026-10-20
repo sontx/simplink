@@ -97,9 +97,6 @@ function Shell() {
         >
           <Network size={23} className="text-primary" />
           simplink
-          <span className="ml-1.5 border-l pl-3.5 text-[10px] font-normal tracking-[0.2px] text-muted-foreground max-[1100px]:hidden">
-            {t("workspace")}
-          </span>
         </Link>
         <Button
           variant="outline"
