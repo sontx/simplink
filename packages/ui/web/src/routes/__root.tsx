@@ -27,7 +27,6 @@ import {
   TriangleAlert,
   Search,
   RefreshCw,
-  Network,
   Moon,
   Sun,
 } from "lucide-react";
@@ -95,8 +94,10 @@ function Shell() {
           to="/graph"
           className="flex items-center gap-2.25 text-[23px] font-bold tracking-[-1px] text-foreground max-[780px]:text-xl"
         >
-          <Network size={23} className="text-primary" />
-          simplink
+          <img src="/logo.svg" alt="" width={26} height={26} />
+          <span>
+            <span className="text-primary">simp</span>link
+          </span>
         </Link>
         <Button
           variant="outline"
