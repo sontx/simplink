@@ -1,0 +1,2 @@
+# Check out text files with LF on every platform, matching Prettier's endOfLine and the test fixtures.
+* text=auto eol=lf
