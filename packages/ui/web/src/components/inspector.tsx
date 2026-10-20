@@ -40,7 +40,13 @@ export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
-export function Inspector({ id }: { id: string }) {
+export function Inspector({
+  id,
+  className,
+}: {
+  id: string;
+  className?: string;
+}) {
   const { t, label, enumDescription } = usePreferences();
 
   const { data: detail, error } = useQuery(nodeQuery(id));
@@ -62,14 +68,14 @@ export function Inspector({ id }: { id: string }) {
   });
   if (!detail)
     return (
-      <aside className={inspectorClass}>
+      <aside className={cn(inspectorClass, className)}>
         <ErrorMessage error={error} />
         <p className="text-xs leading-[1.7]">{t("Loading node…")}</p>
       </aside>
     );
   const { node, out } = detail;
   return (
-    <aside className={inspectorClass}>
+    <aside className={cn(inspectorClass, className)}>
       <Badge type={node.type}>{label(node.type)}</Badge>
       <h2 className="mt-3.25 mb-2.5 text-[18px] tracking-[-0.4px]">
         {node.title}

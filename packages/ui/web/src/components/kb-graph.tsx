@@ -1,6 +1,6 @@
 import { usePreferences } from "./preferences.js";
 import { cn } from "../lib/utils.js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FocusEvent } from "react";
 import {
   ReactFlow,
   Background,
@@ -9,12 +9,14 @@ import {
   Handle,
   Position,
   MarkerType,
+  Panel,
   type Connection,
   type NodeProps,
   type Node,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import dagre from "@dagrejs/dagre";
+import { Maximize2, Minimize2, Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, schemaQuery, type Snapshot } from "../api.js";
 import {
@@ -29,6 +31,14 @@ import {
   ContextMenuContent,
   ContextMenuItem,
 } from "./ui/context-menu.js";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "./ui/command.js";
 import { Badge, Button, Dialog, ErrorMessage } from "./ui/primitives.js";
 import { NodeDialog } from "./node-dialog.js";
 type GraphNode = Node<
@@ -83,6 +93,83 @@ function KnowledgeNode({ data, selected }: NodeProps<GraphNode>) {
   );
 }
 const nodeTypes = { knowledge: KnowledgeNode };
+
+const groupOrder = [
+  "goal",
+  "procedure",
+  "capability",
+  "state",
+  "constraint",
+  "missing",
+];
+
+/** Collapsible search over the nodes currently shown on the canvas. */
+function NodeSearch({
+  nodes,
+  onJump,
+}: {
+  nodes: GraphNode[];
+  onJump: (id: string) => void;
+}) {
+  const { t, label } = usePreferences();
+  const [open, setOpen] = useState(false);
+  const close = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+  };
+  return (
+    <div
+      className={cn(
+        "transition-[width] duration-200 ease-out",
+        open ? "w-64" : "w-7",
+      )}
+      onBlur={close}
+    >
+      {open ? (
+        <Command
+          className="h-auto border border-border shadow-md"
+          onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+        >
+          <CommandInput autoFocus placeholder={t("Search nodes…")} />
+          <CommandList>
+            <CommandEmpty>{t("No matching nodes in view.")}</CommandEmpty>
+            {groupOrder.map((type) => {
+              const group = nodes.filter((n) => n.data.type === type);
+              return (
+                group.length > 0 && (
+                  <CommandGroup key={type} heading={label(type)}>
+                    {group.map((n) => (
+                      <CommandItem
+                        key={n.id}
+                        value={`${n.data.title} ${n.id}`}
+                        title={`${n.data.title}\n${n.id}`}
+                        onSelect={() => {
+                          onJump(n.id);
+                          setOpen(false);
+                        }}
+                      >
+                        <span className="truncate">{n.data.title}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )
+              );
+            })}
+          </CommandList>
+        </Command>
+      ) : (
+        <Button
+          variant="outline"
+          size="icon-sm"
+          aria-label={t("Search nodes in view")}
+          title={t("Search nodes in view")}
+          onClick={() => setOpen(true)}
+        >
+          <Search />
+        </Button>
+      )}
+    </div>
+  );
+}
 const emptyFilters: GraphFilters = {};
 export function KBGraph({
   kb,
@@ -90,6 +177,9 @@ export function KBGraph({
   depth = 1,
   filters = emptyFilters,
   onFocus,
+  onPaneClick,
+  expanded,
+  onExpandedChange,
   editable = true,
 }: {
   kb: Snapshot;
@@ -97,6 +187,9 @@ export function KBGraph({
   depth?: number | "all";
   filters?: GraphFilters;
   onFocus: (id: string) => void;
+  onPaneClick?: () => void;
+  expanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
   editable?: boolean;
 }) {
   const { t, label, enumDescription, theme } = usePreferences();
@@ -271,12 +364,30 @@ export function KBGraph({
             fitView
             fitViewOptions={{ padding: 0.25 }}
             onNodeClick={(_e, node) => onFocus(node.id)}
+            onPaneClick={onPaneClick}
             nodesConnectable={editable}
             onConnect={editable ? setConnection : undefined}
             minZoom={0.15}
           >
             <Background gap={22} size={1} color="var(--border)" />
             <Controls />
+            <Panel position="top-right" className="flex items-start gap-1.5">
+              <NodeSearch nodes={positionedNodes} onJump={onFocus} />
+              {onExpandedChange && (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-pressed={expanded}
+                  aria-label={t(
+                    expanded ? "Collapse diagram" : "Expand diagram",
+                  )}
+                  title={t(expanded ? "Collapse diagram" : "Expand diagram")}
+                  onClick={() => onExpandedChange(!expanded)}
+                >
+                  {expanded ? <Minimize2 /> : <Maximize2 />}
+                </Button>
+              )}
+            </Panel>
             <MiniMap
               pannable
               zoomable
