@@ -65,12 +65,24 @@ After building, launch the browser UI against a knowledge base:
 ```sh
 pnpm ui --kb test/fixtures/kb
 simp-ui --kb /path/to/kb --host 127.0.0.1 --port 4321
+simp-ui --kb https://github.com/org/knowledge.git
+simp-ui --kb git@github.com:org/knowledge.git
 ```
 
 Open `http://127.0.0.1:4321`. Start with the graph, inspect relationships,
 create nodes, or open a node's Source tab to edit its Markdown file. Saves and
 relationship edits write directly to the selected KB and reload its lint results.
 Use a copy of the fixtures when experimenting. Reload picks up external edits.
+
+Git URLs (`https://`, `http://`, `ssh://`, `git://`, `file://`, or
+`user@host:path`) are cloned into `~/.simplink/repos/<repository-hash>`.
+Other `--kb` values are local directories. Git must be installed; private
+repositories use your existing Git credentials or SSH configuration.
+The server prints the clone path at startup. Git-backed KBs are editable:
+saves stay in that local clone and survive restarts. Existing clones are reused
+without pulling, resetting, committing, or pushing. Reload reads local files.
+Run Git commands in the printed clone directory to review, commit, pull, or push
+changes yourself. The repository root must contain the KB's node type folders.
 
 The Nodes table and Issues view provide alternate entry points. Docs previews
 `kb.docs()` in memory using either site or graph layout, including when lint

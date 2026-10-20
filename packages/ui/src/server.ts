@@ -8,9 +8,12 @@ import {
   readdir,
 } from "node:fs/promises";
 import path from "node:path";
+import { createHash } from "node:crypto";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
   createKB,
+  gitSource,
   deriveId,
   FOLDER_TO_TYPE,
   parseDoc,
@@ -104,14 +107,25 @@ export function createUiHandler(root: string): Express {
   let kb: KB;
   let rootPath: string;
   let schema: Record<string, Record<string, string>>;
+  const remote = /^(?:https?|ssh|git|file):\/\/|^[^/\\\s]+@[^/\\:\s]+:/i.test(
+    root,
+  );
+  const localRoot = remote
+    ? path.join(
+        homedir(),
+        ".simplink",
+        "repos",
+        createHash("sha256").update(root).digest("hex"),
+      )
+    : root;
   const ready = Promise.all([
-    realpath(root),
-    createKB(root),
+    createKB(remote ? gitSource(root, { checkout: localRoot }) : root),
     edgeSchema(),
-  ]).then(([directory, loaded, edges]) => {
-    rootPath = directory;
+  ]).then(async ([loaded, edges]) => {
+    rootPath = await realpath(localRoot);
     kb = loaded;
     schema = edges;
+    if (remote) console.log(`Git KB clone: ${rootPath}`);
   });
   // Initialization errors are reported by requests, including when startup completes before a client connects.
   void ready.catch(() => {});

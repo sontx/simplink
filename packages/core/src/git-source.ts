@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, realpath, rm } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -12,16 +12,21 @@ export interface GitSourceOptions {
   ref?: string;
   /** Relative KB folder within the repository; defaults to its root. */
   directory?: string;
+  /** Keep and reuse this local clone, preserving edits. Ref applies only when cloning. */
+  checkout?: string;
 }
 
-/** Load a fresh Git snapshot on each list call, then remove the temporary clone. */
+/** Load Git documents from a temporary snapshot or a persistent local checkout. */
 export function gitSource(
   repo: string,
   options: GitSourceOptions = {},
 ): DocSource {
   const { ref, directory = "" } = options;
   return {
-    name: repo,
+    name:
+      options.checkout === undefined
+        ? repo
+        : path.resolve(options.checkout, directory),
     async list() {
       if (
         path.posix.isAbsolute(directory) ||
@@ -33,12 +38,44 @@ export function gitSource(
         throw new Error(
           "Git source directory must be a relative folder within the repository",
         );
-      const temporary = await mkdtemp(path.join(tmpdir(), "simp-git-"));
-      const checkout = path.join(temporary, "repo");
+      const temporary =
+        options.checkout === undefined
+          ? await mkdtemp(path.join(tmpdir(), "simp-git-"))
+          : undefined;
+      const checkout =
+        options.checkout === undefined
+          ? path.join(temporary!, "repo")
+          : path.resolve(options.checkout);
+      const git = (...args: string[]) =>
+        exec("git", args, {
+          env: {
+            ...process.env,
+            GIT_TERMINAL_PROMPT: "0",
+            GCM_INTERACTIVE: "Never",
+          },
+          timeout: 120_000,
+        });
       try {
-        await exec(
-          "git",
-          [
+        const exists = await lstat(checkout).then(
+          () => true,
+          (error: NodeJS.ErrnoException) => {
+            if (error.code === "ENOENT") return false;
+            throw error;
+          },
+        );
+        if (exists) {
+          const { stdout } = await git(
+            "-C",
+            checkout,
+            "remote",
+            "get-url",
+            "origin",
+          );
+          if (stdout.trim() !== repo && stdout.trim() !== path.resolve(repo))
+            throw new Error("Git checkout belongs to a different repository");
+        } else {
+          await mkdir(path.dirname(checkout), { recursive: true });
+          await git(
             "clone",
             "--depth",
             "1",
@@ -46,16 +83,8 @@ export function gitSource(
             "--",
             repo,
             checkout,
-          ],
-          {
-            env: {
-              ...process.env,
-              GIT_TERMINAL_PROMPT: "0",
-              GCM_INTERACTIVE: "Never",
-            },
-            timeout: 120_000,
-          },
-        );
+          );
+        }
         const root = await realpath(checkout);
         const folder = await realpath(path.join(checkout, directory));
         const relative = path.relative(root, folder);
@@ -69,7 +98,8 @@ export function gitSource(
           );
         return await fsSource(folder).list();
       } finally {
-        await rm(temporary, { recursive: true, force: true });
+        if (temporary !== undefined)
+          await rm(temporary, { recursive: true, force: true });
       }
     },
   };

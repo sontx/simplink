@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -54,6 +54,27 @@ test("Git sources load branches, tags, subfolders, and fresh committed snapshots
   assert.equal(branch.node("procedure.a")?.title, "Second");
   await assert.rejects(core.gitSource(repo, { ref: "missing" }).list());
   await assert.rejects(core.gitSource(repo, { directory: "missing" }).list());
+
+  const checkout = path.join(repo, "checkout");
+  const persistent = core.gitSource(repo, { checkout, directory: "kb" });
+  await core.createKB(persistent);
+  const edited = path.join(checkout, "kb/procedures/a.md");
+  await writeFile(edited, proc("Local edit"));
+  const reopened = await core.createKB(
+    core.gitSource(repo, { checkout, directory: "kb" }),
+  );
+  assert.equal(reopened.node("procedure.a")?.title, "Local edit");
+  assert.equal(await readFile(file, "utf8"), proc("Second"));
+  assert.equal(
+    (
+      await exec("git", ["-C", checkout, "status", "--porcelain"])
+    ).stdout.trim(),
+    "M kb/procedures/a.md",
+  );
+  await assert.rejects(
+    core.gitSource(repo + "-other", { checkout }).list(),
+    /repository/i,
+  );
 });
 
 test("Git sources reject directories outside the repository", async () => {

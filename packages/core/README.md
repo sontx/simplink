@@ -38,7 +38,9 @@ const kb = await createKB(
 );
 ```
 
-`gitSource(repo, options?)` accepts a Git URL or local repository path. `ref` selects a branch or tag (default: the repository's default branch); `directory` selects a relative KB folder (default: repository root). Paths and node IDs are relative to that folder. Git must be installed; private repositories use existing Git credentials or SSH configuration, with interactive credential prompts disabled. Each load creates a fresh shallow clone and removes it afterward, including on failure. Clone operations time out after two minutes. Clone and read errors propagate to the caller. Recreate the KB to refresh its snapshot; caching, watching, submodules, Git LFS downloads, and writing back are not provided.
+`gitSource(repo, options?)` accepts a Git URL or local repository path. `ref` selects a branch or tag (default: the repository's default branch); `directory` selects a relative KB folder (default: repository root). Paths and node IDs are relative to that folder. Git must be installed; private repositories use existing Git credentials or SSH configuration, with interactive credential prompts disabled. By default, each load creates a fresh shallow clone and removes it afterward, including on failure. Clone operations time out after two minutes. Clone and read errors propagate to the caller. Recreate the KB to refresh its snapshot.
+
+Set `checkout` to a local path to keep a persistent clone: `gitSource(repo, { checkout: "/path/to/clone" })`. An absent checkout is cloned; an existing checkout must have a matching `origin`. Subsequent loads read local files, preserving uncommitted edits. `ref` applies only when the clone is created. The source name is the local KB folder, also exposed as `kb.status.root`. Persistent clones are never deleted, pulled, reset, committed, or pushed automatically; manage them with Git yourself. Watching and special handling for submodules or Git LFS are not provided.
 
 ### Other extensions
 
