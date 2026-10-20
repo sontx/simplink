@@ -5,15 +5,23 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r build",
+    "format": "prettier --write .",
     "test": "pnpm build && pnpm -r test",
     "lint:kb": "node packages/core/dist/cli.js kb",
     "dev": "tsx packages/core/src/cli.ts kb",
-    "start:http": "node packages/mcp/dist/http-bin.js --kb kb"
+    "start:http": "node packages/mcp/dist/http-bin.js --kb kb",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/node": "20.17.6",
+    "lint-staged": "^17.1.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.6",
     "tsx": "4.19.2",
     "typescript": "5.6.3"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
   },
   "engines": {
     "node": ">=20"
