@@ -35,7 +35,9 @@ function Issues() {
           <Eyebrow>{t("VALIDATION")}</Eyebrow>
           <h1 className="mt-1.25 mb-2 max-[780px]:text-[22px]">
             {t("Issues")}
-            <span className="text-muted-foreground">{issues.length}</span>
+            <span className="ml-2 inline-flex align-middle">
+              <Badge>{issues.length}</Badge>
+            </span>
           </h1>
         </div>
         <Select
