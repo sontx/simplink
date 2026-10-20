@@ -1,4 +1,4 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { KBTools } from "@sontx/simplink-core";
 
@@ -9,13 +9,13 @@ export const SERVER_INSTRUCTIONS =
   "Call resolve_* again with known states/choices to get a shorter plan. Use get_node / get_related only for details the plan omits.";
 
 /** MCP server exposing the KB tools. Transport-agnostic: connect stdio, in-memory, or HTTP. */
-export function createMcpServer(tools: KBTools, version = "0.2.0"): Server {
-  const server = new Server(
+export function createMcpServer(tools: KBTools, version = "0.2.0"): McpServer {
+  const server = new McpServer(
     { name: "simp-graph", version },
     { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  server.server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: tools.definitions.map((d) => ({
       name: d.name,
       description: d.description,
@@ -24,7 +24,7 @@ export function createMcpServer(tools: KBTools, version = "0.2.0"): Server {
     })),
   }));
 
-  server.setRequestHandler(CallToolRequestSchema, async (req) => {
+  server.server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const r = await tools.call(req.params.name, req.params.arguments ?? {});
     return { content: [{ type: "text" as const, text: r.content }], ...(r.isError ? { isError: true } : {}) };
   });
