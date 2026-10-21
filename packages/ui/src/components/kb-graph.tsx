@@ -1,6 +1,6 @@
 import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
-import { cn } from "../lib/utils.js";
+import { cn, groupByType } from "../lib/utils.js";
 import { useEffect, useMemo, useState, type FocusEvent } from "react";
 import {
   ReactFlow,
@@ -95,15 +95,6 @@ function KnowledgeNode({ data, selected }: NodeProps<GraphNode>) {
 }
 const nodeTypes = { knowledge: KnowledgeNode };
 
-const groupOrder = [
-  "goal",
-  "procedure",
-  "capability",
-  "state",
-  "constraint",
-  "missing",
-];
-
 /** Collapsible search over the nodes currently shown on the canvas. */
 function NodeSearch({
   nodes,
@@ -133,28 +124,23 @@ function NodeSearch({
           <CommandInput autoFocus placeholder={t("Search nodes…")} />
           <CommandList>
             <CommandEmpty>{t("No matching nodes in view.")}</CommandEmpty>
-            {groupOrder.map((type) => {
-              const group = nodes.filter((n) => n.data.type === type);
-              return (
-                group.length > 0 && (
-                  <CommandGroup key={type} heading={label(type)}>
-                    {group.map((n) => (
-                      <CommandItem
-                        key={n.id}
-                        value={`${n.data.title} ${n.id}`}
-                        title={`${n.data.title}\n${n.id}`}
-                        onSelect={() => {
-                          onJump(n.id);
-                          setOpen(false);
-                        }}
-                      >
-                        <span className="truncate">{n.data.title}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )
-              );
-            })}
+            {groupByType(nodes, (n) => n.data.type).map(([type, group]) => (
+              <CommandGroup key={type} heading={label(type)}>
+                {group.map((n) => (
+                  <CommandItem
+                    key={n.id}
+                    value={`${n.data.title} ${n.id}`}
+                    title={`${n.data.title}\n${n.id}`}
+                    onSelect={() => {
+                      onJump(n.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="truncate">{n.data.title}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
           </CommandList>
         </Command>
       ) : (

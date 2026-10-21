@@ -16,6 +16,40 @@ async function fixture() {
 }
 const rel = "procedures/zalo/send-message.md";
 
+test("playground runs validated MCP tools against the current workspace", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  for (const [name, args] of [
+    ["search_kb", { query: "zalo" }],
+    ["resolve_goal", { goal_id: "goal.send-zalo-message" }],
+    ["resolve_procedure", { procedure_id: "procedure.zalo.send-message" }],
+    ["get_node", { id: "goal.send-zalo-message" }],
+    ["get_related", { id: "goal.send-zalo-message" }],
+  ] as const) {
+    const result = await service.callTool(name, args);
+    assert.ok(result.content);
+    assert.ok(!result.isError, result.content);
+  }
+  assert.equal(
+    (await service.callTool("get_related", { id: "x", depth: 9 })).isError,
+    true,
+  );
+  const path = "goals/playground.md";
+  await service.writeFile(
+    path,
+    "---\ntype: goal\ntitle: Playground test\n---\nFresh content\n",
+    { create: true },
+  );
+  assert.match(
+    (await service.callTool("get_node", { id: "goal.playground" })).content,
+    /Fresh content/,
+  );
+  service.close();
+  await assert.rejects(
+    service.callTool("search_kb", { query: "zalo" }),
+    /Workspace closed/,
+  );
+});
+
 test("workspace reads, edits, validates, resolves and repairs fixture documents", async () => {
   const files = await fixture();
   const service = await WorkspaceService.open(

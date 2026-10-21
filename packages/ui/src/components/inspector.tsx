@@ -1,6 +1,6 @@
 import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
-import { cn } from "../lib/utils.js";
+import { cn, groupByType } from "../lib/utils.js";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -8,6 +8,7 @@ import {
   CommandInput,
   CommandList,
   CommandEmpty,
+  CommandGroup,
   CommandItem,
 } from "./ui/command.js";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover.js";
@@ -130,31 +131,36 @@ export function Inspector({
                     />
                     <CommandList>
                       <CommandEmpty>{t("No matching targets.")}</CommandEmpty>
-                      {kb?.nodes
-                        .filter(
+                      {groupByType(
+                        kb?.nodes.filter(
                           (n) =>
                             (type === "node" || n.type === type) &&
                             !targets.includes(n.id),
-                        )
-                        .map((n) => (
-                          <CommandItem
-                            key={n.id}
-                            value={`${n.title} ${n.id}`}
-                            onSelect={() =>
-                              patch.mutate({
-                                kind,
-                                targets: [...targets, n.id],
-                              })
-                            }
-                          >
-                            <div className="flex min-w-0 flex-col">
-                              <span className="truncate">{n.title}</span>
-                              <span className="truncate text-xs text-muted-foreground">
-                                {n.id}
-                              </span>
-                            </div>
-                          </CommandItem>
-                        ))}
+                        ) ?? [],
+                        (n) => n.type,
+                      ).map(([group, nodes]) => (
+                        <CommandGroup key={group} heading={label(group)}>
+                          {nodes.map((n) => (
+                            <CommandItem
+                              key={n.id}
+                              value={`${n.title} ${n.id}`}
+                              onSelect={() =>
+                                patch.mutate({
+                                  kind,
+                                  targets: [...targets, n.id],
+                                })
+                              }
+                            >
+                              <div className="flex min-w-0 flex-col">
+                                <span className="truncate">{n.title}</span>
+                                <span className="truncate text-xs text-muted-foreground">
+                                  {n.id}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      ))}
                     </CommandList>
                   </Command>
                 </PopoverContent>

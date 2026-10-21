@@ -12,7 +12,7 @@ import {
   Markdown,
   stripFrontmatter,
 } from "../../components/markdown.js";
-import { cn, label } from "../../lib/utils.js";
+import { cn, downloadBlob, label } from "../../lib/utils.js";
 
 export const Route = createFileRoute("/docs/$")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -96,17 +96,13 @@ function Docs() {
   const page = useQuery(pageQuery(service, layout, path));
   const { data: kb } = useQuery(kbQuery(service));
   const downloadZip = useMutation({
-    mutationFn: async () => {
-      const bytes = service.exportDocsZip(layout);
-      const url = URL.createObjectURL(
-        new Blob([new Uint8Array(bytes)], { type: "application/zip" }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${service.store.name}-docs-${layout}.zip`;
-      link.click();
-      URL.revokeObjectURL(url);
-    },
+    mutationFn: async () =>
+      downloadBlob(
+        new Blob([new Uint8Array(service.exportDocsZip(layout))], {
+          type: "application/zip",
+        }),
+        `${service.store.name}-docs-${layout}.zip`,
+      ),
   });
   const content = page.data ? stripFrontmatter(page.data.content) : "";
   const toc = outline(content);
@@ -154,16 +150,11 @@ function Docs() {
   );
 
   const crumbs = path.split("/").slice(0, -1);
-  const download = () => {
-    const url = URL.createObjectURL(
+  const download = () =>
+    downloadBlob(
       new Blob([page.data!.content], { type: "text/markdown" }),
+      path.replaceAll("/", "-"),
     );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = path.replaceAll("/", "-");
-    a.click();
-    URL.revokeObjectURL(url);
-  };
   return (
     <div className="flex h-full min-h-125 bg-card">
       <aside className="flex w-65 shrink-0 flex-col overflow-auto border-r text-[13px] max-[780px]:w-47.5">

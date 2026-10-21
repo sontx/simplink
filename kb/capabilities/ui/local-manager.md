@@ -17,6 +17,7 @@ sources:
   - packages/ui/src/routes/__root.tsx
   - packages/ui/src/routes/graph.tsx
   - packages/ui/src/routes/nodes/index.tsx
+  - packages/ui/src/routes/playground.tsx
   - packages/ui/src/routes/issues.tsx
   - packages/ui/src/routes/docs/$.tsx
   - packages/ui/src/lib/i18n.ts
@@ -27,6 +28,7 @@ sources:
 
 - **Graph**: the knowledge graph, with filters for **Node types**, **Relationships**, **Depth**, **Show deprecated**, and **Only with issues**, plus an **Orphans** list. **State** and **Constraint** are unchecked by default; enable them under **Node types** to show them. Select a node to open the **NODE INSPECTOR**.
 - **Nodes**: a table filterable by title or ID, type, status, and tag. Each node page has **Overview**, **Source**, and **Docs** tabs.
+- **Playground**: friendly forms for **Find answers**, **Plan a goal**, **Plan a procedure**, **View details**, and **Explore connections**, using the same validated tools as MCP against the current workspace. Plans accept known conditions, choices, account plan, and permissions. These actions read data and provide guidance; they do not execute procedures or change files.
 - **Issues**: lint findings, filterable by **Severity**.
 - **Docs**: an in-memory preview of the exported docs in **Site** or **Graph** layout, with current-page Markdown and full-layout ZIP downloads.
 

@@ -1,5 +1,6 @@
 import {
   createKB,
+  createKBTools,
   memorySource,
   compileValidator,
   deriveId,
@@ -124,6 +125,13 @@ export class WorkspaceService {
 
   search(q: string) {
     return this.kb.search(q);
+  }
+
+  callTool(name: string, args: unknown) {
+    return this.enqueue(async () => {
+      const tools = await createKBTools(this.kb);
+      return tools.call(name, args);
+    });
   }
 
   private pages(layout: string) {

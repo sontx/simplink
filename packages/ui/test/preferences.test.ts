@@ -3,7 +3,7 @@ import test from "node:test";
 import { resolvePreferences, translate, vietnamese } from "../src/lib/i18n.js";
 import { enumDescription } from "../src/lib/enum-description.js";
 import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core";
-import { label } from "../src/lib/utils.js";
+import { groupByType, label } from "../src/lib/utils.js";
 
 test("preferences honor saved choices and otherwise use browser defaults", () => {
   assert.deepEqual(resolvePreferences({}, "vi-VN", true), {
@@ -70,4 +70,24 @@ test("Vietnamese covers every built-in enum and preserves message placeholders",
       `Changed placeholders: ${message}`,
     );
   }
+});
+
+test("groupByType orders node types canonically and keeps unknown types last", () => {
+  const items = [
+    { id: "a", type: "missing" },
+    { id: "b", type: "state" },
+    { id: "c", type: "goal" },
+    { id: "d", type: "state" },
+  ];
+  assert.deepEqual(
+    groupByType(items, (item) => item.type).map(([type, list]) => [
+      type,
+      list.map((item) => item.id),
+    ]),
+    [
+      ["goal", ["c"]],
+      ["state", ["b", "d"]],
+      ["missing", ["a"]],
+    ],
+  );
 });

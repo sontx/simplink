@@ -18,11 +18,14 @@ import {
   CommandInput,
   CommandList,
   CommandEmpty,
+  CommandGroup,
   CommandItem,
 } from "../components/ui/command.js";
+import { downloadBlob, groupByType } from "../lib/utils.js";
 import { Kbd } from "../components/ui/kbd.js";
 import {
   BookOpen,
+  FlaskConical,
   GitBranch,
   List,
   TriangleAlert,
@@ -47,7 +50,6 @@ import {
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu.js";
 import {
-  Badge,
   Button,
   Dialog,
   ErrorMessage,
@@ -94,17 +96,13 @@ function Shell() {
     onSettled: () => client.invalidateQueries(),
   });
   const download = useMutation({
-    mutationFn: async () => {
-      const bytes = await service.exportZip();
-      const url = URL.createObjectURL(
-        new Blob([new Uint8Array(bytes)], { type: "application/zip" }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${service.store.name}.zip`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    },
+    mutationFn: async () =>
+      downloadBlob(
+        new Blob([new Uint8Array(await service.exportZip())], {
+          type: "application/zip",
+        }),
+        `${service.store.name}.zip`,
+      ),
   });
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -267,6 +265,7 @@ function Shell() {
             { to: "/nodes", label: "Nodes", Icon: List },
             { to: "/issues", label: "Issues", Icon: TriangleAlert },
             { to: "/docs/$", label: "Docs", Icon: BookOpen },
+            { to: "/playground", label: "Playground", Icon: FlaskConical },
           ].map(({ to, label, Icon }) => (
             <Link
               key={label}
@@ -317,24 +316,32 @@ function Shell() {
                   ? t("No nodes found.")
                   : t("Type to search your knowledge base.")}
             </CommandEmpty>
-            {results.data?.hits.map((hit) => (
-              <CommandItem
-                key={hit.id}
-                value={hit.id}
-                onSelect={() => {
-                  setOpen(false);
-                  void navigate({ to: "/graph", search: { focus: hit.id } });
-                }}
-              >
-                <Badge type={hit.type}>{label(hit.type)}</Badge>
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate">{hit.title}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {hit.id}
-                  </span>
-                </div>
-              </CommandItem>
-            ))}
+            {groupByType(results.data?.hits ?? [], (hit) => hit.type).map(
+              ([type, hits]) => (
+                <CommandGroup key={type} heading={label(type)}>
+                  {hits.map((hit) => (
+                    <CommandItem
+                      key={hit.id}
+                      value={hit.id}
+                      onSelect={() => {
+                        setOpen(false);
+                        void navigate({
+                          to: "/graph",
+                          search: { focus: hit.id },
+                        });
+                      }}
+                    >
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate">{hit.title}</span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {hit.id}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ),
+            )}
           </CommandList>
         </Command>
         <ErrorMessage error={results.error} />

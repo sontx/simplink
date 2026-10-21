@@ -25,6 +25,64 @@ export function resolvePreferences(
 
 // English source messages also serve as the English dictionary.
 export const vietnamese: Readonly<Record<string, string>> = {
+  "Search titles or IDs…": "Tìm theo tiêu đề hoặc ID…",
+  "This knowledge base has validation errors. Results may be incomplete.":
+    "Cơ sở tri thức có lỗi kiểm tra. Kết quả có thể chưa đầy đủ.",
+  Playground: "Thử nghiệm",
+  "KNOWLEDGE TOOLS": "CÔNG CỤ TRI THỨC",
+  "Run an action to see results here.":
+    "Chạy một thao tác để xem kết quả tại đây.",
+  "Find answers": "Tìm câu trả lời",
+  "Plan a goal": "Lập kế hoạch cho mục tiêu",
+  "Plan a procedure": "Lập kế hoạch cho quy trình",
+  "View details": "Xem chi tiết",
+  "Explore connections": "Khám phá liên kết",
+  "Explore your knowledge base and try a plan.":
+    "Khám phá cơ sở tri thức và thử lập kế hoạch.",
+  "Plans provide guidance. They do not perform actions or change your files.":
+    "Kế hoạch chỉ hướng dẫn, không thực hiện thao tác hoặc thay đổi tệp.",
+  Actions: "Thao tác",
+  "Describe what you want to do and find a starting point.":
+    "Mô tả điều bạn muốn làm để tìm điểm bắt đầu.",
+  "Turn a goal into a step-by-step plan.":
+    "Chuyển mục tiêu thành kế hoạch từng bước.",
+  "Get guidance for a specific procedure.":
+    "Nhận hướng dẫn cho một quy trình cụ thể.",
+  "Read an item and its relationships.":
+    "Đọc nội dung và các quan hệ của một mục.",
+  "See what an item needs and what depends on it.":
+    "Xem một mục cần gì và những gì phụ thuộc vào mục đó.",
+  "Choose an item…": "Chọn một mục…",
+  "What would you like to do?": "Bạn muốn làm gì?",
+  "Describe your goal…": "Mô tả mục tiêu của bạn…",
+  "Content type": "Loại nội dung",
+  Item: "Mục",
+  "Tailor your plan": "Điều chỉnh kế hoạch",
+  "Leave anything you do not know unanswered. The plan will tell you what to check.":
+    "Bỏ qua những điều chưa biết. Kế hoạch sẽ cho biết cần kiểm tra gì.",
+  "Not sure": "Chưa rõ",
+  "Decide later": "Quyết định sau",
+  "Account plan (optional)": "Gói tài khoản (không bắt buộc)",
+  "Permissions (optional, separated by commas)":
+    "Quyền (không bắt buộc, cách nhau bằng dấu phẩy)",
+  "Show connections": "Hiển thị liên kết",
+  "All connections": "Tất cả liên kết",
+  "What this needs": "Mục này cần gì",
+  "What depends on this": "Những gì phụ thuộc vào mục này",
+  "How far to explore": "Số cấp cần khám phá",
+  "Working…": "Đang xử lý…",
+  Results: "Kết quả",
+  "No matches. Try different words or filters.":
+    "Không có kết quả. Hãy thử từ khóa hoặc bộ lọc khác.",
+  "Your plan": "Kế hoạch của bạn",
+  "Suggested goals": "Mục tiêu gợi ý",
+  "Matching items": "Các mục phù hợp",
+  "Connected items": "Các mục liên kết",
+  "Some connections were omitted. Explore a connected item to see more.":
+    "Một số liên kết đã được lược bớt. Khám phá mục liên kết để xem thêm.",
+  "Open the item to read its full content.": "Mở mục để đọc toàn bộ nội dung.",
+  "Open the item for more details.": "Mở mục để xem thêm chi tiết.",
+  "Make a plan": "Lập kế hoạch",
   Language: "Ngôn ngữ",
   "Switch to dark theme": "Chuyển sang giao diện tối",
   "Switch to light theme": "Chuyển sang giao diện sáng",

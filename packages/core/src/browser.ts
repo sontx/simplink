@@ -32,4 +32,6 @@ export { memorySource, type DocSource, type SourceFile } from "./source.js";
 
 export * from "./kb.js";
 
+export * from "./tools/core.js";
+
 export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";

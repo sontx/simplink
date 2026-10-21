@@ -135,6 +135,63 @@ try {
     assert.match(strFromU8(docsZip[guide]), /# /);
   }
   console.log("Docs UI downloads Site and Graph Markdown ZIPs");
+  await page.getByRole("link", { name: "Playground", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "What would you like to do?" })
+    .fill("zalo");
+  const playground = page.locator("form");
+  await playground
+    .getByRole("button", { name: "Find answers", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Suggested goals" }).waitFor();
+  await page
+    .getByRole("button", { name: "Make a plan", exact: true })
+    .first()
+    .click();
+  await playground
+    .getByRole("button", { name: "Plan a goal", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Your plan", exact: true }).waitFor();
+  await page.getByText("Tailor your plan", { exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Channel connected", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Yes", exact: true }).click();
+  await page
+    .getByRole("combobox", {
+      name: "How is the recipient identified?",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("option").nth(1).click();
+  await playground
+    .getByRole("button", { name: "Plan a goal", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Your plan", exact: true }).waitFor();
+  for (const [action, item, expected] of [
+    ["Plan a procedure", "Send a message", "Your plan"],
+    ["View details", "Send a Zalo message", "Send a Zalo message"],
+    ["Explore connections", "Send a Zalo message", "Connected items"],
+  ]) {
+    await page
+      .getByRole("button", { name: action, exact: true })
+      .first()
+      .click();
+    await page.getByRole("combobox", { name: "Choose an item…" }).click();
+    await page.getByRole("combobox").last().fill(item);
+    await page.getByRole("option").filter({ hasText: item }).first().click();
+    await playground.getByRole("button", { name: action, exact: true }).click();
+    await page.getByRole("heading", { name: expected, exact: true }).waitFor();
+  }
+  console.log("Playground: all five actions render readable results");
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await page.evaluate(
+      () => window.document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+    true,
+  );
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByRole("link", { name: "Nodes", exact: true }).click();
   await page.getByRole("button", { name: "Add goal", exact: true }).click();
   await page.getByLabel("Path within goals").fill("browser-created");
