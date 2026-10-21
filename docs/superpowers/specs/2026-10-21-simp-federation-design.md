@@ -67,7 +67,7 @@ Zalo OA helps teams reach followers on Zalo.
 
 ## Start here
 
-- [[goal.broadcast.send-campaign|Send a broadcast campaign]]
+- [Send a broadcast campaign](simp:///goal.broadcast.send-campaign)
 - Zalo OA needs customers imported by this [CRM import guide](simp://crm/goal.import-customers).
 ```
 
@@ -105,12 +105,19 @@ root-level file is still dropped.
 
 ### Syntax
 
-| Location                                                | Local                 | Remote                                                    |
-| ------------------------------------------------------- | --------------------- | --------------------------------------------------------- |
-| Frontmatter ref fields, `choices[].options[].procedure` | `goal.x`              | `crm:goal.x`                                              |
-| Wikilinks                                               | `[[goal.x]]`          | `[[crm:goal.x]]`, `[[crm:goal.x\|label]]`, `[[crm:simp]]` |
-| Markdown links                                          | `[t](simp:///goal.x)` | `[t](simp://crm/goal.x)`, `[t](simp://crm)`               |
+| Location                                                | Local                                          | Remote                                                                    |
+| ------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------- |
+| Frontmatter ref fields, `choices[].options[].procedure` | `goal.x`                                       | `crm:goal.x`                                                              |
+| Markdown links (canonical in bodies)                    | `[t](simp:///goal.x)`, `[t](simp:///goal.x#h)` | `[t](simp://crm/goal.x)`, `[t](simp://crm/goal.x#h)`, `[t](simp://crm)`   |
+| Wikilinks (supported shorthand)                         | `[[goal.x]]`, `[[goal.x\|t]]`, `[[goal.x#h]]`  | `[[crm:goal.x]]`, `[[crm:goal.x\|t]]`, `[[crm:goal.x#h]]`, `[[crm:simp]]` |
 
+- `simp://` Markdown links are the canonical body link form. They are valid
+  CommonMark, so standard renderers show them as links.
+- Wikilinks remain fully supported so existing KBs keep working. They produce
+  the same edges and lint results as the equivalent `simp://` link. Docs,
+  templates, and the `product-kb-builder` skill teach `simp://` first.
+- A URI fragment (`#h`) targets a heading, matching the existing wikilink
+  `#heading` behavior.
 - The ref schema patterns accept an optional `<simp>:` prefix. The type check
   is kept because the type is part of the node ID.
 - A Markdown link becomes a KB link only when its href uses the `simp:` scheme.
@@ -356,7 +363,10 @@ Use `node:test` and `node:assert/strict`.
 
 Add `kb/` nodes for: writing `simp.md`, referencing other simps, running a simp
 node, connecting MCP to a simp, and mesh constraints (hop limit, no tenant
-pass-through, optional auth). Update `kb/INVENTORY.md`. `pnpm lint:kb` must pass.
+pass-through, optional auth). Document `simp://` as the canonical body link
+form and wikilinks as supported shorthand, in `kb/` and in
+`.agents/skills/product-kb-builder/` (schema reference and templates). Existing
+`kb/` wikilinks are not rewritten. Update `kb/INVENTORY.md`. `pnpm lint:kb` must pass.
 
 ## 13. Out of scope (v1)
 
