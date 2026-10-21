@@ -28,7 +28,7 @@ sources:
 - **Graph**: the knowledge graph, with filters for **Node types**, **Relationships**, **Depth**, **Show deprecated**, and **Only with issues**, plus an **Orphans** list. **State** and **Constraint** are unchecked by default; enable them under **Node types** to show them. Select a node to open the **NODE INSPECTOR**.
 - **Nodes**: a table filterable by title or ID, type, status, and tag. Each node page has **Overview**, **Source**, and **Docs** tabs.
 - **Issues**: lint findings, filterable by **Severity**.
-- **Docs**: an in-memory preview of the exported docs in **Site** or **Graph** layout.
+- **Docs**: an in-memory preview of the exported docs in **Site** or **Graph** layout, with current-page Markdown and full-layout ZIP downloads.
 
 The header shows the error and warning counts, **Search nodes…**, **Reload**, a language switch (English or Vietnamese), and a theme toggle. Goal and procedure pages show the resolved **Agent plan**.
 

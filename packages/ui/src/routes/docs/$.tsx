@@ -2,7 +2,7 @@ import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { docsQuery, kbQuery, pageQuery } from "../../api.js";
 import { ErrorMessage } from "../../components/ui/primitives.js";
 import { Button } from "../../components/ui/button.js";
@@ -95,6 +95,19 @@ function Docs() {
   const path = _splat || order[0] || "";
   const page = useQuery(pageQuery(service, layout, path));
   const { data: kb } = useQuery(kbQuery(service));
+  const downloadZip = useMutation({
+    mutationFn: async () => {
+      const bytes = service.exportDocsZip(layout);
+      const url = URL.createObjectURL(
+        new Blob([new Uint8Array(bytes)], { type: "application/zip" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${service.store.name}-docs-${layout}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+  });
   const content = page.data ? stripFrontmatter(page.data.content) : "";
   const toc = outline(content);
   const at = order.indexOf(path);
@@ -153,8 +166,8 @@ function Docs() {
   };
   return (
     <div className="flex h-full min-h-125 bg-card">
-      <aside className="w-65 shrink-0 overflow-auto border-r text-[13px] max-[780px]:w-47.5">
-        <div className="sticky top-0 flex items-center justify-between gap-2 border-b bg-card px-4 pt-4.5 pb-3.5">
+      <aside className="flex w-65 shrink-0 flex-col overflow-auto border-r text-[13px] max-[780px]:w-47.5">
+        <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b bg-card px-4 pt-4.5 pb-3.5">
           <span className="text-sm font-semibold">{t("Documentation")}</span>
           <Tabs
             value={layout}
@@ -174,7 +187,19 @@ function Docs() {
             </TabsList>
           </Tabs>
         </div>
-        <nav className="px-2.5 pt-3 pb-7">{renderFolder(tree, 0)}</nav>
+        <nav className="flex-1 px-2.5 pt-3 pb-7">{renderFolder(tree, 0)}</nav>
+        <footer className="sticky bottom-0 shrink-0 border-t bg-card px-4 py-3">
+          <Button
+            variant="link"
+            size="sm"
+            className="px-0"
+            onClick={() => downloadZip.mutate()}
+            disabled={!paths?.length || downloadZip.isPending}
+          >
+            <Download /> {t("Download docs (.zip)")}
+          </Button>
+          <ErrorMessage error={downloadZip.error} />
+        </footer>
       </aside>
       <div className="min-w-0 flex-1 overflow-auto">
         <div className="flex justify-center gap-12 px-12 pt-10 pb-16 max-[780px]:px-5 max-[780px]:pt-6 max-[780px]:pb-12">

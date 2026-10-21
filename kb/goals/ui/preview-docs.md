@@ -17,4 +17,4 @@ sources:
   - packages/ui/src/workspace/service.ts
 ---
 
-The user wants to review the generated docs in the browser. The preview writes no files; exporting the full set is a separate step.
+The user wants to review the generated docs in the browser. Download the current page as Markdown or the selected layout's full set as a ZIP from Docs.

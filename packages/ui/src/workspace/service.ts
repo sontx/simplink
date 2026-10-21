@@ -138,6 +138,14 @@ export class WorkspaceService {
     return this.pages(layout).map((page) => page.path);
   }
 
+  exportDocsZip(layout: string): Uint8Array {
+    return zipSync(
+      Object.fromEntries(
+        this.pages(layout).map((page) => [page.path, strToU8(page.content)]),
+      ),
+    );
+  }
+
   page(layout: string, path: string) {
     const page = this.pages(layout).find((page) => page.path === path);
     if (!page) throw new Error("Not found");

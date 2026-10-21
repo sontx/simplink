@@ -173,6 +173,7 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Overview: "Tổng quan",
   Documentation: "Tài liệu",
   "Docs layout": "Bố cục tài liệu",
+  "Download docs (.zip)": "Tải tài liệu (.zip)",
   "{count} lint errors · Preview is available, but simp-docs would refuse to export.":
     "{count} lỗi kiểm tra · Có thể xem trước, nhưng simp-docs sẽ từ chối xuất.",
   Breadcrumb: "Đường dẫn điều hướng",

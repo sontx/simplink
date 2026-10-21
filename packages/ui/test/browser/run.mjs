@@ -112,6 +112,29 @@ try {
   await page
     .getByRole("button", { name: "Download KB (.zip)", exact: true })
     .waitFor();
+  await page.getByRole("link", { name: "Docs", exact: true }).click();
+  for (const layout of ["site", "graph"]) {
+    await page
+      .getByRole("tab", {
+        name: layout === "site" ? "Site" : "Graph",
+        exact: true,
+      })
+      .click();
+    const docsDownloadEvent = page.waitForEvent("download");
+    await page
+      .getByRole("button", { name: "Download docs (.zip)", exact: true })
+      .click();
+    const docsDownload = await docsDownloadEvent;
+    assert.equal(docsDownload.suggestedFilename(), `kb-docs-${layout}.zip`);
+    const docsZip = unzipSync(await readFile(await docsDownload.path()));
+    if (layout === "site") assert.ok(docsZip["index.md"]);
+    const guide =
+      layout === "site"
+        ? "guides/messaging/send-a-message.md"
+        : "goals/send-zalo-message.md";
+    assert.match(strFromU8(docsZip[guide]), /# /);
+  }
+  console.log("Docs UI downloads Site and Graph Markdown ZIPs");
   await page.getByRole("link", { name: "Nodes", exact: true }).click();
   await page.getByRole("button", { name: "Add goal", exact: true }).click();
   await page.getByLabel("Path within goals").fill("browser-created");

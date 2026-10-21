@@ -73,6 +73,10 @@ Open the URL printed by Vite, select **Open KB folder**, and choose a local KB.
 Browse Graph, Nodes, Issues, Docs, and search; edit Markdown, create or delete
 nodes, and manage relationships. All KB operations run in the browser.
 
+In **Docs**, choose **Site** or **Graph**, then **Download docs (.zip)** to download
+all generated Markdown pages with their folder structure and relative links.
+The ZIP includes Markdown only; review lint errors before publishing.
+
 Chromium browsers save directly to the selected folder. The browser remembers
 its handle when IndexedDB is available; after refreshing, **Reopen <name>** asks
 for read/write permission again. Reload picks up external edits.
