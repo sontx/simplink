@@ -1,3 +1,4 @@
+import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -82,17 +83,18 @@ function outline(content: string) {
 }
 
 function Docs() {
+  const { service } = useWorkspace();
   const { t, label } = usePreferences();
 
   const { _splat } = Route.useParams();
   const { layout } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: paths, error } = useQuery(docsQuery(layout));
+  const { data: paths, error } = useQuery(docsQuery(service, layout));
   const tree = buildTree(paths ?? []);
   const order = flatten(tree);
   const path = _splat || order[0] || "";
-  const page = useQuery(pageQuery(layout, path));
-  const { data: kb } = useQuery(kbQuery);
+  const page = useQuery(pageQuery(service, layout, path));
+  const { data: kb } = useQuery(kbQuery(service));
   const content = page.data ? stripFrontmatter(page.data.content) : "";
   const toc = outline(content);
   const at = order.indexOf(path);

@@ -14,7 +14,7 @@
     "gen:docs": "node packages/core/dist/docs-cli.js",
     "dev": "tsx packages/core/src/cli.ts kb",
     "start:http": "node packages/mcp/dist/http-bin.js --kb kb",
-    "ui": "node packages/ui/dist/server/bin.js",
+    "ui": "pnpm --filter @sontx/simplink-ui preview",
     "dev:ui": "pnpm --filter @sontx/simplink-ui dev",
     "prepare": "husky"
   },

@@ -10,9 +10,10 @@ preconditions:
 uses:
   - capability.ui.local-manager
 constrained_by:
-  - constraint.ui.local-write-boundary
+  - constraint.ui.browser-folder-access
   - constraint.authoring.document-format
 sources:
+  - packages/ui/web/src/workspace/service.ts
   - packages/ui/web/src/components/node-dialog.tsx
   - packages/ui/web/src/routes/nodes/index.tsx
   - packages/ui/web/src/routes/nodes/$id.tsx
@@ -25,7 +26,7 @@ sources:
 2. Enter the **Path within {folder}** in lowercase kebab-case (for example `messaging/send-message`), a **Title**, and a **Summary**, then select **Create node**.
 3. To edit an existing node, open it from **Nodes**, the graph, or **Search nodes…**, and select the **Source** tab.
 4. Edit the Markdown in the editor. New goals start with an empty `procedures` list and new states with an empty `satisfied_by` list, so add at least one procedure to each.
-5. Select **Save file**, and confirm that the status changes to **Saved to disk**.
+5. Select **Save file**, and confirm that the save succeeds. In memory mode, download the KB zip to keep the saved edits.
 6. Check the header counts or **Issues** for findings that the save introduced.
 
 ## Failure handling

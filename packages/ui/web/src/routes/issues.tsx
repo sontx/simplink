@@ -1,3 +1,4 @@
+import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "../components/preferences.js";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -20,9 +21,10 @@ export const Route = createFileRoute("/issues")({
 });
 
 function Issues() {
+  const { service } = useWorkspace();
   const { t, enumDescription } = usePreferences();
 
-  const { data: kb } = useQuery(kbQuery);
+  const { data: kb } = useQuery(kbQuery(service));
   const { severity } = Route.useSearch();
   const navigate = Route.useNavigate();
   const issues =

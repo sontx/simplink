@@ -1,7 +1,7 @@
+import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../api.js";
 import {
   Button,
   Dialog,
@@ -26,6 +26,7 @@ export function NodeDialog({
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
+  const { service } = useWorkspace();
   const { t, label } = usePreferences();
   const [path, setPath] = useState("");
   const [title, setTitle] = useState("");
@@ -34,13 +35,11 @@ export function NodeDialog({
   const create = useMutation({
     mutationFn: async () => {
       const relative = `${folders[type]}/${path.replace(/\.md$/, "")}.md`;
-      await api("/files", {
-        method: "POST",
-        body: JSON.stringify({
-          path: relative,
-          content: `---\ntype: ${type}\ntitle: ${JSON.stringify(title)}\nsummary: ${JSON.stringify(summary)}\nstatus: active\n${type === "constraint" ? "severity: warning\n" : ""}${type === "goal" ? `when_to_use:\n  - ${JSON.stringify(summary)}\nprocedures: []\n` : ""}${type === "state" ? `check: ${JSON.stringify(summary)}\nsatisfied_by: []\n` : ""}---\n\n# ${title}\n${type === "procedure" ? `\n## Steps\n\n1. ${summary}\n` : ""}`,
-        }),
-      });
+      await service.writeFile(
+        relative,
+        `---\ntype: ${type}\ntitle: ${JSON.stringify(title)}\nsummary: ${JSON.stringify(summary)}\nstatus: active\n${type === "constraint" ? "severity: warning\n" : ""}${type === "goal" ? `when_to_use:\n  - ${JSON.stringify(summary)}\nprocedures: []\n` : ""}${type === "state" ? `check: ${JSON.stringify(summary)}\nsatisfied_by: []\n` : ""}---\n\n# ${title}\n${type === "procedure" ? `\n## Steps\n\n1. ${summary}\n` : ""}`,
+        { create: true },
+      );
       return `${type}.${path.replace(/\.md$/, "").replaceAll("/", ".")}`;
     },
     onSuccess: async (id) => {

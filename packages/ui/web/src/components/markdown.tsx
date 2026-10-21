@@ -1,4 +1,4 @@
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, useRouterState } from "@tanstack/react-router";
 import { cn } from "../lib/utils.js";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -46,17 +46,18 @@ export function Markdown({
   className?: string;
 }) {
   const router = useRouter();
+  const hash = useRouterState({ select: (state) => state.location.hash });
   useEffect(() => {
-    if (window.location.hash) {
+    if (hash) {
       try {
         document
-          .getElementById(decodeURIComponent(window.location.hash.slice(1)))
+          .getElementById(decodeURIComponent(hash.replace(/^#/, "")))
           ?.scrollIntoView();
       } catch {
         /* Ignore malformed external fragments. */
       }
     }
-  }, [content]);
+  }, [content, hash]);
   const text = content
     .split(/(```[\s\S]*?```|`[^`\n]*`)/g)
     .map((part, i) =>
@@ -87,14 +88,25 @@ export function Markdown({
           h6: ({ children }) => <h6 id={headingId(children)}>{children}</h6>,
           a: ({ href, children, node: _node, ...props }) => {
             const to = docHref(href ?? "", path, layout);
+            const internal = to.startsWith("/") && !to.startsWith("//");
+            const destination = internal
+              ? new URL(to, "https://docs.local")
+              : null;
+            const renderedHref = destination
+              ? router.buildLocation({
+                  to: destination.pathname,
+                  search: Object.fromEntries(destination.searchParams),
+                  hash: destination.hash.slice(1),
+                }).href
+              : to;
             return (
               <a
-                href={to}
+                href={renderedHref}
                 {...props}
                 onClick={(e) => {
                   // In-app paths go through the router; modified clicks keep browser behavior.
                   if (
-                    !to.startsWith("/") ||
+                    !internal ||
                     e.button !== 0 ||
                     e.metaKey ||
                     e.ctrlKey ||

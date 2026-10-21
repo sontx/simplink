@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "./posix-path.js";
 import { getChoices } from "./graph.js";
 import { siteGraph, siteIndexes } from "./docs-layout.js";
 import { docAvailability, renderDocPlan } from "./docs-plan.js";
@@ -163,10 +163,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
     const link = (id: string, title?: string, fragment?: string): string => {
       const target = graph.nodes.get(id);
       if (!target) return id.includes("`") ? code(id) : `\`${id}\``;
-      const relative = path.posix.relative(
-        path.posix.dirname(node.path),
-        target.path,
-      );
+      const relative = path.relative(path.dirname(node.path), target.path);
       const url = encodeURI(relative).replace(/[()]/g, (c) =>
         c === "(" ? "%28" : "%29",
       );

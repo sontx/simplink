@@ -10,13 +10,12 @@ preconditions:
 uses:
   - capability.ui.local-manager
 constrained_by:
-  - constraint.ui.local-write-boundary
-  - constraint.ui.git-clone-lifecycle
+  - constraint.ui.browser-folder-access
   - constraint.authoring.graph-rules
 sources:
   - packages/ui/web/src/routes/nodes/$id.tsx
   - packages/ui/web/src/components/inspector.tsx
-  - packages/ui/src/server.ts
+  - packages/ui/web/src/workspace/service.ts
 ---
 
 ## Steps
@@ -29,5 +28,5 @@ sources:
 
 ## Failure handling
 
-- Deletion cannot be undone in the UI. For a Git-backed KB, restore the file with Git in the clone folder, for example `git restore <path>`, and then select **Reload**.
+- Deletion cannot be undone in the UI. For a directory opened in Chromium, restore the file from your own backup or Git checkout and select **Reload**. In memory mode, deletion changes only the in-memory copy; download the zip to keep it.
 - To retire a node without breaking links, set `status: deprecated` instead; references to it then show warning `W104`.

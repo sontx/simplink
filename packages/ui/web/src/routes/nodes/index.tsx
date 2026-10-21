@@ -1,3 +1,4 @@
+import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -94,6 +95,7 @@ const features = tableFeatures({
 const helper = createColumnHelper<typeof features, NodeRow>();
 
 function Nodes() {
+  const { service } = useWorkspace();
   const { t, label, enumDescription } = usePreferences();
 
   const columns = useMemo(
@@ -153,7 +155,7 @@ function Nodes() {
       ]),
     [t, label, enumDescription],
   );
-  const { data: kb } = useQuery(kbQuery);
+  const { data: kb } = useQuery(kbQuery(service));
   const s = Route.useSearch();
   const navigate = Route.useNavigate();
   const [create, setCreate] = useState<string>();

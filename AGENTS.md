@@ -11,7 +11,7 @@ This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, and `
 - `packages/core/src/tools/core.ts`: Provider independent knowledge-base tool definitions and execution.
 - `packages/core/schemas/`: Bundled JSON schemas for knowledge-base document types.
 - `packages/mcp/src/`: MCP server, HTTP transport, executable entry points, and public `index.ts`. Import core through `@sontx/simplink-core`, never across package source directories.
-- `packages/ui/src/`: Local UI HTTP server and `simp-ui` executable. `packages/ui/web/` contains the Vite React graph manager and in-memory docs preview.
+- `packages/ui/web/`: Static Vite React SPA with browser folder access, workspace services, graph management, and in-memory docs preview; no UI backend.
 - `packages/*/test/`: Package-owned tests; core fixture builders live in `packages/core/test/helpers.ts`.
 - `test/fixtures/kb/`: Shared synthetic knowledge base; tests must not depend on root `kb/`.
 - `kb/`: Simplink's own product knowledge base; `kb/INVENTORY.md` tracks coverage. Run `pnpm lint:kb` after changing it or the features it documents.
@@ -28,10 +28,11 @@ Use Node.js 20 or newer and the package-manager version declared in `package.jso
 - `pnpm dev`: Run the lint CLI directly from source against `kb/`.
 - `pnpm lint:kb`: Run the compiled knowledge-base linter against `kb/`.
 - `pnpm start:http`: Start the compiled MCP HTTP server using `kb/`.
-- `pnpm ui --kb <path>`: Start the compiled local KB manager at `http://127.0.0.1:4321`.
-- `pnpm dev:ui --kb <path>`: Start the UI API and Vite development server.
+- `pnpm ui`: Preview the built static UI; choose a KB folder in the browser.
+- `pnpm dev:ui`: Start the Vite UI development server.
+- `pnpm --filter @sontx/simplink-ui test:browser`: Run the Chrome/Edge browser smoke test against dev and production under `/sub/`.
 
-Runtime commands default to root `kb/`, the checked-in Simplink KB. Tests use checked-in fixtures. To lint another directory, use `pnpm exec tsx packages/core/src/cli.ts <path>`.
+Core and MCP runtime commands default to root `kb/`, the checked-in Simplink KB. Tests use checked-in fixtures. To lint another directory, use `pnpm exec tsx packages/core/src/cli.ts <path>`.
 
 ## Coding Style & Naming Conventions
 

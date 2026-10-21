@@ -9,7 +9,6 @@ resolution, search, and MCP access. Requires Node.js 20+ and pnpm 12.14.0.
 | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
 | `@sontx/simplink-core` | Loading, schemas, linting, resolution, search, provider independent KB tools | `simp-lint`, `simp-resolve`, `simp-search`, `simp-docs` |
 | `@sontx/simplink-mcp`  | MCP server with stdio and HTTP transports; depends on core                   | `simp-mcp`, `simp-mcp-http`                             |
-| `@sontx/simplink-ui`   | Local graph manager, Markdown editing, and live docs preview                 | `simp-ui`                                               |
 
 All packages are ESM and include TypeScript declarations. Core includes the JSON
 schemas and has no dependency on the MCP SDK.
@@ -61,47 +60,39 @@ and restart the container to reload it.
 
 ## Local KB manager
 
-After building, launch the browser UI against a knowledge base:
+The UI is a static browser app. Build it and start the preview server:
 
 ```sh
-pnpm ui --kb test/fixtures/kb
-simp-ui --kb /path/to/kb --host 127.0.0.1 --port 4321
-simp-ui --kb https://github.com/org/knowledge.git
-simp-ui --kb git@github.com:org/knowledge.git
+pnpm build
+pnpm ui
+# Development:
+pnpm dev:ui
 ```
 
-Open `http://127.0.0.1:4321`. Start with the graph, inspect relationships,
-create nodes, or open a node's Source tab to edit its Markdown file. Saves and
-relationship edits write directly to the selected KB and reload its lint results.
-Use a copy of the fixtures when experimenting. Reload picks up external edits.
+Open the URL printed by Vite, select **Open KB folder**, and choose a local KB.
+Browse Graph, Nodes, Issues, Docs, and search; edit Markdown, create or delete
+nodes, and manage relationships. All KB operations run in the browser.
 
-Git URLs (`https://`, `http://`, `ssh://`, `git://`, `file://`, or
-`user@host:path`) are cloned into `~/.simplink/repos/<repository-hash>`.
-Other `--kb` values are local directories. Git must be installed; private
-repositories use your existing Git credentials or SSH configuration.
-The server prints the clone path at startup. Git-backed KBs are editable:
-saves stay in that local clone and survive restarts. Existing clones are reused
-without pulling, resetting, committing, or pushing. Reload reads local files.
-Run Git commands in the printed clone directory to review, commit, pull, or push
-changes yourself. The repository root must contain the KB's node type folders.
+Chromium browsers save directly to the selected folder. The browser remembers
+its handle when IndexedDB is available; after refreshing, **Reopen <name>** asks
+for read/write permission again. Reload picks up external edits.
 
-The Nodes table and Issues view provide alternate entry points. Docs previews
-`kb.docs()` in memory using either site or graph layout, including when lint
-errors would prevent `simp-docs` from exporting. Goal and procedure inspectors
-also show the resolved plan.
+Other browsers load a memory copy. The banner **Changes saved in memory — download
+to keep them** includes **Download KB (.zip)**, which preserves Markdown edits and
+unchanged assets. Reload keeps memory edits; closing, switching folders, or
+refreshing guards against losing them. Download before leaving. Dot-files and
+dot-folders such as `.git` are excluded in both modes. Git URLs are unsupported;
+clone repositories yourself and open the local folder.
 
-For development, `pnpm dev:ui --kb /path/to/kb` runs the API on port 4321 and
-Vite on port 5173 with an API proxy. The default KB is root `kb/`.
-The server defaults to loopback and has no authentication; use it locally.
+For static hosting, deploy `packages/ui/dist/`. Use HTTPS or localhost for browser
+folder access. To host under a subpath, build with `SIMPLINK_UI_BASE=/sub/` (set
+that environment variable using your shell). Routes use browser history and
+Markdown anchors use the hash. The build copies `index.html` to `404.html` for
+hosts such as GitHub Pages; other hosts need a rewrite to `index.html` for SPA
+routes. Vite preview already provides that fallback.
 
-The UI uses shadcn/ui with the Radix Nova preset. Add components with the CLI:
-
-```sh
-pnpm dlx shadcn@latest add <component> -c packages/ui
-```
-
-`packages/ui/components.json` configures component paths; theme tokens live in
-`packages/ui/web/src/index.css`.
+Run `pnpm --filter @sontx/simplink-ui test:browser` for the separate Chrome/Edge
+smoke test against Vite dev and a production build hosted under `/sub/`.
 
 ## Export Markdown docs
 

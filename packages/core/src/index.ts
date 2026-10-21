@@ -3,8 +3,7 @@ export * from "./types.js";
 export { loadDocs, deriveId, parseDoc, type RawDoc } from "./loader.js";
 
 export {
-  createValidator,
-  SCHEMA_DIR,
+  compileValidator,
   type FrontmatterValidator,
   type SchemaFinding,
   type ValidatorExtension,
@@ -59,3 +58,5 @@ export { runResolve } from "./cli/resolve.js";
 export { runDocs } from "./cli/docs.js";
 
 export type { CliContext } from "./cli/context.js";
+
+export { fsSource, createValidator, SCHEMA_DIR } from "./platform.js";

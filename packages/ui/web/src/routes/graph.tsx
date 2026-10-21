@@ -1,3 +1,4 @@
+import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "../components/preferences.js";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -43,9 +44,10 @@ const check =
   "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground max-[780px]:text-[10px]";
 
 function Graph() {
+  const { service } = useWorkspace();
   const { t, label, enumDescription } = usePreferences();
 
-  const { data: kb } = useQuery(kbQuery);
+  const { data: kb } = useQuery(kbQuery(service));
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const [expanded, setExpanded] = useState(false);

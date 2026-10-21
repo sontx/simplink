@@ -1,8 +1,9 @@
+import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, kbQuery, nodeQuery } from "../../api.js";
+import { kbQuery, nodeQuery } from "../../api.js";
 import {
   Badge,
   Button,
@@ -40,28 +41,26 @@ function NodePage() {
 }
 
 function NodeContent() {
+  const { service, setDraftDirty } = useWorkspace();
   const { t, label, enumDescription, theme } = usePreferences();
 
   const { id } = Route.useParams();
   const { tab } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: detail, error } = useQuery(nodeQuery(id));
-  const { data: kb } = useQuery(kbQuery);
+  const { data: detail, error } = useQuery(nodeQuery(service, id));
+  const { data: kb } = useQuery(kbQuery(service));
   const client = useQueryClient();
   const [raw, setRaw] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [plan, setPlan] = useState(false);
   const dirty = raw !== undefined && raw !== detail?.raw;
+  useEffect(() => {
+    setDraftDirty(dirty);
+    return () => setDraftDirty(false);
+  }, [dirty, setDraftDirty]);
   const save = useMutation({
-    mutationFn: () =>
-      api("/files", {
-        method: "PUT",
-        body: JSON.stringify({
-          path: detail!.node.path,
-          content: raw ?? detail!.raw,
-        }),
-      }),
+    mutationFn: () => service.writeFile(detail!.node.path, raw ?? detail!.raw),
     onSuccess: async () => {
       await client.invalidateQueries();
       setRaw(undefined);
@@ -69,10 +68,7 @@ function NodeContent() {
     },
   });
   const remove = useMutation({
-    mutationFn: () =>
-      api(`/files?path=${encodeURIComponent(detail!.node.path)}`, {
-        method: "DELETE",
-      }),
+    mutationFn: () => service.deleteFile(detail!.node.path),
     onSuccess: async () => {
       await client.invalidateQueries();
       void navigate({ to: "/nodes" });
@@ -251,7 +247,9 @@ function NodeContent() {
               {dirty
                 ? t("Unsaved changes")
                 : saved
-                  ? t("Saved to disk")
+                  ? service.store.kind === "memory"
+                    ? "Saved in memory"
+                    : t("Saved to disk")
                   : t("Markdown source")}
             </span>
           </div>

@@ -1,3 +1,4 @@
+import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { cn } from "../lib/utils.js";
 import { useState } from "react";
@@ -11,7 +12,7 @@ import {
 } from "./ui/command.js";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover.js";
 import { Link } from "@tanstack/react-router";
-import { api, kbQuery, nodeQuery, planQuery, schemaQuery } from "../api.js";
+import { kbQuery, nodeQuery, planQuery, schemaQuery } from "../api.js";
 import { Badge, Button, Dialog, ErrorMessage } from "./ui/primitives.js";
 import { Markdown } from "./markdown.js";
 
@@ -25,9 +26,10 @@ export const issueClass = (severity: string) =>
   );
 
 export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
+  const { service } = useWorkspace();
   const { t } = usePreferences();
 
-  const plan = useQuery(planQuery(id));
+  const plan = useQuery(planQuery(service, id));
   return (
     <Dialog open onOpenChange={onClose} title={t("Agent plan")} sheet>
       <ErrorMessage error={plan.error} />
@@ -47,20 +49,18 @@ export function Inspector({
   id: string;
   className?: string;
 }) {
+  const { service } = useWorkspace();
   const { t, label, enumDescription } = usePreferences();
 
-  const { data: detail, error } = useQuery(nodeQuery(id));
-  const { data: kb } = useQuery(kbQuery);
-  const { data: schema } = useQuery(schemaQuery);
+  const { data: detail, error } = useQuery(nodeQuery(service, id));
+  const { data: kb } = useQuery(kbQuery(service));
+  const { data: schema } = useQuery(schemaQuery(service));
   const [adding, setAdding] = useState<string>();
   const [plan, setPlan] = useState(false);
   const client = useQueryClient();
   const patch = useMutation({
     mutationFn: ({ kind, targets }: { kind: string; targets: string[] }) =>
-      api(`/nodes/${encodeURIComponent(id)}/edges`, {
-        method: "PATCH",
-        body: JSON.stringify({ kind, targets }),
-      }),
+      service.patchEdges(id, kind, targets),
     onSuccess: async () => {
       setAdding(undefined);
       await client.invalidateQueries();

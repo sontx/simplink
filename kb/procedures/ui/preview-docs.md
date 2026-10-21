@@ -15,7 +15,7 @@ constrained_by:
 sources:
   - packages/ui/web/src/routes/docs/$.tsx
   - packages/ui/web/src/components/node-docs.tsx
-  - packages/ui/src/server.ts
+  - packages/ui/web/src/workspace/service.ts
   - README.md
 ---
 

@@ -3,7 +3,8 @@ import { lstat, mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { fsSource, type DocSource } from "./source.js";
+import type { DocSource } from "./source.js";
+import { fsSource } from "./platform.js";
 
 const exec = promisify(execFile);
 

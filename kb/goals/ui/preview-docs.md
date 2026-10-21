@@ -14,7 +14,7 @@ procedures:
   - procedure.ui.preview-docs
 sources:
   - packages/ui/web/src/routes/docs/$.tsx
-  - packages/ui/src/server.ts
+  - packages/ui/web/src/workspace/service.ts
 ---
 
 The user wants to review the generated docs in the browser. The preview writes no files; exporting the full set is a separate step.

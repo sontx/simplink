@@ -13,14 +13,14 @@ uses:
   - capability.ui.local-manager
   - capability.authoring.graph-validation
 constrained_by:
-  - constraint.ui.local-write-boundary
+  - constraint.ui.browser-folder-access
   - constraint.authoring.document-format
   - constraint.authoring.graph-rules
 sources:
   - packages/ui/web/src/routes/issues.tsx
   - packages/ui/web/src/routes/__root.tsx
   - packages/ui/web/src/routes/nodes/$id.tsx
-  - packages/ui/src/server.ts
+  - packages/ui/web/src/workspace/service.ts
 ---
 
 ## Steps
@@ -28,7 +28,7 @@ sources:
 1. Open **Issues**, and set **Severity** to **Errors** to start with blocking findings.
 2. For an issue on a loaded node, select **Source ↗** to open that file in the editor, fix it, and select **Save file**.
 3. For an issue marked `Fix this file on disk, then Reload`, edit the file in another editor; files with path or YAML errors are not loaded as nodes.
-4. After editing files outside the UI, select **Reload** in the header.
+4. In directory mode, select **Reload** after editing files outside the UI. In memory mode, Reload keeps your in-memory edits and does not reread the original folder; download the zip before opening the folder again.
 5. Repeat until **Issues** shows **All clear**, or only warnings you accept.
 
 ## Failure handling

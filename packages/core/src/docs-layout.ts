@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "./posix-path.js";
 import type { DocPage } from "./docs.js";
 import type { KBGraph, KBNode } from "./types.js";
 
@@ -25,7 +25,7 @@ function settings(node: KBNode): DocSettings {
       !/^(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(
         docs.path,
       ) ||
-      path.posix.basename(docs.path) === "index.md")
+      path.basename(docs.path) === "index.md")
   )
     throw new Error(`Invalid docs path for ${node.id}: ${docs.path}`);
   return docs;
@@ -83,17 +83,15 @@ export function siteGraph(graph: KBGraph): KBGraph {
 export function siteIndexes(graph: KBGraph): DocPage[] {
   const folders = new Set([""]);
   for (const node of graph.nodes.values()) {
-    let folder = path.posix.dirname(node.path);
+    let folder = path.dirname(node.path);
     while (folder !== ".") {
       folders.add(folder);
-      folder = path.posix.dirname(folder);
+      folder = path.dirname(folder);
     }
   }
   return [...folders].map((folder) => {
     const route = folder ? `${folder}/index.md` : "index.md";
-    const heading = folder
-      ? title(path.posix.basename(folder))
-      : "Documentation";
+    const heading = folder ? title(path.basename(folder)) : "Documentation";
     const summary = folder
       ? `Browse ${heading.toLowerCase()}.`
       : "Browse guides, requirements, and troubleshooting.";
@@ -106,8 +104,7 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
     for (const child of folders) {
       if (
         !child ||
-        (path.posix.dirname(child) === "." ? "" : path.posix.dirname(child)) !==
-          folder
+        (path.dirname(child) === "." ? "" : path.dirname(child)) !== folder
       )
         continue;
       const order = Math.min(
@@ -117,16 +114,15 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
       );
       entries.push({
         path: `${child}/index.md`,
-        title: title(path.posix.basename(child)),
+        title: title(path.basename(child)),
         order,
         task: false,
       });
     }
     for (const node of graph.nodes.values()) {
       if (
-        (path.posix.dirname(node.path) === "."
-          ? ""
-          : path.posix.dirname(node.path)) === folder
+        (path.dirname(node.path) === "." ? "" : path.dirname(node.path)) ===
+        folder
       )
         entries.push({
           path: node.path,
@@ -150,7 +146,7 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
     const links = entries
       .map(
         (e) =>
-          `- [${escapeLabel(e.title)}](${path.posix.relative(folder || ".", e.path)})`,
+          `- [${escapeLabel(e.title)}](${path.relative(folder || ".", e.path)})`,
       )
       .join("\n");
     return {

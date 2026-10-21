@@ -6,9 +6,6 @@
     },
     {
       "path": "./packages/mcp"
-    },
-    {
-      "path": "./packages/ui"
     }
   ]
 }

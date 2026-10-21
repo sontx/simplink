@@ -6,9 +6,23 @@ import { devtools } from "@tanstack/devtools-vite";
 import { fileURLToPath } from "node:url";
 
 export default defineConfig({
+  base: process.env.SIMPLINK_UI_BASE ?? "/",
   root: fileURLToPath(new URL("./web", import.meta.url)),
   plugins: [
     devtools(),
+    {
+      name: "spa-fallback",
+      enforce: "post",
+      generateBundle(_options, bundle) {
+        const index = bundle["index.html"];
+        if (index?.type === "asset")
+          this.emitFile({
+            type: "asset",
+            fileName: "404.html",
+            source: index.source,
+          });
+      },
+    },
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
@@ -25,8 +39,5 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./web/src", import.meta.url)) },
   },
-  build: { outDir: "../dist/web", emptyOutDir: true },
-  server: {
-    proxy: { "/api": { target: "http://127.0.0.1:4321", changeOrigin: true } },
-  },
+  build: { outDir: "../dist", emptyOutDir: true },
 });

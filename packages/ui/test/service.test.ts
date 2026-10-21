@@ -1,0 +1,211 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { fsSource } from "@sontx/simplink-core";
+import { fileURLToPath } from "node:url";
+import { memoryStore, type KBStore } from "../web/src/workspace/store.js";
+import { WorkspaceService } from "../web/src/workspace/service.js";
+
+async function fixture() {
+  return Object.fromEntries(
+    (
+      await fsSource(
+        fileURLToPath(new URL("../../../test/fixtures/kb/", import.meta.url)),
+      ).list()
+    ).map((file) => [file.relPath, file.content]),
+  );
+}
+const rel = "procedures/zalo/send-message.md";
+
+test("workspace reads, edits, validates, resolves and repairs fixture documents", async () => {
+  const files = await fixture();
+  const service = await WorkspaceService.open(
+    memoryStore(files, {}, "fixture"),
+  );
+  assert.equal(service.snapshot().status.errors, 0);
+  assert.equal(service.schema().procedure.uses, "capability");
+  assert.equal(service.schema().goal.procedures, "procedure");
+  assert.equal(service.schema().procedure.related, "node");
+  assert.ok((await service.search("zalo")).hits.length);
+  assert.ok((await service.resolve("goal.send-zalo-message")).rendered);
+  assert.throws(
+    () => service.resolve("state.channel.zalo-connected"),
+    /Only goals and procedures/,
+  );
+  assert.ok(
+    service.docs("site").includes("guides/messaging/send-a-message.md"),
+  );
+  assert.match(
+    service.page("site", "guides/messaging/send-a-message.md").content,
+    /# /,
+  );
+  assert.throws(() => service.page("site", "missing.md"), /Not found/);
+  assert.throws(() => service.docs("bad"), /Invalid docs layout/);
+  const original = files[rel];
+  await service.writeFile(rel, "---\ntype: [\n---\nBroken\n");
+  assert.ok(service.snapshot().status.errors);
+  assert.equal(
+    service.nodeDetail("procedure.zalo.send-message").raw,
+    "---\ntype: [\n---\nBroken\n",
+  );
+  await service.writeFile(rel, original);
+  assert.equal(service.snapshot().status.errors, 0);
+  for (const invalid of [
+    "../escape.md",
+    "goals/x.txt",
+    "goals/../escape.md",
+    "goals\\escape.md",
+    "goals//x.md",
+    "goals/./x.md",
+    "goals/.hidden/x.md",
+    "/goals/x.md",
+  ])
+    await assert.rejects(service.writeFile(invalid, "x"), /Invalid path/);
+  await assert.rejects(
+    service.writeFile(rel, original, { create: true }),
+    /File already exists/,
+  );
+  for (const [kind, targets] of [
+    ["procedures", []],
+    ["uses", ["goal.send-zalo-message"]],
+    ["related", ["missing"]],
+    ["related", ["goal.send-zalo-message", "goal.send-zalo-message"]],
+  ] as [string, string[]][])
+    await assert.rejects(
+      service.patchEdges("procedure.zalo.send-message", kind, targets),
+      /Invalid relationship/,
+    );
+  await service.patchEdges("procedure.zalo.send-message", "related", [
+    "goal.send-zalo-message",
+  ]);
+  assert.ok(
+    service
+      .nodeDetail("procedure.zalo.send-message")
+      .out.some((edge) => edge.kind === "related"),
+  );
+  await service.writeFile(
+    "goals/new/nested.md",
+    "---\ntitle: New\nsummary: New goal\n---\n",
+    { create: true },
+  );
+  await service.deleteFile("goals/new/nested.md");
+  assert.throws(() => service.nodeDetail("goal.new.nested"), /Node not found/);
+});
+
+test("memory edits survive reload and closed workspaces cannot affect a new folder", async () => {
+  const a = await WorkspaceService.open(memoryStore(await fixture(), {}, "A"));
+  const bFiles = await fixture();
+  bFiles[rel] = bFiles[rel].replace("summary:", "summary: B ");
+  const b = await WorkspaceService.open(memoryStore(bFiles, {}, "B"));
+  await a.writeFile(
+    rel,
+    a.nodeDetail("procedure.zalo.send-message").raw + "\nChanged\n",
+  );
+  await a.reload();
+  assert.match(a.nodeDetail("procedure.zalo.send-message").raw, /Changed/);
+  assert.ok(a.store.dirty);
+  a.close();
+  await assert.rejects(a.writeFile(rel, "overwrite"), /Workspace closed/);
+  assert.equal(b.snapshot().status.root, "B");
+  assert.match(b.nodeDetail("procedure.zalo.send-message").node.summary, /^B /);
+  assert.doesNotMatch(
+    b.nodeDetail("procedure.zalo.send-message").raw,
+    /Changed/,
+  );
+});
+
+test("failed writes leave snapshot intact and do not poison subsequent queued writes", async () => {
+  const base = memoryStore(await fixture(), {}, "fixture");
+  let fail = true;
+  const store: KBStore = {
+    ...base,
+    async write(...args) {
+      if (fail) {
+        fail = false;
+        throw new Error("Permission denied");
+      }
+      await base.write(...args);
+    },
+  };
+  const service = await WorkspaceService.open(store);
+  const original = service.nodeDetail("procedure.zalo.send-message").raw;
+  const first = service.writeFile(rel, "wrong");
+  const second = service.writeFile(rel, original + "\nSaved\n");
+  await assert.rejects(first, /Permission denied/);
+  await second;
+  assert.match(service.nodeDetail("procedure.zalo.send-message").raw, /Saved/);
+});
+
+test("reload and later writes wait for a slow write, and close rejects queued mutations", async () => {
+  const base = memoryStore(await fixture(), {}, "fixture");
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const store: KBStore = {
+    ...base,
+    async write(...args) {
+      await gate;
+      await base.write(...args);
+    },
+  };
+  const service = await WorkspaceService.open(store);
+  const original = service.nodeDetail("procedure.zalo.send-message").raw;
+  const first = service.writeFile(rel, original + "\nFirst\n");
+  const reload = service.reload();
+  release();
+  await Promise.all([first, reload]);
+  assert.match(service.nodeDetail("procedure.zalo.send-message").raw, /First/);
+  const second = service.writeFile(rel, original + "\nSecond\n");
+  const third = service.writeFile(rel, original + "\nThird\n");
+  await Promise.all([second, third]);
+  assert.match(service.nodeDetail("procedure.zalo.send-message").raw, /Third/);
+  const pending = service.writeFile(rel, "closed");
+  service.close();
+  await assert.rejects(pending, /Workspace closed/);
+});
+
+test("failed rebuild retains the previous KB, marks it stale and recovers on reload", async () => {
+  const store = memoryStore(await fixture(), {}, "fixture");
+  const service = await WorkspaceService.open(store);
+  await service.writeFile(rel, "saved to store");
+  const previous = service.snapshot();
+  const list = store.list;
+  store.list = async () => {
+    throw new Error("Read failed");
+  };
+  await assert.rejects(service.reload(), /Read failed/);
+  assert.deepEqual(service.snapshot(), { ...previous, stale: true });
+  store.list = list;
+  await service.reload();
+  assert.equal(service.snapshot().stale, false);
+  assert.equal(
+    service.nodeDetail("procedure.zalo.send-message").raw,
+    "saved to store",
+  );
+});
+
+test("docs export errors are preserved while graph export remains available", async () => {
+  const files = await fixture();
+  for (const name of ["first", "second"])
+    files[`constraints/${name}.md`] =
+      `---\ntype: constraint\ntitle: ${name}\nsummary: ${name}\nseverity: warning\ndocs:\n  path: reference/shared.md\n---\n`;
+  const service = await WorkspaceService.open(
+    memoryStore(files, {}, "fixture"),
+  );
+  assert.throws(
+    () => service.docs("site"),
+    /Duplicate docs path: reference\/shared.md/,
+  );
+  assert.ok(service.docs("graph").length);
+});
+
+test("edge edits re-read the file so external changes are kept", async () => {
+  const store = memoryStore(await fixture(), {}, "fixture");
+  const service = await WorkspaceService.open(store);
+  const raw = service.nodeDetail("procedure.zalo.send-message").raw;
+  await store.write(rel, raw + "\nExternal\n");
+  await service.patchEdges("procedure.zalo.send-message", "related", [
+    "goal.send-zalo-message",
+  ]);
+  assert.match(await store.read(rel), /External/);
+});

@@ -8,10 +8,12 @@ import capability from "@sontx/simplink-core/schemas/capability.schema.json" wit
 import state from "@sontx/simplink-core/schemas/state.schema.json" with { type: "json" };
 import constraint from "@sontx/simplink-core/schemas/constraint.schema.json" with { type: "json" };
 
-const schemas = { goal, procedure, capability, state, constraint };
+const schemasByType = { goal, procedure, capability, state, constraint };
+export const schemas = [defs, ...Object.values(schemasByType)] as const;
+
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 ajv.addSchema(defs);
-for (const schema of Object.values(schemas)) ajv.addSchema(schema);
+for (const schema of Object.values(schemasByType)) ajv.addSchema(schema);
 
 export interface FrontmatterDiagnostic {
   start: number;
@@ -65,7 +67,7 @@ export function validateFrontmatter(
   } catch (error) {
     return [...diagnostics, { ...range(), message: String(error) }];
   }
-  const validate = ajv.getSchema(schemas[type].$id)!;
+  const validate = ajv.getSchema(schemasByType[type].$id)!;
   validate(data);
   for (const error of validate.errors ?? []) {
     const path = error.instancePath
@@ -199,7 +201,7 @@ export function completeFrontmatter(
   );
   const context = completionContext(doc.contents);
   if (!context) return [];
-  let schema: CompletionSchema = schemas[type];
+  let schema: CompletionSchema = schemasByType[type];
   for (const key of context.path) {
     const current = expand(schema);
     const next =

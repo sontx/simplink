@@ -1,7 +1,8 @@
 import { loadDocs, type RawDoc } from "./loader.js";
 import type { DocSource } from "./source.js";
 import type { MaybePromise } from "./types.js";
-import { createValidator, type ValidatorExtension } from "./schema.js";
+import type { ValidatorExtension } from "./schema.js";
+import { defaultValidator } from "./platform.js";
 import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
 import {
@@ -89,7 +90,7 @@ export async function lintKB(
         `Cannot disable error code ${code}; only warnings may be disabled`,
       );
   }
-  const validate = opts.validator ?? createValidator();
+  const validate = opts.validator ?? defaultValidator();
   const issues: Issue[] = [];
   const nodes = new Map<string, KBNode>();
 

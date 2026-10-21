@@ -1,5 +1,6 @@
 import matter from "gray-matter";
-import { fsSource, type DocSource } from "./source.js";
+import type { DocSource } from "./source.js";
+import { fsSource } from "./platform.js";
 import { FOLDER_TO_TYPE, type NodeType } from "./types.js";
 
 /**

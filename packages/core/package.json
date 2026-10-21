@@ -10,7 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./schemas/*": "./schemas/*"
+    "./schemas/*": "./schemas/*",
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    }
   },
   "files": [
     "dist",
@@ -39,5 +43,8 @@
     "ajv": "8.17.1",
     "gray-matter": "4.0.3",
     "minisearch": "7.1.2"
+  },
+  "browser": {
+    "./dist/platform.js": "./dist/platform-browser.js"
   }
 }

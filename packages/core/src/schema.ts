@@ -1,17 +1,9 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import * as ajv2020 from "ajv/dist/2020.js";
 import type { ErrorObject, ValidateFunction } from "ajv/dist/2020.js";
 import { NODE_TYPES, type NodeType } from "./types.js";
 
 // ajv ships CJS; under NodeNext the class may sit on .default.
 const Ajv2020 = ajv2020.default.default ?? ajv2020.default;
-
-/** Absolute path to the bundled JSON schema directory, usable from source and built modules. */
-export const SCHEMA_DIR = fileURLToPath(
-  new URL("../schemas/", import.meta.url),
-);
 
 /**
  * A frontmatter validation finding without a document path.
@@ -40,22 +32,20 @@ export type FrontmatterValidator = (
 ) => SchemaFinding[];
 
 /**
- * Loads and compiles the bundled JSON schemas for all node types.
- * @param schemaDir - Schema directory; defaults to SCHEMA_DIR.
+ * Compiles supplied JSON schemas for all node types.
+ * @param schemas - JSON schemas including shared definitions.
  * @returns A reusable synchronous frontmatter validator.
- * @throws If schemas cannot be read or compiled, or a required node schema is missing.
+ * @throws If schemas cannot be compiled, or a required node schema is missing.
  */
-export function createValidator(schemaDir = SCHEMA_DIR): FrontmatterValidator {
+export function compileValidator(
+  schemas: readonly object[],
+): FrontmatterValidator {
   const ajv = new Ajv2020({ allErrors: true, verbose: true, strict: true });
-  for (const file of readdirSync(schemaDir).filter((f) =>
-    f.endsWith(".schema.json"),
-  )) {
-    ajv.addSchema(JSON.parse(readFileSync(path.join(schemaDir, file), "utf8")));
-  }
+  for (const schema of schemas) ajv.addSchema(schema);
   const byType = new Map<NodeType, ValidateFunction>();
   for (const t of NODE_TYPES) {
     const fn = ajv.getSchema(`https://kb.local/schemas/${t}.schema.json`);
-    if (!fn) throw new Error(`Missing schema for type "${t}" in ${schemaDir}`);
+    if (!fn) throw new Error(`Missing schema for type "${t}"`);
     byType.set(t, fn);
   }
 

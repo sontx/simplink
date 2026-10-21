@@ -1,3 +1,4 @@
+import { useWorkspace } from "../workspace/context.js";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -13,8 +14,9 @@ export function NodeDocs({
   docPath: string;
   nodePath: string;
 }) {
+  const { service } = useWorkspace();
   const { t } = usePreferences();
-  const page = useQuery(pageQuery("site", docPath));
+  const page = useQuery(pageQuery(service, "site", docPath));
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">

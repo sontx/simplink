@@ -15,6 +15,7 @@ when_to_use:
 procedures:
   - procedure.ui.inspect-relationships
 sources:
+  - packages/ui/web/src/workspace/service.ts
   - packages/ui/web/src/components/kb-graph.tsx
   - packages/ui/web/src/components/inspector.tsx
 ---

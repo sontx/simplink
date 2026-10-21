@@ -1,3 +1,4 @@
+import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { cn } from "../lib/utils.js";
 import { useEffect, useMemo, useState, type FocusEvent } from "react";
@@ -18,7 +19,7 @@ import {
 import dagre from "@dagrejs/dagre";
 import { Maximize2, Minimize2, Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, schemaQuery, type Snapshot } from "../api.js";
+import { schemaQuery, type Snapshot } from "../api.js";
 import {
   applyLayoutChanges,
   neighborhood,
@@ -192,8 +193,9 @@ export function KBGraph({
   onExpandedChange?: (expanded: boolean) => void;
   editable?: boolean;
 }) {
+  const { service } = useWorkspace();
   const { t, label, enumDescription, theme } = usePreferences();
-  const { data: schema } = useQuery(schemaQuery);
+  const { data: schema } = useQuery(schemaQuery(service));
   const client = useQueryClient();
   const [connection, setConnection] = useState<Connection>();
   const [layout, setLayout] = useState<Record<string, NodeLayout>>({});
@@ -201,25 +203,19 @@ export function KBGraph({
   const [create, setCreate] = useState<string>();
   const patch = useMutation({
     mutationFn: (kind: string) =>
-      api(`/nodes/${encodeURIComponent(connection!.source!)}/edges`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          kind,
-          targets: [
-            ...new Set([
-              ...kb.edges
-                .filter(
-                  (e) =>
-                    e.from === connection!.source &&
-                    e.kind === kind &&
-                    e.source === "frontmatter",
-                )
-                .map((e) => e.to),
-              connection!.target,
-            ]),
-          ],
-        }),
-      }),
+      service.patchEdges(connection!.source!, kind, [
+        ...new Set([
+          ...kb.edges
+            .filter(
+              (e) =>
+                e.from === connection!.source &&
+                e.kind === kind &&
+                e.source === "frontmatter",
+            )
+            .map((e) => e.to),
+          connection!.target!,
+        ]),
+      ]),
     onSuccess: async () => {
       setConnection(undefined);
       await client.invalidateQueries();

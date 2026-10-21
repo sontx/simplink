@@ -1,3 +1,4 @@
+import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "../components/preferences.js";
 import { useEffect, useState } from "react";
 import {
@@ -30,7 +31,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import { api, kbQuery, searchQuery } from "../api.js";
+import { kbQuery, searchQuery } from "../api.js";
 import {
   Select,
   SelectTrigger,
@@ -59,23 +60,43 @@ function WorkspaceError({ error }: { error: unknown }) {
     <Page>
       <h1>{t("Unable to load workspace")}</h1>
       <ErrorMessage error={error} />
-      <a href="/">{t("Try again")}</a>
+      <Link to="/">{t("Try again")}</Link>
     </Page>
   );
 }
 
 function Shell() {
+  const {
+    service,
+    close,
+    openAnother,
+    reload: reloadWorkspace,
+  } = useWorkspace();
   const { t, label, language, theme, setLanguage, setTheme } = usePreferences();
 
-  const { data: kb, error } = useQuery(kbQuery);
+  const { data: kb, error } = useQuery(kbQuery(service));
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const results = useQuery(searchQuery(q));
+  const results = useQuery(searchQuery(service, q));
   const navigate = useNavigate();
   const reload = useMutation({
-    mutationFn: () => api("/reload", { method: "POST", body: "{}" }),
-    onSuccess: () => client.invalidateQueries(),
+    mutationFn: () => reloadWorkspace(),
+    // A failed reload also changes the stale flag, so refetch either way.
+    onSettled: () => client.invalidateQueries(),
+  });
+  const download = useMutation({
+    mutationFn: async () => {
+      const bytes = await service.exportZip();
+      const url = URL.createObjectURL(
+        new Blob([new Uint8Array(bytes)], { type: "application/zip" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${service.store.name}.zip`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
   });
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -94,7 +115,12 @@ function Shell() {
           to="/graph"
           className="flex items-center gap-2.25 text-[23px] font-bold tracking-[-1px] text-foreground max-[780px]:text-xl"
         >
-          <img src="/logo.svg" alt="" width={26} height={26} />
+          <img
+            src={`${import.meta.env.BASE_URL}logo.svg`}
+            alt=""
+            width={26}
+            height={26}
+          />
           <span>
             <span className="text-primary">simp</span>link
           </span>
@@ -169,7 +195,40 @@ function Shell() {
           />
           <span className="max-[780px]:hidden">{t("Reload")}</span>
         </Button>
+        <span className="max-w-32 truncate text-xs" title={service.store.name}>
+          {service.store.name}
+        </span>
+        <Button variant="outline" onClick={openAnother}>
+          Open another folder
+        </Button>
+        <Button variant="outline" onClick={close}>
+          Close folder
+        </Button>
       </header>
+      {service.store.kind === "memory" && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 border-b bg-warning/10 px-6 py-2 text-sm"
+        >
+          <span>
+            Changes saved in memory — download to keep them. Dot-files and
+            dot-folders are excluded.
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => download.mutate()}
+            disabled={download.isPending}
+          >
+            Download KB (.zip)
+          </Button>
+        </div>
+      )}
+      {kb?.stale && (
+        <p role="alert">
+          The last rebuild failed. Reload to refresh this workspace.
+        </p>
+      )}
+      <ErrorMessage error={download.error} />
       <div className="flex min-h-0 flex-1">
         <nav className="flex w-20 shrink-0 flex-col gap-2.5 border-r bg-card px-2 py-6 max-[780px]:w-14.5 max-[780px]:px-1 max-[780px]:py-3.75">
           {[
