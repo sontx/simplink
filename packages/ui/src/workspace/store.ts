@@ -34,6 +34,7 @@ export interface DirectoryHandle {
   ): Promise<FileHandle>;
   removeEntry(name: string): Promise<void>;
   requestPermission(options: { mode: "readwrite" }): Promise<PermissionState>;
+  queryPermission(options: { mode: "readwrite" }): Promise<PermissionState>;
 }
 
 export interface FileHandle {

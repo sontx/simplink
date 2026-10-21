@@ -51,10 +51,35 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [last, setLast] = useState<DirectoryHandle | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<unknown>();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
   const { t } = usePreferences();
   useEffect(() => {
-    void lastDirectory().then(setLast);
+    let cancelled = false;
+    opening.current = true;
+    void (async () => {
+      try {
+        const handle = await lastDirectory();
+        if (cancelled) return;
+        setLast(handle);
+        if (
+          handle &&
+          window.isSecureContext &&
+          (await handle.queryPermission({ mode: "readwrite" })) === "granted" &&
+          !cancelled
+        )
+          await activate(directoryStore(handle), handle);
+      } catch (error) {
+        if (!cancelled) setError(error);
+      } finally {
+        if (!cancelled) {
+          opening.current = false;
+          setBusy(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {
@@ -194,6 +219,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           <ErrorMessage error={error} />
         </QueryClientProvider>
       </Context.Provider>
+    );
+  if (busy)
+    return (
+      <main className="flex min-h-dvh items-center justify-center">
+        <p role="status">{t("Opening folder…")}</p>
+      </main>
     );
   return (
     <main className="flex min-h-dvh items-center justify-center bg-muted/40 p-4">

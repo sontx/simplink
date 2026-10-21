@@ -273,11 +273,7 @@ try {
     ).text();
   });
   assert.match(directRaw, /Direct-created goal/);
-  await folderAction("Close folder");
   await page.reload();
-  await page
-    .getByRole("button", { name: "Reopen direct-browser", exact: true })
-    .click();
   await page
     .getByRole("heading", { name: "Direct-created goal", exact: true })
     .first()

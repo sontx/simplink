@@ -65,6 +65,9 @@ function folder(name: string): DirectoryHandle & {
     async requestPermission() {
       return "granted" as const;
     },
+    async queryPermission() {
+      return "granted" as const;
+    },
   };
   return directory;
 }

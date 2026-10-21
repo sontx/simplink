@@ -33,3 +33,5 @@ sources:
 The header shows the error and warning counts, **Search nodes…**, **Reload**, a language switch (English or Vietnamese), and a theme toggle. Goal and procedure pages show the resolved **Agent plan**.
 
 All KB operations run in the browser. There is no UI server API. The header shows the folder name and actions to open another folder or close it. Unsaved memory changes are guarded when closing, switching folders, reloading, or refreshing the page.
+
+Refreshing automatically restores the last selected directory when the browser still grants read/write permission. If permission must be renewed, use **Reopen** on the open screen. Memory workspaces do not persist across refreshes.
