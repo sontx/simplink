@@ -30,16 +30,22 @@ import {
   RefreshCw,
   Moon,
   Sun,
+  ChevronsUpDown,
+  FolderOpen,
+  FolderX,
+  Settings2,
 } from "lucide-react";
 import { kbQuery, searchQuery } from "../api.js";
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-} from "../components/ui/select.js";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+} from "../components/ui/dropdown-menu.js";
 import {
   Badge,
   Button,
@@ -80,6 +86,8 @@ function Shell() {
   const [q, setQ] = useState("");
   const results = useQuery(searchQuery(service, q));
   const navigate = useNavigate();
+  const issueCount = (kb?.status.errors ?? 0) + (kb?.status.warnings ?? 0);
+  const issueSummary = `${kb?.status.errors ?? 0} ${t("errors")} · ${kb?.status.warnings ?? 0} ${t("warnings")}`;
   const reload = useMutation({
     mutationFn: () => reloadWorkspace(),
     // A failed reload also changes the stale flag, so refetch either way.
@@ -111,23 +119,58 @@ function Shell() {
   return (
     <div className="flex h-dvh flex-col">
       <header className="flex h-17 shrink-0 items-center gap-6.25 border-b bg-card px-6.25 max-[1100px]:gap-3.75 max-[780px]:h-14.5 max-[780px]:gap-2.5 max-[780px]:px-3.25">
-        <Link
-          to="/graph"
-          className="flex items-center gap-2.25 text-[23px] font-bold tracking-[-1px] text-foreground max-[780px]:text-xl"
-        >
-          <img
-            src={`${import.meta.env.BASE_URL}logo.svg`}
-            alt=""
-            width={26}
-            height={26}
-          />
-          <span>
-            <span className="text-primary">simp</span>link
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            to="/graph"
+            className="flex items-center gap-2.25 text-[23px] font-bold tracking-[-1px] text-foreground max-[780px]:text-xl"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}logo.svg`}
+              alt=""
+              width={26}
+              height={26}
+            />
+            <span>
+              <span className="text-primary">simp</span>link
+            </span>
+          </Link>
+          <span aria-hidden className="text-lg text-border">
+            |
           </span>
-        </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={t("Folder actions")}
+                title={service.store.name}
+                className="min-w-0 text-muted-foreground"
+              >
+                <span className="max-w-40 truncate max-[780px]:max-w-24">
+                  {service.store.name}
+                </span>
+                <ChevronsUpDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-60">
+              <DropdownMenuLabel className="truncate">
+                {service.store.name}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={openAnother}>
+                <FolderOpen />
+                {t("Open another folder")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={close}>
+                <FolderX />
+                {t("Close folder")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <Button
           variant="outline"
-          className="ml-5 w-72 justify-start bg-background text-muted-foreground max-[1100px]:ml-0 max-[1100px]:w-56 max-[900px]:w-auto"
+          className="w-72 justify-start bg-background text-muted-foreground max-[1100px]:w-56 max-[900px]:w-auto"
           aria-label={t("Search nodes…")}
           onClick={() => setOpen(true)}
         >
@@ -135,75 +178,63 @@ function Shell() {
           <span className="max-[900px]:hidden">{t("Search nodes…")}</span>
           <Kbd className="ml-auto max-[900px]:hidden">⌘K</Kbd>
         </Button>
-        <div className="ml-auto flex gap-2.25 max-[1100px]:gap-0.75 max-[900px]:hidden">
-          <Badge type={kb?.status.errors ? "error" : "success"}>
-            ● {kb?.status.errors ?? 0} {t("errors")}
-          </Badge>
-          <Badge type="warning">
-            △ {kb?.status.warnings ?? 0} {t("warnings")}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 max-[900px]:ml-auto">
-          <Select
-            value={language}
-            onValueChange={(value) => setLanguage(value === "vi" ? "vi" : "en")}
-          >
-            <SelectTrigger
-              aria-label={t("Language")}
-              className="max-[480px]:max-w-24"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="en">
-                  <span lang="en">English</span>
-                </SelectItem>
-                <SelectItem value="vi">
-                  <span lang="vi">Tiếng Việt</span>
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <div className="ml-auto flex items-center gap-1">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            aria-label={t(
-              theme === "dark"
-                ? "Switch to light theme"
-                : "Switch to dark theme",
-            )}
-            title={t(
-              theme === "dark"
-                ? "Switch to light theme"
-                : "Switch to dark theme",
-            )}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label={t("Reload")}
+            title={t("Reload")}
+            disabled={reload.isPending}
+            onClick={() => reload.mutate()}
           >
-            {theme === "dark" ? <Sun /> : <Moon />}
+            <RefreshCw className={reload.isPending ? "animate-spin" : ""} />
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("Preferences")}
+                title={t("Preferences")}
+              >
+                <Settings2 />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>{t("Theme")}</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={theme}
+                onValueChange={(value) =>
+                  setTheme(value === "dark" ? "dark" : "light")
+                }
+              >
+                <DropdownMenuRadioItem value="light">
+                  <Sun />
+                  {t("Light")}
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark">
+                  <Moon />
+                  {t("Dark")}
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>{t("Language")}</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={language}
+                onValueChange={(value) =>
+                  setLanguage(value === "vi" ? "vi" : "en")
+                }
+              >
+                <DropdownMenuRadioItem value="en">
+                  <span lang="en">English</span>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="vi">
+                  <span lang="vi">Tiếng Việt</span>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <Button
-          variant="outline"
-          aria-label={t("Reload")}
-          disabled={reload.isPending}
-          onClick={() => reload.mutate()}
-        >
-          <RefreshCw
-            size={14}
-            className={reload.isPending ? "animate-spin" : ""}
-          />
-          <span className="max-[780px]:hidden">{t("Reload")}</span>
-        </Button>
-        <span className="max-w-32 truncate text-xs" title={service.store.name}>
-          {service.store.name}
-        </span>
-        <Button variant="outline" onClick={openAnother}>
-          Open another folder
-        </Button>
-        <Button variant="outline" onClick={close}>
-          Close folder
-        </Button>
       </header>
       {service.store.kind === "memory" && (
         <div
@@ -243,7 +274,18 @@ function Shell() {
               params={to === "/docs/$" ? { _splat: "" } : undefined}
               className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
             >
-              <Icon size={19} className="max-[780px]:w-4.25" />
+              <span className="relative">
+                <Icon size={19} className="max-[780px]:w-4.25" />
+                {to === "/issues" && issueCount > 0 && (
+                  <span
+                    title={issueSummary}
+                    aria-label={issueSummary}
+                    className={`absolute -top-1.5 left-3 min-w-4 rounded-full px-1 text-center text-[9px] leading-4 font-semibold text-background ${kb?.status.errors ? "bg-destructive" : "bg-warning"}`}
+                  >
+                    {issueCount > 99 ? "99+" : issueCount}
+                  </span>
+                )}
+              </span>
               <span>{t(label)}</span>
             </Link>
           ))}

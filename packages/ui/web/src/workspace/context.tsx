@@ -15,7 +15,15 @@ import {
   type KBStore,
 } from "./store.js";
 import { lastDirectory, rememberDirectory } from "./persist.js";
-import { Button, ErrorMessage, Page } from "../components/ui/primitives.js";
+import { Button, ErrorMessage } from "../components/ui/primitives.js";
+import { usePreferences } from "../components/preferences.js";
+import {
+  FolderOpen,
+  HardDrive,
+  History,
+  Info,
+  ShieldAlert,
+} from "lucide-react";
 
 interface Workspace {
   id: number;
@@ -44,6 +52,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
+  const { t } = usePreferences();
   useEffect(() => {
     void lastDirectory().then(setLast);
   }, []);
@@ -187,35 +196,92 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       </Context.Provider>
     );
   return (
-    <Page className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4">
-      <h1 className="text-2xl font-semibold">Open a knowledge base</h1>
-      <p>
-        Choose a local KB folder. Dot-files and dot-folders such as .git are
-        excluded. Git URLs are not supported.
-      </p>
-      <p>
-        Chromium browsers save directly to your folder. Other browsers keep
-        changes in memory; download a zip to keep them.
-      </p>
-      {!window.isSecureContext && (
-        <p role="alert">Folder access requires HTTPS or localhost.</p>
-      )}
-      <Button
-        disabled={busy || !window.isSecureContext}
-        onClick={() => void open()}
-      >
-        Open KB folder
-      </Button>
-      {last && (
-        <Button
-          disabled={busy || !window.isSecureContext}
-          onClick={() => void reopen()}
-        >
-          Reopen {last.name}
-        </Button>
-      )}
-      {message && <p role="status">{message}</p>}
-      <ErrorMessage error={error} />
-    </Page>
+    <main className="flex min-h-dvh items-center justify-center bg-muted/40 p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex items-center justify-center gap-2.25 text-[26px] font-bold tracking-[-1px]">
+          <img
+            src={`${import.meta.env.BASE_URL}logo.svg`}
+            alt=""
+            width={30}
+            height={30}
+          />
+          <span>
+            <span className="text-primary">simp</span>link
+          </span>
+        </div>
+        <section className="rounded-xl border bg-card p-8 shadow-sm max-[480px]:p-5">
+          <h1 className="text-xl font-semibold tracking-tight">
+            {t("Open a knowledge base")}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {t("Choose a local folder of Markdown nodes to explore and edit.")}
+          </p>
+          {!window.isSecureContext && (
+            <p
+              role="alert"
+              className="mt-5 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              <ShieldAlert className="size-4 shrink-0" />
+              {t("Folder access requires HTTPS or localhost.")}
+            </p>
+          )}
+          <Button
+            size="lg"
+            className="mt-6 w-full"
+            disabled={busy || !window.isSecureContext}
+            onClick={() => void open()}
+          >
+            <FolderOpen />
+            {t("Open KB folder")}
+          </Button>
+          {last && (
+            <div className="mt-6">
+              <div className="mb-2 text-xs font-medium text-muted-foreground">
+                {t("Recent")}
+              </div>
+              <button
+                type="button"
+                aria-label={t("Reopen {name}", { name: last.name })}
+                disabled={busy || !window.isSecureContext}
+                onClick={() => void reopen()}
+                className="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+              >
+                <History className="size-4 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {last.name}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t("Reopen")}
+                </span>
+              </button>
+            </div>
+          )}
+          {message && (
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              {message}
+            </p>
+          )}
+          {error ? (
+            <div className="mt-4">
+              <ErrorMessage error={error} />
+            </div>
+          ) : null}
+        </section>
+        <ul className="mt-6 space-y-2 px-1 text-xs text-muted-foreground">
+          <li className="flex gap-2">
+            <HardDrive className="mt-px size-3.5 shrink-0" />
+            {t(
+              "Chromium browsers save directly to your folder. Other browsers keep changes in memory; download a zip to keep them.",
+            )}
+          </li>
+          <li className="flex gap-2">
+            <Info className="mt-px size-3.5 shrink-0" />
+            {t(
+              "Dot-files and dot-folders such as .git are excluded. Git URLs are not supported.",
+            )}
+          </li>
+        </ul>
+      </div>
+    </main>
   );
 }

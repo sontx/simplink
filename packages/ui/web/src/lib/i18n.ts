@@ -35,6 +35,26 @@ export const vietnamese: Readonly<Record<string, string>> = {
   errors: "lỗi",
   warnings: "cảnh báo",
   Reload: "Tải lại",
+  "Folder actions": "Thao tác thư mục",
+  "Open another folder": "Mở thư mục khác",
+  "Close folder": "Đóng thư mục",
+  Preferences: "Tùy chọn",
+  Theme: "Giao diện",
+  Light: "Sáng",
+  Dark: "Tối",
+  "Open a knowledge base": "Mở cơ sở tri thức",
+  "Choose a local folder of Markdown nodes to explore and edit.":
+    "Chọn một thư mục cục bộ chứa các nút Markdown để khám phá và chỉnh sửa.",
+  "Folder access requires HTTPS or localhost.":
+    "Truy cập thư mục yêu cầu HTTPS hoặc localhost.",
+  "Open KB folder": "Mở thư mục cơ sở tri thức",
+  Recent: "Gần đây",
+  Reopen: "Mở lại",
+  "Reopen {name}": "Mở lại {name}",
+  "Chromium browsers save directly to your folder. Other browsers keep changes in memory; download a zip to keep them.":
+    "Trình duyệt Chromium lưu trực tiếp vào thư mục. Trình duyệt khác giữ thay đổi trong bộ nhớ; hãy tải tệp zip để lưu lại.",
+  "Dot-files and dot-folders such as .git are excluded. Git URLs are not supported.":
+    "Các tệp và thư mục bắt đầu bằng dấu chấm như .git sẽ bị bỏ qua. Không hỗ trợ URL Git.",
   Graph: "Đồ thị",
   Nodes: "Nút",
   Issues: "Vấn đề",
