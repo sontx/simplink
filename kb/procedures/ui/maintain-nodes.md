@@ -13,11 +13,11 @@ constrained_by:
   - constraint.ui.browser-folder-access
   - constraint.authoring.document-format
 sources:
-  - packages/ui/web/src/workspace/service.ts
-  - packages/ui/web/src/components/node-dialog.tsx
-  - packages/ui/web/src/routes/nodes/index.tsx
-  - packages/ui/web/src/routes/nodes/$id.tsx
-  - packages/ui/web/src/components/kb-graph.tsx
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/components/node-dialog.tsx
+  - packages/ui/src/routes/nodes/index.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/components/kb-graph.tsx
 ---
 
 ## Steps

@@ -13,9 +13,9 @@ constrained_by:
   - constraint.ui.browser-folder-access
   - constraint.authoring.graph-rules
 sources:
-  - packages/ui/web/src/routes/nodes/$id.tsx
-  - packages/ui/web/src/components/inspector.tsx
-  - packages/ui/web/src/workspace/service.ts
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/components/inspector.tsx
+  - packages/ui/src/workspace/service.ts
 ---
 
 ## Steps

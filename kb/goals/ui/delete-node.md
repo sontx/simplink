@@ -13,8 +13,8 @@ when_to_use:
 procedures:
   - procedure.ui.delete-node
 sources:
-  - packages/ui/web/src/routes/nodes/$id.tsx
-  - packages/ui/web/src/workspace/service.ts
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/workspace/service.ts
 ---
 
 The user wants a node gone from the KB. Deletion is permanent, and nodes that still reference it become invalid until they are updated.

@@ -13,10 +13,10 @@ constrained_by:
   - constraint.ui.browser-folder-access
   - constraint.authoring.graph-rules
 sources:
-  - packages/ui/web/src/components/inspector.tsx
-  - packages/ui/web/src/components/kb-graph.tsx
-  - packages/ui/web/src/routes/graph.tsx
-  - packages/ui/web/src/workspace/service.ts
+  - packages/ui/src/components/inspector.tsx
+  - packages/ui/src/components/kb-graph.tsx
+  - packages/ui/src/routes/graph.tsx
+  - packages/ui/src/workspace/service.ts
 ---
 
 ## Steps

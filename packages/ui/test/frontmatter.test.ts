@@ -4,7 +4,7 @@ import {
   completeFrontmatter,
   getFrontmatter,
   validateFrontmatter,
-} from "../web/src/lib/frontmatter.js";
+} from "../src/lib/frontmatter.js";
 
 const valid =
   "---\ntype: procedure\ntitle: Send\nsummary: Send a message\n---\n# Body\n";

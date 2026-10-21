@@ -12,7 +12,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.web.json",
+    "build": "vite build && tsc -p tsconfig.json",
     "test": "tsx --test test/*.test.ts",
     "dev": "vite",
     "prepack": "pnpm build",

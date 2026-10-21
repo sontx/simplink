@@ -8,7 +8,7 @@ export default tseslint.config(
   js.configs.recommended,
   tseslint.configs.recommended,
   {
-    files: ["packages/ui/web/**"],
+    files: ["packages/ui/src/**"],
     languageOptions: { globals: globals.browser },
   },
   {

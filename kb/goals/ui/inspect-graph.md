@@ -15,9 +15,9 @@ when_to_use:
 procedures:
   - procedure.ui.inspect-relationships
 sources:
-  - packages/ui/web/src/workspace/service.ts
-  - packages/ui/web/src/components/kb-graph.tsx
-  - packages/ui/web/src/components/inspector.tsx
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/components/kb-graph.tsx
+  - packages/ui/src/components/inspector.tsx
 ---
 
 The user wants to see and change the structure of the KB: which nodes depend on which, and how that shapes the resolved plan.

@@ -11,7 +11,7 @@ This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, and `
 - `packages/core/src/tools/core.ts`: Provider independent knowledge-base tool definitions and execution.
 - `packages/core/schemas/`: Bundled JSON schemas for knowledge-base document types.
 - `packages/mcp/src/`: MCP server, HTTP transport, executable entry points, and public `index.ts`. Import core through `@sontx/simplink-core`, never across package source directories.
-- `packages/ui/web/`: Static Vite React SPA with browser folder access, workspace services, graph management, and in-memory docs preview; no UI backend.
+- `packages/ui/src/`: Static Vite React SPA with browser folder access, workspace services, graph management, and in-memory docs preview; no UI backend.
 - `packages/*/test/`: Package-owned tests; core fixture builders live in `packages/core/test/helpers.ts`.
 - `test/fixtures/kb/`: Shared synthetic knowledge base; tests must not depend on root `kb/`.
 - `kb/`: Simplink's own product knowledge base; `kb/INVENTORY.md` tracks coverage. Run `pnpm lint:kb` after changing it or the features it documents.

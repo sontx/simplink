@@ -6,7 +6,7 @@ import {
   docHref,
   Markdown,
   stripFrontmatter,
-} from "../web/src/components/markdown.js";
+} from "../src/components/markdown.js";
 
 test("documentation previews hide frontmatter and preserve Markdown separators", () => {
   assert.equal(

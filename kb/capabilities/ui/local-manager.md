@@ -13,13 +13,13 @@ requires:
 constrained_by:
   - constraint.ui.browser-folder-access
 sources:
-  - packages/ui/web/src/workspace/service.ts
-  - packages/ui/web/src/routes/__root.tsx
-  - packages/ui/web/src/routes/graph.tsx
-  - packages/ui/web/src/routes/nodes/index.tsx
-  - packages/ui/web/src/routes/issues.tsx
-  - packages/ui/web/src/routes/docs/$.tsx
-  - packages/ui/web/src/lib/i18n.ts
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/routes/__root.tsx
+  - packages/ui/src/routes/graph.tsx
+  - packages/ui/src/routes/nodes/index.tsx
+  - packages/ui/src/routes/issues.tsx
+  - packages/ui/src/routes/docs/$.tsx
+  - packages/ui/src/lib/i18n.ts
   - README.md
 ---
 

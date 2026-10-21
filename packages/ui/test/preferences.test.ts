@@ -1,13 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  resolvePreferences,
-  translate,
-  vietnamese,
-} from "../web/src/lib/i18n.js";
-import { enumDescription } from "../web/src/lib/enum-description.js";
+import { resolvePreferences, translate, vietnamese } from "../src/lib/i18n.js";
+import { enumDescription } from "../src/lib/enum-description.js";
 import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core";
-import { label } from "../web/src/lib/utils.js";
+import { label } from "../src/lib/utils.js";
 
 test("preferences honor saved choices and otherwise use browser defaults", () => {
   assert.deepEqual(resolvePreferences({}, "vi-VN", true), {

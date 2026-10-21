@@ -6,9 +6,9 @@ check: "Confirm the header shows the intended folder name, the expected node cou
 satisfied_by:
   - procedure.ui.launch-workspace
 sources:
-  - packages/ui/web/src/workspace/context.tsx
-  - packages/ui/web/src/workspace/service.ts
-  - packages/ui/web/src/routes/__root.tsx
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/routes/__root.tsx
 ---
 
 Opening a different folder creates a fresh workspace and clears the previous query cache.

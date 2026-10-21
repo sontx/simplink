@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { editEdges } from "../web/src/workspace/edges.js";
+import { editEdges } from "../src/workspace/edges.js";
 
 test("edge edits preserve comments, flow style, CRLF and body bytes", () => {
   for (const newline of ["\n", "\r\n"]) {

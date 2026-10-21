@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const configFile = path.join(root, "vite.config.ts");
-const entry = path.join(root, "web/__smoke.html");
+const entry = path.join(root, "__smoke.html");
 const output = await mkdtemp(path.join(tmpdir(), "simplink-browser-"));
 let browser;
 let dev;
@@ -74,7 +74,7 @@ try {
       outDir: output,
       emptyOutDir: true,
       rollupOptions: {
-        input: { main: path.join(root, "web/index.html"), smoke: entry },
+        input: { main: path.join(root, "index.html"), smoke: entry },
       },
     },
   });

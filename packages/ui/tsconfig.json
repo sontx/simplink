@@ -13,7 +13,7 @@
     "allowImportingTsExtensions": true,
     "types": ["vite/client"],
     "baseUrl": ".",
-    "paths": { "@/*": ["web/src/*"] }
+    "paths": { "@/*": ["src/*"] }
   },
-  "include": ["web/src"]
+  "include": ["src"]
 }

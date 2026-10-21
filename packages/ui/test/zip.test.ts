@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { unzipSync, strFromU8 } from "fflate";
-import { memoryStore } from "../web/src/workspace/store.js";
-import { WorkspaceService } from "../web/src/workspace/service.js";
+import { memoryStore } from "../src/workspace/store.js";
+import { WorkspaceService } from "../src/workspace/service.js";
 
 test("zip exports current edits and unchanged assets, excluding dot files and folders", async () => {
   const service = await WorkspaceService.open(

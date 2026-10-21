@@ -15,8 +15,8 @@ procedures:
   - procedure.ui.launch-workspace
 sources:
   - README.md
-  - packages/ui/web/src/workspace/context.tsx
-  - packages/ui/web/src/workspace/service.ts
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
 ---
 
 The user wants a visual workspace for a KB on their own machine, from a local folder. Clone Git repositories yourself before opening their folders.

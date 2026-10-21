@@ -13,9 +13,9 @@ when_to_use:
 procedures:
   - procedure.ui.repair-issues
 sources:
-  - packages/ui/web/src/workspace/service.ts
-  - packages/ui/web/src/routes/issues.tsx
-  - packages/ui/web/src/routes/nodes/$id.tsx
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/routes/issues.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
 ---
 
 The user wants to fix validation findings without leaving the browser, including files changed by other tools.

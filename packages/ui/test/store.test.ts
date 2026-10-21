@@ -4,8 +4,8 @@ import {
   directoryStore,
   type DirectoryHandle,
   type FileHandle,
-} from "../web/src/workspace/store.js";
-import { WorkspaceService } from "../web/src/workspace/service.js";
+} from "../src/workspace/store.js";
+import { WorkspaceService } from "../src/workspace/service.js";
 
 function folder(name: string): DirectoryHandle & {
   entries: Map<string, DirectoryHandle | FileHandle>;

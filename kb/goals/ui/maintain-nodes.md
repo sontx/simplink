@@ -13,9 +13,9 @@ when_to_use:
 procedures:
   - procedure.ui.maintain-nodes
 sources:
-  - packages/ui/web/src/workspace/service.ts
-  - packages/ui/web/src/components/node-dialog.tsx
-  - packages/ui/web/src/routes/nodes/$id.tsx
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/components/node-dialog.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
 ---
 
 The user wants to create or change KB content in the local UI instead of a text editor. Removing a node is a separate goal.

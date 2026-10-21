@@ -1,12 +1,12 @@
-import "../../web/src/polyfills.js";
+import "../../src/polyfills.js";
 import {
   createKB,
   memorySource,
   compileValidator,
 } from "@sontx/simplink-core/browser";
-import { schemas } from "../../web/src/lib/frontmatter.js";
-import { memoryStore } from "../../web/src/workspace/store.js";
-import { WorkspaceService } from "../../web/src/workspace/service.js";
+import { schemas } from "../../src/lib/frontmatter.js";
+import { memoryStore } from "../../src/workspace/store.js";
+import { WorkspaceService } from "../../src/workspace/service.js";
 
 const fixtures = import.meta.glob("../../../../test/fixtures/kb/**/*.md", {
   query: "?raw",

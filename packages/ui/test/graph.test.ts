@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { neighborhood } from "../web/src/graph.js";
+import { neighborhood } from "../src/graph.js";
 test("neighborhood follows both directions, limits depth and respects kinds", () => {
   const nodes = ["a", "b", "c", "d"].map((id) => ({
     id,

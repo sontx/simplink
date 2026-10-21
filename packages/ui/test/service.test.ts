@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fsSource } from "@sontx/simplink-core";
 import { fileURLToPath } from "node:url";
-import { memoryStore, type KBStore } from "../web/src/workspace/store.js";
-import { WorkspaceService } from "../web/src/workspace/service.js";
+import { memoryStore, type KBStore } from "../src/workspace/store.js";
+import { WorkspaceService } from "../src/workspace/service.js";
 
 async function fixture() {
   return Object.fromEntries(

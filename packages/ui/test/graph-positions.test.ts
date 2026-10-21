@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyLayoutChanges } from "../web/src/graph.js";
+import { applyLayoutChanges } from "../src/graph.js";
 
 test("drag updates keep positions across layout and data refreshes", () => {
   const previous = { a: { position: { x: 10, y: 20 } } };

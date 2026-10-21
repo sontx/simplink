@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core";
-import { enumDescription } from "../web/src/lib/enum-description.js";
+import { enumDescription } from "../src/lib/enum-description.js";
 
 test("every KB enum has a short explanation", () => {
   for (const value of [

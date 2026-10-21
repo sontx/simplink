@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   base: process.env.SIMPLINK_UI_BASE ?? "/",
-  root: fileURLToPath(new URL("./web", import.meta.url)),
+  root: fileURLToPath(new URL(".", import.meta.url)),
   plugins: [
     devtools(),
     {
@@ -26,18 +26,16 @@ export default defineConfig({
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
-      routesDirectory: fileURLToPath(
-        new URL("./web/src/routes", import.meta.url),
-      ),
+      routesDirectory: fileURLToPath(new URL("./src/routes", import.meta.url)),
       generatedRouteTree: fileURLToPath(
-        new URL("./web/src/routeTree.gen.ts", import.meta.url),
+        new URL("./src/routeTree.gen.ts", import.meta.url),
       ),
     }),
     react(),
     tailwindcss(),
   ],
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./web/src", import.meta.url)) },
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
-  build: { outDir: "../dist", emptyOutDir: true },
+  build: { outDir: "dist", emptyOutDir: true },
 });

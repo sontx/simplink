@@ -8,10 +8,10 @@ aliases:
   - browser folder permission
   - download memory edits
 sources:
-  - packages/ui/web/src/workspace/store.ts
-  - packages/ui/web/src/workspace/persist.ts
-  - packages/ui/web/src/workspace/context.tsx
-  - packages/ui/web/src/workspace/service.ts
+  - packages/ui/src/workspace/store.ts
+  - packages/ui/src/workspace/persist.ts
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
   - README.md
 ---
 

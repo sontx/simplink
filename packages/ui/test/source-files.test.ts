@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import test from "node:test";
-import { SourceFiles } from "../web/src/components/source-files.js";
+import { SourceFiles } from "../src/components/source-files.js";
 
 test("sources render as individual files and only HTTP URLs become links", () => {
   const html = renderToStaticMarkup(
