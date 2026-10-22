@@ -81,6 +81,7 @@ export async function createFederatedKB(
       : createPeerService({
           kb: hub!,
           peers: opts.peers,
+          maxHops: opts.hops,
           timeoutMs: opts.timeoutMs,
           modes: opts.modes,
         });
@@ -117,6 +118,11 @@ export async function createFederatedKB(
     options: ResolveOptions = {},
   ) {
     const normalized = localize(id, manifest.name);
+    // No peers: skip the federated overlay copy of the whole graph.
+    if (local && !direct.length)
+      return kind === "goal"
+        ? local.resolveGoal(normalized, options)
+        : local.resolveProcedure(normalized, options);
     const disabled = new Set<string>();
     await Promise.all(
       direct.map(async (peer) => {
@@ -248,17 +254,8 @@ export async function createFederatedKB(
       return Promise.all(
         direct.map(async (p) => {
           const start = Date.now();
-          let timer: ReturnType<typeof setTimeout> | undefined;
           try {
-            await Promise.race([
-              p.manifest(),
-              new Promise<never>((_, reject) => {
-                timer = setTimeout(
-                  () => reject(new Error("timeout")),
-                  "local" in opts ? (opts.timeoutMs ?? 2000) : 2000,
-                );
-              }),
-            ]);
+            await request(() => p.manifest());
             return { simp: p.name, ok: true, ms: Date.now() - start };
           } catch (error) {
             return {
@@ -267,8 +264,6 @@ export async function createFederatedKB(
               error: error instanceof Error ? error.message : String(error),
               ms: Date.now() - start,
             };
-          } finally {
-            if (timer) clearTimeout(timer);
           }
         }),
       );

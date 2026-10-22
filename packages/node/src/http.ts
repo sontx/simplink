@@ -90,9 +90,29 @@ export function createSimpNodeHandler(
           ...(allow ? { allow } : {}),
         })
         .end(JSON.stringify(body));
+    const forbidden =
+      (opts.allowedHosts?.length &&
+        !opts.allowedHosts.includes(req.headers.host ?? "")) ||
+      (opts.allowedOrigins?.length &&
+        req.headers.origin &&
+        !opts.allowedOrigins.includes(req.headers.origin));
+    const actual = Buffer.from(req.headers.authorization ?? ""),
+      expected = Buffer.from(`Bearer ${opts.token}`);
+    const authorized =
+      !opts.token ||
+      (actual.length === expected.length && timingSafeEqual(actual, expected));
     if (path === "/healthz") {
       if (req.method !== "GET") {
         send(405, { error: "method not allowed" }, "GET");
+        return;
+      }
+      if (forbidden) {
+        send(403, { error: "forbidden" });
+        return;
+      }
+      // Health stays public, but probing and listing peers requires the token.
+      if (!authorized) {
+        send(200, { ok: true, kb: { ...service.kb.status, root: undefined } });
         return;
       }
       const m = await service.manifest();
@@ -120,22 +140,11 @@ export function createSimpNodeHandler(
       send(404, { error: "not found" });
       return;
     }
-    if (
-      (opts.allowedHosts?.length &&
-        !opts.allowedHosts.includes(req.headers.host ?? "")) ||
-      (opts.allowedOrigins?.length &&
-        req.headers.origin &&
-        !opts.allowedOrigins.includes(req.headers.origin))
-    ) {
+    if (forbidden) {
       send(403, { error: "forbidden" });
       return;
     }
-    const actual = Buffer.from(req.headers.authorization ?? ""),
-      expected = Buffer.from(`Bearer ${opts.token}`);
-    if (
-      opts.token &&
-      (actual.length !== expected.length || !timingSafeEqual(actual, expected))
-    ) {
+    if (!authorized) {
       send(401, { error: "unauthorized" });
       return;
     }

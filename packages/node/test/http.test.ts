@@ -19,6 +19,19 @@ test("HTTP API validates requests, protects auth, and round trips peer calls", a
   );
   try {
     assert.equal((await fetch(`${server.url}/healthz`)).status, 200);
+    assert.equal(
+      (await (await fetch(`${server.url}/healthz`)).json()).peers,
+      undefined,
+    );
+    assert.ok(
+      (
+        await (
+          await fetch(`${server.url}/healthz`, {
+            headers: { authorization: "Bearer secret" },
+          })
+        ).json()
+      ).peers,
+    );
     assert.equal((await fetch(`${server.url}/simp/v1/manifest`)).status, 401);
     const peer = httpPeer(`${server.url}/simp`, { token: "secret" });
     assert.equal((await peer.manifest()).name, "crm");

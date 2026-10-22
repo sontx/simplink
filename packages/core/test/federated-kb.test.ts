@@ -150,3 +150,32 @@ test("search applies relevance and goal limits after merging", async () => {
   );
   assert.equal((await kb.search("Banana", { goalLimit: 0 })).goals.length, 0);
 });
+
+test("hops option reaches peers beyond the default two hops", async () => {
+  const c = createPeerService({
+    kb: await product("c", [], { "procedures/x.md": proc("X") }),
+  });
+  const b = createPeerService({ kb: await product("b", ["c"]), peers: [c] });
+  const a = createPeerService({ kb: await product("a", ["b"]), peers: [b] });
+  const kb = await createFederatedKB({
+    local: await product("hub", ["a"]),
+    peers: [a],
+    hops: 3,
+  });
+  assert.ok((await kb.nodes(["c:procedure.x"])).has("c:procedure.x"));
+});
+
+test("peers() honours timeoutMs without a local KB", async () => {
+  const slow = createPeerService({ kb: await product("slow") });
+  const kb = await createFederatedKB({
+    peers: [
+      {
+        ...slow,
+        manifest: () =>
+          new Promise((done) => setTimeout(() => done(slow.manifest()), 200)),
+      },
+    ],
+    timeoutMs: 50,
+  });
+  assert.equal((await kb.peers())[0].ok, false);
+});

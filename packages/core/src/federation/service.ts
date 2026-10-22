@@ -292,11 +292,22 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
       const target = localize(r.target, name);
       const owner = parseRef(target).simp;
       const sources: SourceStatus[] = [{ simp: name, ok: true, ms: 0 }];
+      const modes = {
+        ...Object.fromEntries(doc.peers.map((p) => [p.name, p.mode])),
+        ...opts.modes,
+      };
       if (owner)
         for (const peer of await routeOwner(owner, r.trace)) {
           if (!peer.resolve) continue;
           const manifest = await call(peer, () => peer.manifest());
-          if (!manifest.value?.serves.length) continue;
+          const serves = manifest.value?.serves ?? [];
+          // The owner honours the configured mode; intermediaries only need to forward delegation.
+          if (
+            peer.name === owner
+              ? selectMode(modes[owner], serves) !== "delegate"
+              : !serves.includes("delegate")
+          )
+            continue;
           const localized = <T>(values: Record<string, T> | undefined) =>
             values &&
             Object.fromEntries(
@@ -349,10 +360,6 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
             }
           }
         }
-      const modes = {
-        ...Object.fromEntries(doc.peers.map((p) => [p.name, p.mode])),
-        ...opts.modes,
-      };
       const disabled = new Set<string>();
       await Promise.all(
         eligible(r.trace).map(async (peer) => {
@@ -361,14 +368,28 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
             disabled.add(peer.name);
         }),
       );
+      // resolveFederated and the availability overlay prefetch the same ids; look each up once.
+      const cache = new Map<string, LookupNode | undefined>();
       const fetch = async (ids: string[]) => {
-        const result = await service.lookup({
-          ids: ids.filter((id) => !disabled.has(parseRef(id).simp ?? "")),
-          body: true,
-          trace: r.trace,
-        });
-        sources.push(...result.sources);
-        return new Map(result.nodes.map((n) => [n.id, n]));
+        const wanted = ids.filter(
+          (id) => !cache.has(id) && !disabled.has(parseRef(id).simp ?? ""),
+        );
+        if (wanted.length) {
+          const result = await service.lookup({
+            ids: wanted,
+            body: true,
+            trace: r.trace,
+          });
+          sources.push(...result.sources);
+          const found = new Map(result.nodes.map((n) => [n.id, n]));
+          for (const id of wanted) cache.set(id, found.get(id));
+        }
+        return new Map(
+          ids.flatMap((id) => {
+            const n = cache.get(id);
+            return n ? [[id, n] as const] : [];
+          }),
+        );
       };
       const remoteResults = new Map<
         string,

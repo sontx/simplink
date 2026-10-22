@@ -25,7 +25,11 @@ export async function buildSimpIndex(source: DocSource): Promise<SimpIndex> {
   const index = {
     protocol: 1 as const,
     name: simp.data.name as string,
-    files: docs.map((d) => d.relPath).sort(),
+    // Only node files: lint reports stray Markdown, the index must not reject itself.
+    files: docs
+      .map((d) => d.relPath)
+      .filter((file) => idToPath(deriveId(file).derivedId ?? "") === file)
+      .sort(),
   };
   return parseSimpIndex(formatSimpIndex(index));
 }

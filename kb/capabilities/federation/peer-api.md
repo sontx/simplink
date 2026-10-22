@@ -12,7 +12,7 @@ sources:
   - packages/node/src/open-peer.ts
 ---
 
-The peer API provides `GET /simp/v1/manifest` and `POST /simp/v1/explore`, `/simp/v1/lookup`, and, when delegate is served, `/simp/v1/resolve`. Its protocol version is 1. `GET /healthz` reports KB status and peers. The base path can be configured.
+The peer API provides `GET /simp/v1/manifest` and `POST /simp/v1/explore`, `/simp/v1/lookup`, and, when delegate is served, `/simp/v1/resolve`. Its protocol version is 1. `GET /healthz` is public and reports KB status; it probes and lists peers only for requests with the bearer token, and it honours the host and origin allowlists. The base path can be configured.
 
 Search and lookup keep local IDs unqualified and use `<simp>:<node-id>` for remote results. [Write a manifest](simp:///procedure.federation.write-simp-doc) to declare product identity and peers. [Reference another simp](simp:///procedure.federation.reference-other-simp) without changing that product's IDs.
 

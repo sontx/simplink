@@ -69,3 +69,29 @@ test("unknown remote id suggests similar ids", async () => {
   assert.equal(r.isError, true);
   assert.match(r.content, /Did you mean: crm:procedure.import/);
 });
+test("get_related skips dangling refs before applying the limit", async () => {
+  const local = await createKB(
+    memorySource({
+      "simp.md": simp("x"),
+      "procedures/send.md": proc(
+        "send",
+        "requires: [procedure.ghost, procedure.real]\n",
+      ),
+      "procedures/real.md": proc("real"),
+    }),
+  );
+  const r = await (
+    await createKBTools(await createFederatedKB({ local }))
+  ).call("get_related", {
+    id: "procedure.send",
+    depth: 1,
+    direction: "out",
+    limit: 2,
+  });
+  const result = JSON.parse(r.content.slice(r.content.indexOf("{")));
+  assert.deepEqual(
+    result.nodes.map((n: { id: string }) => n.id),
+    ["procedure.send", "procedure.real"],
+  );
+  assert.equal(result.truncated, undefined);
+});

@@ -20,6 +20,8 @@ test("builds a sorted index from the KB files and rerun is identical", async () 
     "simp.md": manifest,
     "goals/a.md": "A",
     "README.md": "Ignored",
+    "notes/readme.md": "Not a node",
+    "goals/README.md": "Not a node",
   });
   const index = await buildSimpIndex(source);
   assert.deepEqual(index, {

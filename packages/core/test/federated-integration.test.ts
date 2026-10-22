@@ -304,7 +304,11 @@ test("forwarding does not reuse caller-local states or choices in another simp",
   const crm = createPeerService({ kb: crmKB });
   const xKB = await product("x", ["crm"]);
   xKB.graph.nodes.get("simp")!.data.serves = ["pull", "delegate"];
-  const x = createPeerService({ kb: xKB, peers: [crm] });
+  const x = createPeerService({
+    kb: xKB,
+    peers: [crm],
+    modes: { crm: "delegate" },
+  });
   const result = await x.resolve!({
     target: "crm:procedure.main",
     states: { "state.ready": true },
@@ -341,4 +345,53 @@ test("delegate service warns for gated capabilities", async () => {
       "availability of capability.api not checked",
     ),
   );
+});
+
+test("service does not delegate to an owner that only serves pull", async () => {
+  const { peer: crm } = await integrated();
+  let delegated = false;
+  const xKB = await product("x", ["crm"]);
+  xKB.graph.nodes.get("simp")!.data.serves = ["pull", "delegate"];
+  const x = createPeerService({
+    kb: xKB,
+    peers: [
+      {
+        ...crm,
+        resolve: async () => {
+          delegated = true;
+          throw new Error("does not serve delegate");
+        },
+      },
+    ],
+  });
+  const result = await x.resolve!({
+    target: "crm:procedure.import",
+    trace: newTrace(),
+  });
+  assert.equal(delegated, false);
+  assert.ok(!result.sources.some((s) => !s.ok));
+});
+
+test("service resolve looks up each remote node once", async () => {
+  const { peer: crm } = await integrated();
+  const looked: string[] = [];
+  const xKB = await product("x", ["crm"], {
+    "procedures/send.md": proc("Send", "requires: [crm:procedure.import]\n"),
+  });
+  xKB.graph.nodes.get("simp")!.data.serves = ["pull", "delegate"];
+  const x = createPeerService({
+    kb: xKB,
+    peers: [
+      {
+        ...crm,
+        lookup: (r) => {
+          looked.push(...r.ids);
+          return crm.lookup(r);
+        },
+      },
+    ],
+  });
+  await x.resolve!({ target: "procedure.send", trace: newTrace() });
+  assert.ok(looked.includes("procedure.import"));
+  assert.deepEqual(looked, [...new Set(looked)]);
 });

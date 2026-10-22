@@ -320,28 +320,30 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
       });
     },
     resolve_goal: async (a, kb) => {
-      const node = await requireNode(kb, a.goal_id, "goal");
+      await requireNode(kb, a.goal_id, "goal");
       return {
         content: (
-          await kb.render(await kb.resolveGoal(node, resolveOpts(a)), {
+          await kb.render(await kb.resolveGoal(a.goal_id, resolveOpts(a)), {
             tokenBudget: a.token_budget,
           })
         ).text,
       };
     },
     resolve_procedure: async (a, kb) => {
-      const node = await requireNode(kb, a.procedure_id, "procedure");
+      await requireNode(kb, a.procedure_id, "procedure");
       return {
         content: (
-          await kb.render(await kb.resolveProcedure(node, resolveOpts(a)), {
-            tokenBudget: a.token_budget,
-          })
+          await kb.render(
+            await kb.resolveProcedure(a.procedure_id, resolveOpts(a)),
+            {
+              tokenBudget: a.token_budget,
+            },
+          )
         ).text,
       };
     },
     get_node: async (a, kb) => {
-      const id = await requireNode(kb, a.id);
-      const n = (await kb.node(id))!;
+      const n = await requireNode(kb, a.id);
       const fields = Object.fromEntries(
         Object.entries(n.fields).filter(([k]) => !COMMON_KEYS.has(k)),
       );
@@ -364,21 +366,20 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
       });
     },
     get_related: async (a, kb) => {
-      const id = await requireNode(kb, a.id);
+      const id: string = a.id;
+      const root = await requireNode(kb, id);
       const kinds = a.kinds ? new Set<EdgeKind>(a.kinds) : null;
       const dist = new Map([[id, 0]]);
-      const known = new Map<string, LookupNode>();
+      const known = new Map<string, LookupNode>([[id, root]]);
       const edges = new Map<string, [string, EdgeKind, string]>();
       let frontier = [id];
       let truncated = false;
       for (let d = 1; d <= a.depth && frontier.length; d++) {
-        const batch = await kb.nodes(frontier);
-        for (const [key, n] of batch) known.set(key, n);
-        const next: string[] = [];
+        const candidates: [string, [string, EdgeKind, string]][] = [];
         for (const cur of frontier) {
           const n = known.get(cur);
           if (!n) continue;
-          const candidates: [string, EdgeKind, string][] = [
+          for (const edge of [
             ...(a.direction !== "in"
               ? n.out.map(
                   (e) => [cur, e.kind, e.to] as [string, EdgeKind, string],
@@ -389,25 +390,31 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
                   (e) => [e.from, e.kind, cur] as [string, EdgeKind, string],
                 )
               : []),
-          ];
-          for (const edge of candidates) {
-            const [from, kind, to] = edge;
-            const other = from === cur ? to : from;
-            if (kinds && !kinds.has(kind)) continue;
-            if (!dist.has(other)) {
-              if (dist.size >= a.limit) {
-                truncated = true;
-                continue;
-              }
-              dist.set(other, d);
-              next.push(other);
-            }
-            edges.set(`${from}|${kind}|${to}`, edge);
+          ]) {
+            if (kinds && !kinds.has(edge[1])) continue;
+            candidates.push([edge[0] === cur ? edge[2] : edge[0], edge]);
           }
+        }
+        // Fetch neighbours before admitting them so dangling refs never take a slot.
+        const unknown = [...new Set(candidates.map(([other]) => other))].filter(
+          (other) => !known.has(other),
+        );
+        for (const [key, n] of await kb.nodes(unknown)) known.set(key, n);
+        const next: string[] = [];
+        for (const [other, edge] of candidates) {
+          if (!known.has(other)) continue;
+          if (!dist.has(other)) {
+            if (dist.size >= a.limit) {
+              truncated = true;
+              continue;
+            }
+            dist.set(other, d);
+            next.push(other);
+          }
+          edges.set(edge.join("|"), edge);
         }
         frontier = next;
       }
-      for (const [key, n] of await kb.nodes(frontier)) known.set(key, n);
       return json({
         root: id,
         nodes: [...dist].flatMap(([nid, distance]) => {
@@ -521,9 +528,9 @@ async function requireNode(
   kb: FederatedKB,
   id: string,
   type?: NodeType,
-): Promise<string> {
+): Promise<LookupNode> {
   const n = await kb.node(id);
-  if (n && (!type || n.type === type)) return id;
+  if (n && (!type || n.type === type)) return n;
   if (n && type) {
     const hint =
       n.type === "procedure"
