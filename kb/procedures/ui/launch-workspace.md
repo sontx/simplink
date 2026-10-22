@@ -31,4 +31,5 @@ sources:
 
 - Folder access needs HTTPS or localhost. Use a Chromium browser for direct writes.
 - Cancelling leaves the open screen usable. Denied permissions show an error; open the folder again and grant access.
-- Close or Open another folder asks for confirmation when the memory copy has edits. Reload keeps those edits; refreshing the page loses the memory workspace unless you downloaded it.
+- **Close knowledge base** or **Open another knowledge base** asks for confirmation when the memory copy has edits. Reload keeps those edits; refreshing the page loses the memory workspace unless you downloaded it.
+- Closing a knowledge base keeps the picker open after refreshing the tab. The recent folder remains available through **Reopen**; reopening it enables automatic restoration on refresh again.

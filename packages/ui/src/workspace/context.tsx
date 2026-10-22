@@ -43,6 +43,25 @@ let nextId = 0;
 
 // Session storage survives a page refresh but not closing the tab, so the token never outlives the tab.
 const REMOTE_SESSION = "simplink-remote-session";
+const CLOSED_SESSION = "simplink-workspace-closed";
+
+function workspaceClosed(): boolean {
+  try {
+    return sessionStorage.getItem(CLOSED_SESSION) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function saveWorkspaceClosed(closed: boolean) {
+  try {
+    if (closed) sessionStorage.setItem(CLOSED_SESSION, "true");
+    else sessionStorage.removeItem(CLOSED_SESSION);
+  } catch {
+    /* Closing still works when browser storage is unavailable. */
+  }
+}
+
 interface RemoteSession {
   url: string;
   token: string;
@@ -97,7 +116,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const remote = remoteSession();
-        if (remote) {
+        if (remote && !workspaceClosed()) {
           if (await activate(await remoteStore(remote.url, remote.token)))
             saveRemoteSession(remote);
           return;
@@ -107,6 +126,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setLast(handle);
         if (
           handle &&
+          !workspaceClosed() &&
           window.isSecureContext &&
           (await handle.queryPermission({ mode: "readwrite" })) === "granted" &&
           !cancelled
@@ -181,6 +201,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           active.current = null;
           setWorkspace(null);
           saveRemoteSession();
+          saveWorkspaceClosed(true);
         }
       },
       openAnother() {
@@ -199,6 +220,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     };
     active.current = next;
     setWorkspace(next);
+    saveWorkspaceClosed(false);
     saveRemoteSession();
     if (handle && (await rememberDirectory(handle))) setLast(handle);
     return true;

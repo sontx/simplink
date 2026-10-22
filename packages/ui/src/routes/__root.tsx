@@ -34,8 +34,8 @@ import {
   Moon,
   Sun,
   ChevronsUpDown,
-  FolderOpen,
-  FolderX,
+  BookOpenCheck,
+  X,
   Sparkles,
 } from "lucide-react";
 import { kbQuery, searchQuery } from "../api.js";
@@ -140,7 +140,7 @@ function Shell() {
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label={t("Folder actions")}
+                aria-label={t("Knowledge base actions")}
                 title={service.store.name}
                 className="min-w-0 text-muted-foreground"
               >
@@ -156,12 +156,12 @@ function Shell() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={openAnother}>
-                <FolderOpen />
-                {t("Open another folder")}
+                <BookOpenCheck />
+                {t("Open another knowledge base")}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={close}>
-                <FolderX />
-                {t("Close folder")}
+                <X />
+                {t("Close knowledge base")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

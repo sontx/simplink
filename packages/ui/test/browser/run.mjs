@@ -37,10 +37,10 @@ try {
     ),
   );
   const page = await browser.newPage();
-  // Folder actions live in the header's folder menu.
-  async function folderAction(name) {
+  // Knowledge base actions live in the header menu.
+  async function knowledgeBaseAction(name) {
     await page
-      .getByRole("button", { name: "Folder actions", exact: true })
+      .getByRole("button", { name: "Knowledge base actions", exact: true })
       .click();
     await page.getByRole("menuitem", { name, exact: true }).click();
   }
@@ -153,7 +153,7 @@ try {
         .getByRole("cell", { name: "Import customers" })
         .first()
         .waitFor();
-      await folderAction("Close folder");
+      await knowledgeBaseAction("Close knowledge base");
       await page.reload();
       await page
         .getByRole("button", { name: "Open KB folder", exact: true })
@@ -293,7 +293,7 @@ try {
     draftPrompt = dialog.message();
     await dialog.dismiss();
   });
-  await folderAction("Close folder");
+  await knowledgeBaseAction("Close knowledge base");
   assert.match(draftPrompt, /unsaved changes.*editor/i);
   await page.getByRole("button", { name: "Save file", exact: true }).click();
   await page.getByText("Saved in memory", { exact: true }).waitFor();
@@ -308,13 +308,13 @@ try {
     /Browser-created goal/,
   );
   page.once("dialog", (dialog) => dialog.dismiss());
-  await folderAction("Close folder");
+  await knowledgeBaseAction("Close knowledge base");
   await page
     .getByRole("heading", { name: "Browser-created goal", exact: true })
     .first()
     .waitFor();
   page.once("dialog", (dialog) => dialog.accept());
-  await folderAction("Close folder");
+  await knowledgeBaseAction("Close knowledge base");
   await page
     .getByRole("button", { name: "Open KB folder", exact: true })
     .waitFor();
@@ -332,7 +332,7 @@ try {
     await page.getByText("Browser-created goal", { exact: true }).count(),
     0,
   );
-  await folderAction("Close folder");
+  await knowledgeBaseAction("Close knowledge base");
   for (const [name, message] of [
     ["AbortError", "Folder selection cancelled."],
     ["NotAllowedError", "Folder access denied"],
@@ -371,7 +371,7 @@ try {
     .getByRole("button", { name: "Open KB folder", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Folder actions", exact: true })
+    .getByRole("button", { name: "Knowledge base actions", exact: true })
     .waitFor();
   assert.equal(
     await page
@@ -434,10 +434,10 @@ try {
           reject(new DOMException("Cancelled", "AbortError"));
       });
   });
-  await folderAction("Open another folder");
+  await knowledgeBaseAction("Open another knowledge base");
   await page.locator('[aria-busy="true"]').waitFor();
   const clickable = await page
-    .getByRole("button", { name: "Folder actions", exact: true })
+    .getByRole("button", { name: "Knowledge base actions", exact: true })
     .click({ trial: true, timeout: 750 })
     .then(
       () => true,
@@ -450,7 +450,24 @@ try {
   );
   await page.evaluate(() => window.__cancelFolder());
   await page.locator('[aria-busy="false"]').waitFor();
-  await folderAction("Close folder");
+  await knowledgeBaseAction("Close knowledge base");
+  await page
+    .getByRole("heading", { name: "Open a knowledge base", exact: true })
+    .waitFor();
+  await page.reload();
+  await page
+    .getByRole("heading", { name: "Open a knowledge base", exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Reopen direct-browser", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Knowledge base actions", exact: true })
+    .waitFor();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Knowledge base actions", exact: true })
+    .waitFor();
   console.log(
     "real directory handle create/delete, IndexedDB reopen and transition interaction guard verified",
   );
