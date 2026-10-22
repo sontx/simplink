@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-import { createServer } from "node:http";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { createKB, createPeerService, simpDoc } from "@sontx/simplink-core";
-import { createSimpNodeHandler } from "./http.js";
+import { createKB, simpDoc } from "@sontx/simplink-core";
+import { startSimpNode } from "./server.js";
 import { loadPeerConfig, parsePeerOverrides } from "./config.js";
 import { lintPeers } from "./lint-peers.js";
 const env = process.env;
@@ -66,8 +65,6 @@ try {
   const port = integer(values.port!, "port", 0, 65535),
     maxHops = integer(values["max-hops"]!, "max-hops", 0),
     timeoutMs = integer(values["peer-timeout"]!, "peer-timeout", 1);
-  if (!values["base-path"]!.startsWith("/"))
-    throw new Error("base-path must start with /");
   const root = path.resolve(
       values.kb ?? (lint ? positionals[1] : undefined) ?? env.KB_DIR ?? "kb",
     ),
@@ -75,15 +72,12 @@ try {
     doc = simpDoc(kb.graph);
   if (!doc)
     throw new Error(`KB at ${root} has no simp.md; a simp node needs a name`);
-  const config = loadPeerConfig(
-    doc,
-    parsePeerOverrides(
-      { peer: values.peer!, "peer-token": values["peer-token"]! },
-      env,
-    ),
-    { timeoutMs, kbRoot: root },
+  const overrides = parsePeerOverrides(
+    { peer: values.peer!, "peer-token": values["peer-token"]! },
+    env,
   );
   if (lint) {
+    const config = loadPeerConfig(doc, overrides, { timeoutMs, kbRoot: root });
     const issues = [...kb.issues, ...(await lintPeers(kb, config.peers))];
     for (const i of issues)
       process.stdout.write(`${i.path}: ${i.code} ${i.message}\n`);
@@ -93,42 +87,32 @@ try {
     process.stdout.write(
       `${JSON.stringify({ t: new Date().toISOString(), ...entry })}\n`,
     );
-  const service = createPeerService({
+  const node = await startSimpNode({
     kb,
-    peers: config.peers,
-    modes: config.modes,
+    host: values.host,
+    port,
+    basePath: values["base-path"],
+    token: values.token,
+    peerOverrides: overrides,
     maxHops,
     timeoutMs,
+    allowedHosts: values["allowed-host"],
+    allowedOrigins: values["allowed-origin"],
     log,
   });
-  const server = createServer(
-    createSimpNodeHandler({
-      service,
-      basePath: values["base-path"],
-      token: values.token,
-      allowedHosts: values["allowed-host"],
-      allowedOrigins: values["allowed-origin"],
-      onRequest: (entry) => log({ msg: "request", ...entry }),
-    }),
-  );
-  server.keepAliveTimeout = 65000;
-  server.headersTimeout = 66000;
-  server.on("error", (error) => {
+  node.server.on("error", (error) => {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 2;
   });
-  server.listen(port, values.host, () =>
-    log({
-      msg: "listening",
-      url: `http://${values.host}:${(server.address() as { port: number }).port}${values["base-path"]}`,
-      kb: kb.status,
-      skipped: config.skipped,
-    }),
-  );
+  log({
+    msg: "listening",
+    url: node.url,
+    kb: node.status,
+    skipped: node.skipped,
+  });
   const shutdown = (signal: string) => {
     log({ msg: "shutting down", signal });
-    server.close(() => process.exit(0));
-    server.closeIdleConnections();
+    void node.close().then(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
   };
   process.on("SIGTERM", () => shutdown("SIGTERM"));

@@ -6,11 +6,17 @@ import type {
   LookupResponse,
   ResolveResponse,
 } from "@sontx/simplink-core/browser";
+/** Options for {@link httpPeer}. */
 export interface HttpPeerOptions {
+  /** Expected simp name; a manifest with another name is rejected. */
   name?: string;
+  /** Bearer token sent with every request. */
   token?: string;
+  /** Per-request timeout in milliseconds. Defaults to `2000`. */
   timeoutMs?: number;
+  /** Replaces the global `fetch`, for example in tests. */
   fetch?: typeof fetch;
+  /** Clock used for the 60-second manifest cache. */
   now?: () => number;
 }
 import {
@@ -22,6 +28,13 @@ import {
   resolved,
   strings,
 } from "./wire.js";
+/**
+ * Connects to a running simp node's peer API. Works in Node.js and browsers
+ * (import `@sontx/simplink-node/http-peer` in browser bundles). Responses are
+ * validated, and the manifest is cached for 60 seconds.
+ *
+ * @param baseUrl - Peer API base URL including the base path, such as `http://127.0.0.1:3393/simp`.
+ */
 export function httpPeer(baseUrl: string, opts: HttpPeerOptions = {}): Peer {
   let name = opts.name ?? "",
     cached: SimpManifest | undefined,

@@ -4,10 +4,17 @@ import type { Peer } from "@sontx/simplink-core";
 import { httpPeer, type HttpPeerOptions } from "./http-peer.js";
 import { staticPeer } from "./static-peer.js";
 import { folderPeer } from "./folder-peer.js";
+/** Options for {@link openPeer}. */
 export interface OpenPeerOptions extends HttpPeerOptions {
+  /** Directory that relative folder paths resolve against. Defaults to the working directory. */
   kbRoot?: string;
 }
 
+/**
+ * Opens a peer by URL, detecting its kind: an `http(s)` URL is tried as a simp
+ * node first and then as a static KB, while a `file:` URL or path opens a local
+ * folder. Static and folder peers serve only pull and never forward.
+ */
 export function openPeer(url: string, opts: OpenPeerOptions = {}): Peer {
   if (!/^https?:/i.test(url))
     return folderPeer(

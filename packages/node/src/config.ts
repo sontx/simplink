@@ -1,10 +1,20 @@
 import type { Peer, SimpDoc, ResolutionMode } from "@sontx/simplink-core";
 import { openPeer } from "./open-peer.js";
+/** Peer URLs and tokens by peer name that take precedence over `simp.md`. */
 export interface PeerOverrides {
+  /** Peer URLs by name. */
   urls: Record<string, string>;
+  /** Bearer tokens by name. */
   tokens: Record<string, string>;
 }
 
+/**
+ * Reads peer overrides the way `simp-node` does: `SIMP_PEERS` and `--peer`
+ * entries as `name=url`, and `SIMP_PEER_TOKEN_<NAME>` and `--peer-token`
+ * entries as `name=token`. Flags win over environment variables.
+ *
+ * @throws Error when an entry is not `name=value` with a valid simp name.
+ */
 export function parsePeerOverrides(
   flags: { peer: string[]; "peer-token": string[] },
   env: NodeJS.ProcessEnv,
@@ -35,6 +45,11 @@ export function parsePeerOverrides(
   };
 }
 
+/**
+ * Opens the peers a `simp.md` declares, applying overrides. Peers without a
+ * URL are skipped and reported in `skipped`; declared modes are returned in
+ * `modes` for `createPeerService`.
+ */
 export function loadPeerConfig(
   doc: SimpDoc,
   overrides: PeerOverrides,

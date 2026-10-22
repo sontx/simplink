@@ -11,14 +11,24 @@ import {
   type LookupRequest,
   type ResolveRequest,
 } from "@sontx/simplink-core";
+/**
+ * Options for {@link createSimpNodeHandler}: an existing peer service, or the
+ * options to create one, plus HTTP settings.
+ */
 export type SimpNodeHandlerOptions = (
   { service: PeerService } | PeerServiceOptions
 ) & {
+  /** Base path of the peer API. Defaults to `/simp`. */
   basePath?: string;
+  /** Bearer token required on peer API routes; `/healthz` stays public but lists peers only with it. */
   token?: string;
+  /** Maximum request body size in bytes. Defaults to `1000000`. */
   maxBodyBytes?: number;
+  /** Host header allowlist; empty allows any host. `/healthz` is exempt. */
   allowedHosts?: string[];
+  /** Origin allowlist; only these origins get CORS headers, and other browser origins are refused. */
   allowedOrigins?: string[];
+  /** Called once per finished request with method, path, status, and duration. */
   onRequest?: (e: Record<string, unknown>) => void;
 };
 const trace = {
@@ -68,6 +78,12 @@ const validators = Object.fromEntries(
     }),
   ]),
 );
+/**
+ * Creates a `node:http` request handler that serves the simp peer API
+ * (`manifest`, `nodes`, `explore`, `lookup`, and `resolve` when delegate is
+ * served) under the base path, plus `GET /healthz`. Mount it on your own
+ * server; use {@link startSimpNode} to load a KB and listen in one call.
+ */
 export function createSimpNodeHandler(
   opts: SimpNodeHandlerOptions,
 ): (req: IncomingMessage, res: ServerResponse) => void {

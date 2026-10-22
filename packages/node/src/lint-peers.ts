@@ -6,6 +6,12 @@ import {
   type Peer,
   type Issue,
 } from "@sontx/simplink-core";
+/**
+ * Checks a KB's references against live peers. A referenced remote node must
+ * exist (`E007`) and have the type its ID prefix names (`E003`); a peer whose
+ * manifest or lookup fails is reported as unreachable (`W109`). Issues are
+ * sorted by path, code, and message.
+ */
 export async function lintPeers(kb: KB, peers: Peer[]): Promise<Issue[]> {
   const issues: Issue[] = [];
   await Promise.all(
