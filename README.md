@@ -69,7 +69,7 @@ pnpm ui
 pnpm dev:ui
 ```
 
-Open the URL printed by Vite, select **Open KB folder**, and choose a local KB. To browse a running simp node read-only instead, start it with the UI's origin allowed (`--allowed-origin`) and use **Connect**.
+Open the URL printed by Vite, select **Open KB folder**, and choose a local KB. To browse a running simp node read-only instead, use **Connect**. The node allows `https://simp.sontx.dev` by default; set `--allowed-origin` to allow another UI origin.
 Browse Graph, Nodes, Issues, Docs, and search; edit Markdown, create or delete
 nodes, and manage relationships. All KB operations run in the browser.
 

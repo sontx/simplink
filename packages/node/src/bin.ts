@@ -27,7 +27,10 @@ function prettyLine({ msg, ...rest }: Record<string, unknown>): string {
     .join(" ");
   return `${time}  ${paint("cyan", String(msg))} ${fields}`;
 }
-const collect = (value: string, previous: string[]) => [...previous, value];
+const collect = (value: string, previous: string[] = []) => [
+  ...previous,
+  value,
+];
 const integer =
   (key: string, min: number, max = Number.MAX_SAFE_INTEGER) =>
   (value: string) => {
@@ -126,9 +129,9 @@ peerOptions(
   )
   .option(
     "--allowed-origin <origin>",
-    "allowed CORS origin, repeatable; * allows any (env ALLOWED_ORIGINS)",
+    "allowed CORS origin, repeatable; defaults to https://simp.sontx.dev; * allows any (env ALLOWED_ORIGINS)",
     collect,
-    env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
+    env.ALLOWED_ORIGINS?.split(",").filter(Boolean),
   )
   .action(
     async (
@@ -139,7 +142,7 @@ peerOptions(
         token?: string;
         maxHops: number;
         allowedHost: string[];
-        allowedOrigin: string[];
+        allowedOrigin?: string[];
         logFormat: "pretty" | "json";
       },
     ) => {

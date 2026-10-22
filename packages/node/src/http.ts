@@ -26,7 +26,7 @@ export type SimpNodeHandlerOptions = (
   maxBodyBytes?: number;
   /** Host header allowlist; empty allows any host. `/healthz` is exempt. */
   allowedHosts?: string[];
-  /** Origin allowlist; only these origins get CORS headers, and other browser origins are refused. `*` allows any origin. */
+  /** Origin allowlist; defaults to `https://simp.sontx.dev`. Other browser origins are refused. `*` allows any origin. */
   allowedOrigins?: string[];
   /** Called once per finished request with method, path, status, and duration. */
   onRequest?: (e: Record<string, unknown>) => void;
@@ -88,6 +88,7 @@ export function createSimpNodeHandler(
   opts: SimpNodeHandlerOptions,
 ): (req: IncomingMessage, res: ServerResponse) => void {
   const service = "service" in opts ? opts.service : createPeerService(opts);
+  const allowedOrigins = opts.allowedOrigins ?? ["https://simp.sontx.dev"];
   return async (req, res) => {
     const started = performance.now();
     const path = new URL(req.url ?? "/", "http://localhost").pathname;
@@ -99,10 +100,10 @@ export function createSimpNodeHandler(
         ms: Math.round(performance.now() - started),
       }),
     );
-    // CORS only for origins on the allowlist (or `*`), so browser apps such as the UI must be listed explicitly.
+    // CORS only for origins on the allowlist (or `*`).
     const origin = req.headers.origin;
     const originAllowed = (o: string) =>
-      !!opts.allowedOrigins?.some((a) => a === "*" || a === o);
+      allowedOrigins.some((a) => a === "*" || a === o);
     const cors: Record<string, string> =
       origin && originAllowed(origin)
         ? { "access-control-allow-origin": origin, vary: "origin" }
@@ -118,7 +119,7 @@ export function createSimpNodeHandler(
     const forbidden =
       (opts.allowedHosts?.length &&
         !opts.allowedHosts.includes(req.headers.host ?? "")) ||
-      (opts.allowedOrigins?.length && origin && !originAllowed(origin));
+      (allowedOrigins.length && origin && !originAllowed(origin));
     const actual = Buffer.from(req.headers.authorization ?? ""),
       expected = Buffer.from(`Bearer ${opts.token}`);
     const authorized =

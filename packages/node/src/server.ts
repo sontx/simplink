@@ -34,7 +34,7 @@ export interface SimpNodeOptions {
   timeoutMs?: number;
   /** Host header allowlist; empty allows any host. */
   allowedHosts?: string[];
-  /** Origin allowlist; only these origins get CORS headers. */
+  /** Origin allowlist; defaults to `https://simp.sontx.dev`. Only these origins get CORS headers. */
   allowedOrigins?: string[];
   /** Receives one structured entry per log event, including each request. */
   log?: (entry: Record<string, unknown>) => void;
