@@ -73,6 +73,11 @@ export interface LookupResponse {
   sources: SourceStatus[];
 }
 
+// Every node of the answering simp itself, without bodies; never forwarded to peers.
+export interface ListResponse {
+  nodes: LookupNode[];
+}
+
 export interface ResolveRequest {
   target: string;
   states?: Record<string, boolean>;
@@ -93,6 +98,7 @@ export interface Peer {
   explore(r: ExploreRequest): Promise<ExploreResponse>;
   lookup(r: LookupRequest): Promise<LookupResponse>;
   resolve?(r: ResolveRequest): Promise<ResolveResponse>;
+  list?(): Promise<ListResponse>;
 }
 
 export function newTrace(hops = 2): Trace {

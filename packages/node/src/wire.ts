@@ -1,4 +1,4 @@
-import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core";
+import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core/browser";
 export const object = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const string = (v: unknown) => typeof v === "string";

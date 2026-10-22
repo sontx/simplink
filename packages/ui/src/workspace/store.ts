@@ -1,4 +1,11 @@
-import type { SourceFile } from "@sontx/simplink-core/browser";
+import {
+  idToPath,
+  newTrace,
+  type LookupNode,
+  type SourceFile,
+} from "@sontx/simplink-core/browser";
+import { httpPeer } from "@sontx/simplink-node/http-peer";
+import { stringify } from "yaml";
 
 export interface WriteOptions {
   create?: boolean;
@@ -6,7 +13,8 @@ export interface WriteOptions {
 
 export interface KBStore {
   name: string;
-  kind: "directory" | "memory";
+  kind: "directory" | "memory" | "remote";
+  readonly readOnly?: boolean;
   readonly dirty?: boolean;
   readonly assets?: Record<string, Blob>;
   list(): Promise<SourceFile[]>;
@@ -149,6 +157,80 @@ export function memoryStore(
       delete files[relPath];
       dirty = true;
     },
+  };
+}
+
+// Rebuilds a node's Markdown file from its lookup form; formatting and comments are not preserved.
+export function nodeMarkdown(n: LookupNode): string {
+  const data = {
+    type: n.type,
+    title: n.title,
+    summary: n.summary,
+    ...(n.aliases.length ? { aliases: n.aliases } : {}),
+    ...(n.tags.length ? { tags: n.tags } : {}),
+    ...(n.status === "deprecated" ? { status: n.status } : {}),
+    ...(n.availability ? { availability: n.availability } : {}),
+    ...n.fields,
+  };
+  return `---\n${stringify(data)}---\n${n.body ?? ""}`;
+}
+
+// Read-only snapshot of a simp node's own KB: list every node, then fetch bodies through lookup.
+export async function remoteStore(
+  url: string,
+  token?: string,
+): Promise<KBStore> {
+  const base = url.trim().replace(/\/+$/, "");
+  // A bare origin means the default /simp base path.
+  const peer = httpPeer(
+    new URL(base).pathname === "/" ? `${base}/simp` : base,
+    {
+      token: token || undefined,
+      timeoutMs: 30000,
+    },
+  );
+  const manifest = await peer.manifest().catch((error: Error) => {
+    // Browsers report CORS refusals and unreachable hosts as the same TypeError.
+    throw error instanceof TypeError
+      ? new Error(
+          `Cannot reach ${base}. Check the URL and that the node allows this page's origin (--allowed-origin ${globalThis.location?.origin ?? "<origin>"}).`,
+        )
+      : error;
+  });
+  const files: Record<string, string> = {};
+  const readOnly = () => {
+    throw new Error("Remote KBs are read-only");
+  };
+  return {
+    name: manifest.title || manifest.name,
+    kind: "remote",
+    readOnly: true,
+    async list() {
+      const ids = (await peer.list!()).nodes.map((n) => n.id);
+      for (const key of Object.keys(files)) delete files[key];
+      // ponytail: fixed batches of 200; add a server-side page size if lookups hit maxBodyBytes.
+      for (let i = 0; i < ids.length; i += 200) {
+        const { nodes } = await peer.lookup({
+          ids: ids.slice(i, i + 200),
+          body: true,
+          trace: newTrace(0),
+        });
+        for (const n of nodes) {
+          const path = idToPath(n.id);
+          if (path) files[path] = nodeMarkdown(n);
+        }
+      }
+      return Object.entries(files).map(([relPath, content]) => ({
+        relPath,
+        content,
+      }));
+    },
+    async read(relPath) {
+      if (!Object.hasOwn(files, relPath)) throw new Error("File not found");
+      return files[relPath];
+    },
+    write: readOnly,
+    remove: readOnly,
   };
 }
 

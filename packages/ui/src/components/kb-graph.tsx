@@ -181,6 +181,7 @@ export function KBGraph({
   editable?: boolean;
 }) {
   const { service } = useWorkspace();
+  editable &&= !service.store.readOnly;
   const { t, label, enumDescription, theme } = usePreferences();
   const { data: schema } = useQuery(schemaQuery(service));
   const client = useQueryClient();

@@ -2,9 +2,10 @@ import type {
   Peer,
   SimpManifest,
   ExploreResponse,
+  ListResponse,
   LookupResponse,
   ResolveResponse,
-} from "@sontx/simplink-core";
+} from "@sontx/simplink-core/browser";
 export interface HttpPeerOptions {
   name?: string;
   token?: string;
@@ -104,6 +105,12 @@ export function httpPeer(baseUrl: string, opts: HttpPeerOptions = {}): Peer {
       if (!nodes(v.nodes) || !strings(v.missing) || !sources(v.sources))
         throw new Error("invalid response");
       return v as unknown as LookupResponse;
+    },
+    async list() {
+      await manifest();
+      const v = await request("nodes");
+      if (!nodes(v.nodes)) throw new Error("invalid response");
+      return v as unknown as ListResponse;
     },
     async resolve(req) {
       if (!(await manifest()).serves.includes("delegate"))

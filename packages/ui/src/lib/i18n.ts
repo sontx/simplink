@@ -109,6 +109,12 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Recent: "Gần đây",
   Reopen: "Mở lại",
   "Reopen {name}": "Mở lại {name}",
+  "Or connect to a simp node": "Hoặc kết nối tới một nút simp",
+  "Simp node URL": "URL của nút simp",
+  "Token (optional)": "Mã truy cập (không bắt buộc)",
+  Connect: "Kết nối",
+  "Simp nodes open read-only. Add this page's origin to the node's allowed origins.":
+    "Nút simp được mở ở chế độ chỉ đọc. Hãy thêm origin của trang này vào danh sách origin được phép của nút.",
   "Chromium browsers save directly to your folder. Other browsers keep changes in memory; download a zip to keep them.":
     "Trình duyệt Chromium lưu trực tiếp vào thư mục. Trình duyệt khác giữ thay đổi trong bộ nhớ; hãy tải tệp zip để lưu lại.",
   "Dot-files and dot-folders such as .git are excluded. Git URLs are not supported.":

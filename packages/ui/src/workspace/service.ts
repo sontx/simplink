@@ -1,4 +1,5 @@
 import {
+  createFederatedKB,
   createKB,
   createKBTools,
   memorySource,
@@ -6,9 +7,12 @@ import {
   deriveId,
   FOLDER_TO_TYPE,
   parseDoc,
+  simpDoc,
   type KB,
   type KBNode,
+  type Peer,
 } from "@sontx/simplink-core/browser";
+import { httpPeer } from "@sontx/simplink-node/http-peer";
 import { zipSync, strToU8 } from "fflate";
 import { schemas } from "../lib/frontmatter.js";
 import { editEdges, edgeSchema } from "./edges.js";
@@ -33,6 +37,7 @@ const relationships = edgeSchema();
 
 export class WorkspaceService {
   private kb!: KB;
+  private peers: Peer[] = [];
   private files: Record<string, string> = {};
   private queue: Promise<unknown> = Promise.resolve();
   private disposed = false;
@@ -69,6 +74,12 @@ export class WorkspaceService {
       },
     );
     this.kb = kb;
+    // ponytail: only declared simp-node peers over HTTP(S), without tokens; static and folder peers need a server.
+    this.peers = (simpDoc(kb.graph)?.peers ?? []).flatMap((p) =>
+      p.url && /^https?:/i.test(p.url)
+        ? [httpPeer(p.url, { name: p.name })]
+        : [],
+    );
     this.pageCache.clear();
     this.stale = false;
     return { status: kb.status, issues: kb.issues };
@@ -129,7 +140,9 @@ export class WorkspaceService {
 
   callTool(name: string, args: unknown) {
     return this.enqueue(async () => {
-      const tools = await createKBTools(this.kb);
+      const tools = await createKBTools(
+        await createFederatedKB({ local: this.kb, peers: this.peers }),
+      );
       return tools.call(name, args);
     });
   }

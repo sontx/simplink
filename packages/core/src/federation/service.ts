@@ -15,6 +15,7 @@ import {
 } from "./prefetch.js";
 import type {
   ExploreResponse,
+  ListResponse,
   LookupNode,
   LookupResponse,
   Peer,
@@ -37,6 +38,7 @@ export interface PeerServiceOptions {
 
 export interface PeerService extends Peer {
   readonly kb: KB;
+  list(): Promise<ListResponse>;
 }
 const COMMON_KEYS = new Set([
   "id",
@@ -175,6 +177,13 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
         ...(doc?.docsUrl ? { docs_url: doc.docsUrl } : {}),
         peers: doc?.peers.map((p) => p.name) ?? [],
         errors: kb.status.errors,
+      };
+    },
+    async list() {
+      return {
+        nodes: [...kb.graph.nodes.keys()].flatMap(
+          (id) => toLookupNode(kb, id, false) ?? [],
+        ),
       };
     },
     async explore(r): Promise<ExploreResponse> {

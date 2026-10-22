@@ -111,60 +111,62 @@ export function Inspector({
               >
                 {label(kind)}
               </strong>
-              <Popover
-                open={adding === kind}
-                onOpenChange={(open) => setAdding(open ? kind : undefined)}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={t("Add {type}", { type: label(kind) })}
-                  >
-                    +
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-0" align="end">
-                  <Command>
-                    <CommandInput
-                      placeholder={t("Find {type}…", { type: label(type) })}
-                    />
-                    <CommandList>
-                      <CommandEmpty>{t("No matching targets.")}</CommandEmpty>
-                      {groupByType(
-                        kb?.nodes.filter(
-                          (n) =>
-                            (type === "node" || n.type === type) &&
-                            !targets.includes(n.id),
-                        ) ?? [],
-                        (n) => n.type,
-                      ).map(([group, nodes]) => (
-                        <CommandGroup key={group} heading={label(group)}>
-                          {nodes.map((n) => (
-                            <CommandItem
-                              key={n.id}
-                              value={`${n.title} ${n.id}`}
-                              onSelect={() =>
-                                patch.mutate({
-                                  kind,
-                                  targets: [...targets, n.id],
-                                })
-                              }
-                            >
-                              <div className="flex min-w-0 flex-col">
-                                <span className="truncate">{n.title}</span>
-                                <span className="truncate text-xs text-muted-foreground">
-                                  {n.id}
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              {!service.store.readOnly && (
+                <Popover
+                  open={adding === kind}
+                  onOpenChange={(open) => setAdding(open ? kind : undefined)}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label={t("Add {type}", { type: label(kind) })}
+                    >
+                      +
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0" align="end">
+                    <Command>
+                      <CommandInput
+                        placeholder={t("Find {type}…", { type: label(type) })}
+                      />
+                      <CommandList>
+                        <CommandEmpty>{t("No matching targets.")}</CommandEmpty>
+                        {groupByType(
+                          kb?.nodes.filter(
+                            (n) =>
+                              (type === "node" || n.type === type) &&
+                              !targets.includes(n.id),
+                          ) ?? [],
+                          (n) => n.type,
+                        ).map(([group, nodes]) => (
+                          <CommandGroup key={group} heading={label(group)}>
+                            {nodes.map((n) => (
+                              <CommandItem
+                                key={n.id}
+                                value={`${n.title} ${n.id}`}
+                                onSelect={() =>
+                                  patch.mutate({
+                                    kind,
+                                    targets: [...targets, n.id],
+                                  })
+                                }
+                              >
+                                <div className="flex min-w-0 flex-col">
+                                  <span className="truncate">{n.title}</span>
+                                  <span className="truncate text-xs text-muted-foreground">
+                                    {n.id}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
             {targets.map((target) => (
               <div
@@ -178,20 +180,22 @@ export function Inspector({
                 >
                   {target}
                 </Link>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={t("Remove {target}", { target })}
-                  disabled={patch.isPending}
-                  onClick={() =>
-                    patch.mutate({
-                      kind,
-                      targets: targets.filter((t) => t !== target),
-                    })
-                  }
-                >
-                  ×
-                </Button>
+                {!service.store.readOnly && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={t("Remove {target}", { target })}
+                    disabled={patch.isPending}
+                    onClick={() =>
+                      patch.mutate({
+                        kind,
+                        targets: targets.filter((t) => t !== target),
+                      })
+                    }
+                  >
+                    ×
+                  </Button>
+                )}
               </div>
             ))}
           </section>

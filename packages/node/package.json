@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./http-peer": {
+      "types": "./dist/http-peer.d.ts",
+      "import": "./dist/http-peer.js"
     }
   },
   "files": [

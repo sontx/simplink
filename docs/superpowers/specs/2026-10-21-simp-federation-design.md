@@ -157,12 +157,16 @@ simp's view (its own nodes unqualified).
 | Endpoint           | Request                                         | Response                                                                               |
 | ------------------ | ----------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `GET /v1/manifest` | none                                            | `{protocol: 1, name, title, summary, tags, serves, docs_url?, peers: [names], errors}` |
+| `GET /v1/nodes`    | none                                            | `{nodes}` (every local node, no bodies, never forwarded)                               |
 | `POST /v1/explore` | `{query, types?, limit?, trace}`                | `{hits, goals, sources}`                                                               |
 | `POST /v1/lookup`  | `{ids, body?, trace}`                           | `{nodes, missing, sources}`                                                            |
 | `POST /v1/resolve` | `{target, states?, choices?, maxDepth?, trace}` | `{resolved, sources}`                                                                  |
 | `GET /healthz`     | none                                            | `{ok, kb, peers: [{name, ok, ms}]}`                                                    |
 
 - `/v1/resolve` exists only when `serves` contains `delegate`; otherwise 404.
+- Only origins in `allowedOrigins` get CORS headers (`access-control-allow-origin`
+  echoes the origin). `OPTIONS` preflights from those origins return 204 without
+  the token.
 - `explore` hits use the existing `SearchHit` and `GoalHit` shapes.
 - A `lookup` node contains `id, type, title, summary, status, aliases, tags,
 fields` (raw frontmatter), `body` (when requested), and `out` and `in` edges.

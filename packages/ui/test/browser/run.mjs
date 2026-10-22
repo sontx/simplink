@@ -7,6 +7,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
+import { createServer as createHttpServer } from "node:http";
+import { once } from "node:events";
+import { createKB } from "@sontx/simplink-core";
+import { createSimpNodeHandler } from "@sontx/simplink-node";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const configFile = path.join(root, "vite.config.ts");
@@ -96,6 +100,62 @@ try {
     .getByRole("button", { name: "Open KB folder", exact: true })
     .waitFor();
   console.log("production open screen and SPA fallback verified");
+  // Connect form against real simp nodes: one allows this origin, one does not.
+  const crmKB = await createKB(
+    fileURLToPath(
+      new URL("../../../../test/fixtures/mesh/crm/", import.meta.url),
+    ),
+  );
+  const origin = new URL(production.resolvedUrls.local[0]).origin;
+  for (const allowed of [false, true]) {
+    const node = createHttpServer(
+      createSimpNodeHandler({
+        kb: crmKB,
+        token: "secret",
+        allowedOrigins: allowed ? [origin] : [],
+      }),
+    ).listen(0, "127.0.0.1");
+    await once(node, "listening");
+    try {
+      await page
+        .getByRole("textbox", { name: "Simp node URL", exact: true })
+        .fill(`http://127.0.0.1:${node.address().port}`);
+      await page
+        .getByRole("textbox", { name: "Token (optional)", exact: true })
+        .fill("secret");
+      await page.getByRole("button", { name: "Connect", exact: true }).click();
+      if (!allowed) {
+        await page
+          .getByRole("alert")
+          .getByText(/allowed-origin/)
+          .waitFor();
+        continue;
+      }
+      await page.getByRole("link", { name: "Nodes", exact: true }).click();
+      await page
+        .getByRole("cell", { name: "Import customers" })
+        .first()
+        .click();
+      await page.getByRole("tab", { name: "Source", exact: true }).click();
+      await page.getByText("type: goal").first().waitFor();
+      assert.equal(
+        await page.getByRole("button", { name: "Save file" }).count(),
+        0,
+      );
+      await page.getByRole("link", { name: "Nodes", exact: true }).click();
+      assert.equal(
+        await page.getByRole("button", { name: "Add goal" }).count(),
+        0,
+      );
+      await folderAction("Close folder");
+    } finally {
+      node.closeAllConnections();
+      node.close();
+    }
+  }
+  console.log(
+    "Connect form browses an allowed simp node read-only and reports CORS denial",
+  );
   // Exercise the actual fallback UI with a real directory upload.
   await page.evaluate(() => {
     delete window.showDirectoryPicker;

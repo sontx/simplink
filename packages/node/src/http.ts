@@ -83,10 +83,17 @@ export function createSimpNodeHandler(
         ms: Math.round(performance.now() - started),
       }),
     );
+    // CORS only for origins on the allowlist, so browser apps such as the UI must be listed explicitly.
+    const origin = req.headers.origin;
+    const cors: Record<string, string> =
+      origin && opts.allowedOrigins?.includes(origin)
+        ? { "access-control-allow-origin": origin, vary: "origin" }
+        : {};
     const send = (status: number, body: unknown, allow?: string) =>
       res
         .writeHead(status, {
           "content-type": "application/json",
+          ...cors,
           ...(allow ? { allow } : {}),
         })
         .end(JSON.stringify(body));
@@ -128,9 +135,13 @@ export function createSimpNodeHandler(
     );
     if (
       !path.startsWith(`${(opts.basePath ?? "/simp").replace(/\/$/, "")}/`) ||
-      !["/v1/manifest", "/v1/explore", "/v1/lookup", "/v1/resolve"].includes(
-        route,
-      ) ||
+      ![
+        "/v1/manifest",
+        "/v1/nodes",
+        "/v1/explore",
+        "/v1/lookup",
+        "/v1/resolve",
+      ].includes(route) ||
       (route === "/v1/resolve" && !service.resolve)
     ) {
       send(404, { error: "not found" });
@@ -140,18 +151,36 @@ export function createSimpNodeHandler(
       send(403, { error: "forbidden" });
       return;
     }
+    const method =
+      route === "/v1/manifest" || route === "/v1/nodes" ? "GET" : "POST";
+    // Preflights carry no credentials, so answer them before the token check.
+    if (req.method === "OPTIONS" && cors["access-control-allow-origin"]) {
+      res
+        .writeHead(204, {
+          ...cors,
+          "access-control-allow-methods": method,
+          "access-control-allow-headers": "authorization, content-type",
+          "access-control-max-age": "600",
+        })
+        .end();
+      return;
+    }
     if (!authorized) {
       send(401, { error: "unauthorized" });
       return;
     }
-    const method = route === "/v1/manifest" ? "GET" : "POST";
     if (req.method !== method) {
       send(405, { error: "method not allowed" }, method);
       return;
     }
     try {
       if (method === "GET") {
-        send(200, await service.manifest());
+        send(
+          200,
+          route === "/v1/nodes"
+            ? await service.list()
+            : await service.manifest(),
+        );
         return;
       }
       const chunks: Buffer[] = [];

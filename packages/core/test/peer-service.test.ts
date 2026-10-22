@@ -56,3 +56,16 @@ test("lookup returns nodes with fields and edges and reports missing ids", async
     ).nodes[0].body,
   );
 });
+
+test("list returns every local node without bodies", async () => {
+  const kb = await product("x", ["crm"], {
+    "goals/a.md": goal(["procedure.p"]),
+    "procedures/p.md": proc("P", "requires: [crm:procedure.import]\n"),
+  });
+  const { nodes } = await createPeerService({ kb }).list();
+  assert.deepEqual(
+    nodes.map((n) => n.id).sort(),
+    [...kb.graph.nodes.keys()].sort(),
+  );
+  assert.ok(nodes.every((n) => n.body === undefined));
+});

@@ -147,3 +147,42 @@ test("healthz stays public for hosts outside the allowlist", async () => {
     await server.close();
   }
 });
+
+test("nodes route lists the KB and CORS allows only listed origins", async () => {
+  const kb = await createKB(crmRoot.pathname.replace(/^\/(\w:)/, "$1"));
+  const server = await serve(
+    createSimpNodeHandler({
+      kb,
+      token: "secret",
+      allowedOrigins: ["http://ui.test"],
+    }),
+  );
+  try {
+    const preflight = await fetch(`${server.url}/simp/v1/nodes`, {
+      method: "OPTIONS",
+      headers: { origin: "http://ui.test" },
+    });
+    assert.equal(preflight.status, 204);
+    assert.equal(
+      preflight.headers.get("access-control-allow-origin"),
+      "http://ui.test",
+    );
+    assert.match(
+      preflight.headers.get("access-control-allow-headers") ?? "",
+      /authorization/,
+    );
+    const denied = await fetch(`${server.url}/simp/v1/nodes`, {
+      headers: { origin: "http://evil.test", authorization: "Bearer secret" },
+    });
+    assert.equal(denied.status, 403);
+    assert.equal(denied.headers.get("access-control-allow-origin"), null);
+    assert.equal((await fetch(`${server.url}/simp/v1/nodes`)).status, 401);
+    const peer = httpPeer(`${server.url}/simp`, { token: "secret" });
+    assert.deepEqual(
+      (await peer.list!()).nodes.map((n) => n.id).sort(),
+      [...kb.graph.nodes.keys()].sort(),
+    );
+  } finally {
+    await server.close();
+  }
+});

@@ -36,4 +36,6 @@ The header shows the error and warning counts, **Search nodes…**, **Reload**, 
 
 All KB operations run in the browser. There is no UI server API. The header shows the folder name and actions to open another folder or close it. Unsaved memory changes are guarded when closing, switching folders, reloading, or refreshing the page.
 
+The open screen can also connect to a simp node by URL and optional token. That workspace is a read-only snapshot of the node's own KB, rebuilt from its nodes; editing controls are hidden. In any workspace, Playground tools also reach peers that `simp.md` declares with an `http(s)` simp-node URL; peers that need a token are not supported there.
+
 Refreshing automatically restores the last selected directory when the browser still grants read/write permission. If permission must be renewed, use **Reopen** on the open screen. Memory workspaces do not persist across refreshes.

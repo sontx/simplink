@@ -224,38 +224,40 @@ function Nodes() {
             </span>
           </h1>
         </div>
-        <ButtonGroup>
-          <Button variant="outline" onClick={() => setCreate("goal")}>
-            <Plus />
-            {t("Add goal")}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon"
-                variant="outline"
-                aria-label={t("Add other node types")}
-              >
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                {NODE_TYPES.filter(
-                  (type) => type !== "goal" && type !== "simp",
-                ).map((type) => (
-                  <DropdownMenuItem
-                    key={type}
-                    title={enumDescription(type)}
-                    onSelect={() => setCreate(type)}
-                  >
-                    {t("Add {type}", { type: label(type).toLowerCase() })}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </ButtonGroup>
+        {!service.store.readOnly && (
+          <ButtonGroup>
+            <Button variant="outline" onClick={() => setCreate("goal")}>
+              <Plus />
+              {t("Add goal")}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  aria-label={t("Add other node types")}
+                >
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  {NODE_TYPES.filter(
+                    (type) => type !== "goal" && type !== "simp",
+                  ).map((type) => (
+                    <DropdownMenuItem
+                      key={type}
+                      title={enumDescription(type)}
+                      onSelect={() => setCreate(type)}
+                    >
+                      {t("Add {type}", { type: label(type).toLowerCase() })}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </ButtonGroup>
+        )}
       </div>
       <div className="my-6.25 flex gap-2.5 max-[780px]:flex-wrap">
         <Input

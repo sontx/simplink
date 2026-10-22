@@ -261,7 +261,7 @@ function NodeContent() {
                 value={raw ?? detail.raw}
                 options={{
                   ariaLabel: t("Markdown source"),
-                  readOnly: save.isPending,
+                  readOnly: save.isPending || service.store.readOnly,
                   automaticLayout: true,
                   minimap: { enabled: false },
                   lineNumbers: "off",
@@ -284,19 +284,21 @@ function NodeContent() {
             </Suspense>
           </div>
           <ErrorMessage error={save.error} />
-          <div className={actions}>
-            <Button
-              variant="default"
+          {!service.store.readOnly && (
+            <div className={actions}>
+              <Button
+                variant="default"
 
-              disabled={save.isPending || !dirty}
-              onClick={() => save.mutate()}
-            >
-              {save.isPending ? t("Saving…") : t("Save file")}
-            </Button>
-            <Button variant="destructive" onClick={() => setDeleting(true)}>
-              {t("Delete file")}
-            </Button>
-          </div>
+                disabled={save.isPending || !dirty}
+                onClick={() => save.mutate()}
+              >
+                {save.isPending ? t("Saving…") : t("Save file")}
+              </Button>
+              <Button variant="destructive" onClick={() => setDeleting(true)}>
+                {t("Delete file")}
+              </Button>
+            </div>
+          )}
           {issues.map((i, index) => (
             <div key={index} className={issueClass(i.severity)}>
               {i.code} · {i.message}

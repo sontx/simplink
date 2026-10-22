@@ -11,14 +11,17 @@ import { WorkspaceService } from "./service.js";
 import {
   directoryStore,
   pickFolder,
+  remoteStore,
   type DirectoryHandle,
   type KBStore,
 } from "./store.js";
 import { lastDirectory, rememberDirectory } from "./persist.js";
 import { Button, ErrorMessage } from "../components/ui/primitives.js";
+import { Input } from "../components/ui/input.js";
 import { usePreferences } from "../components/preferences.js";
 import {
   FolderOpen,
+  Globe,
   HardDrive,
   History,
   Info,
@@ -52,6 +55,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(true);
+  const [nodeUrl, setNodeUrl] = useState(() => {
+    try {
+      return localStorage.getItem("simplink-node-url") ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [token, setToken] = useState("");
   const { t } = usePreferences();
   useEffect(() => {
     let cancelled = false;
@@ -176,6 +187,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // The token stays in memory; only the URL is remembered.
+  async function connect() {
+    if (opening.current || !nodeUrl.trim()) return;
+    opening.current = true;
+    const wasDirty = !!active.current?.service.store.dirty;
+    setBusy(true);
+    setError(undefined);
+    setMessage("");
+    try {
+      await activate(await remoteStore(nodeUrl, token), undefined, wasDirty);
+      try {
+        localStorage.setItem("simplink-node-url", nodeUrl.trim());
+      } catch {
+        /* Remembering the URL is optional. */
+      }
+    } catch (error) {
+      setError(error);
+    } finally {
+      opening.current = false;
+      setBusy(false);
+    }
+  }
+
   async function reopen() {
     if (!last || opening.current) return;
     opening.current = true;
@@ -265,6 +299,42 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             <FolderOpen />
             {t("Open KB folder")}
           </Button>
+          <form
+            className="mt-6 space-y-2 border-t pt-6"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void connect();
+            }}
+          >
+            <div className="text-xs font-medium text-muted-foreground">
+              {t("Or connect to a simp node")}
+            </div>
+            <Input
+              type="url"
+              required
+              aria-label={t("Simp node URL")}
+              placeholder="http://localhost:3393"
+              value={nodeUrl}
+              onChange={(event) => setNodeUrl(event.target.value)}
+            />
+            <Input
+              type="password"
+              autoComplete="off"
+              aria-label={t("Token (optional)")}
+              placeholder={t("Token (optional)")}
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full"
+              disabled={busy}
+            >
+              <Globe />
+              {t("Connect")}
+            </Button>
+          </form>
           {last && (
             <div className="mt-6">
               <div className="mb-2 text-xs font-medium text-muted-foreground">
@@ -303,6 +373,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             <HardDrive className="mt-px size-3.5 shrink-0" />
             {t(
               "Chromium browsers save directly to your folder. Other browsers keep changes in memory; download a zip to keep them.",
+            )}
+          </li>
+          <li className="flex gap-2">
+            <Globe className="mt-px size-3.5 shrink-0" />
+            {t(
+              "Simp nodes open read-only. Add this page's origin to the node's allowed origins.",
             )}
           </li>
           <li className="flex gap-2">
