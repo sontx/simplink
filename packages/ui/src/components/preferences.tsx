@@ -52,11 +52,7 @@ function initialPreferences() {
   } catch {
     /* Preferences still work when browser storage is unavailable. */
   }
-  return resolvePreferences(
-    saved,
-    navigator.language,
-    window.matchMedia("(prefers-color-scheme: dark)").matches,
-  );
+  return resolvePreferences(saved, navigator.language);
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {

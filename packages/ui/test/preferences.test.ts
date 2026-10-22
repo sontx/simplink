@@ -5,17 +5,21 @@ import { enumDescription } from "../src/lib/enum-description.js";
 import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core";
 import { groupByType, label } from "../src/lib/utils.js";
 
-test("preferences honor saved choices and otherwise use browser defaults", () => {
-  assert.deepEqual(resolvePreferences({}, "vi-VN", true), {
+test("preferences honor saved choices and default to light with browser language", () => {
+  assert.deepEqual(resolvePreferences({}, "vi-VN"), {
     language: "vi",
+    theme: "light",
+  });
+  assert.deepEqual(resolvePreferences({ theme: "dark" }, "en"), {
+    language: "en",
     theme: "dark",
   });
   assert.deepEqual(
-    resolvePreferences({ language: "en", theme: "light" }, "vi", true),
+    resolvePreferences({ language: "en", theme: "light" }, "vi"),
     { language: "en", theme: "light" },
   );
   assert.deepEqual(
-    resolvePreferences({ language: "invalid", theme: "invalid" }, "fr", false),
+    resolvePreferences({ language: "invalid", theme: "invalid" }, "fr"),
     { language: "en", theme: "light" },
   );
 });

@@ -188,6 +188,23 @@ function Shell() {
           >
             <RefreshCw className={reload.isPending ? "animate-spin" : ""} />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t(
+              theme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme",
+            )}
+            title={t(
+              theme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme",
+            )}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Moon /> : <Sun />}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -200,23 +217,6 @@ function Shell() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>{t("Theme")}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={theme}
-                onValueChange={(value) =>
-                  setTheme(value === "dark" ? "dark" : "light")
-                }
-              >
-                <DropdownMenuRadioItem value="light">
-                  <Sun />
-                  {t("Light")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="dark">
-                  <Moon />
-                  {t("Dark")}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
               <DropdownMenuLabel>{t("Language")}</DropdownMenuLabel>
               <DropdownMenuRadioGroup
                 value={language}

@@ -5,7 +5,6 @@ export type Theme = "light" | "dark";
 export function resolvePreferences(
   saved: { language?: string | null; theme?: string | null },
   browserLanguage: string,
-  prefersDark: boolean,
 ): { language: Language; theme: Theme } {
   return {
     language:
@@ -15,11 +14,7 @@ export function resolvePreferences(
           ? "vi"
           : "en",
     theme:
-      saved.theme === "light" || saved.theme === "dark"
-        ? saved.theme
-        : prefersDark
-          ? "dark"
-          : "light",
+      saved.theme === "light" || saved.theme === "dark" ? saved.theme : "light",
   };
 }
 
