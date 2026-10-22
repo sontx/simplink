@@ -5,6 +5,8 @@ Product: Simplink · Primary language: English · Scope: all public core, CLI, M
 Status values: `planned` → `drafted` → `verified`, or `skipped` (with a reason in notes).
 This file sits at the KB root, so the loader ignores it. Inventory approved 2026-10-20; all rows are drafted and verified except one skipped row.
 
+Synced 2026-10-22 (update mode): the unified `simp` CLI (`packages/core/src/cli/simp.ts`) is folded into the existing lint, search, resolve, docs, index, runner, and CLI-validation nodes as an alternative invocation, not new nodes. `simp-node` readable logs, `--log-format json`, Ctrl+C shutdown, and the `*` allowed origin are covered in `procedure.federation.run-simp-node`, `capability.federation.peer-api`, and `procedure.ui.connect-simp-node`. Node.js 22 baseline updated in integration and CI nodes.
+
 Aliases and goal `when_to_use` will include Vietnamese with diacritics and English. Procedures will use public CLI commands, library APIs, MCP tools, or exact English UI labels.
 
 ## Area: Author and validate a knowledge base

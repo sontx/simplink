@@ -5,6 +5,7 @@ summary: Run simp-docs with a KB and a dedicated output directory to write a Mar
 aliases:
   - chạy simp-docs
   - run simp-docs
+  - simp docs
 preconditions:
   - state.authoring.no-lint-errors
 uses:
@@ -14,6 +15,7 @@ constrained_by:
   - constraint.docs.publication-lifecycle
 sources:
   - packages/core/src/cli/docs.ts
+  - packages/core/src/cli/simp.ts
   - README.md
 ---
 
@@ -21,7 +23,7 @@ sources:
 
 1. Optionally set `docs.path` and `docs.order` in node frontmatter to place pages, for example in a getting-started section.
 2. Choose an empty output directory outside the KB.
-3. Run `simp-docs --kb <dir> --out <output>` for the guide site, or add `--layout graph` for one page per node at its source path.
+3. Run `simp-docs --kb <dir> --out <output>` (or `simp docs` with the same options) for the guide site, or add `--layout graph` for one page per node at its source path. In an interactive terminal, `simp docs` without `--out` asks for the output directory.
 4. Confirm that the command prints `Wrote N page(s) to <output>.`
 5. Review the generated Markdown and copy any assets your site engine needs before you publish it.
 

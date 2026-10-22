@@ -8,6 +8,7 @@ uses: [capability.federation.peer-api]
 constrained_by: [constraint.federation.mesh-limits]
 sources:
   - packages/core/src/cli/index-file.ts
+  - packages/core/src/cli/simp.ts
   - packages/core/src/simp-index.ts
   - packages/node/src/static-peer.ts
   - packages/node/src/folder-peer.ts
@@ -17,7 +18,7 @@ sources:
 ## Steps
 
 1. Validate the KB with `simp-lint <kb>` and keep `simp.md` at its root.
-2. For static HTTP publishing, run `simp-index <kb>` to write `simp-index.yaml`. Publish this index to enable search; without it, static peers support ID-based lookup and pull planning only.
+2. For static HTTP publishing, run `simp-index <kb>` (or `simp index <kb>`) to write `simp-index.yaml`. Publish this index to enable search; without it, static peers support ID-based lookup and pull planning only.
 3. Copy the KB's source Markdown files, preserving paths, to an HTTP server with `simp.md` at the shared base URL. Publish the source KB rather than generated reader documentation. Avoid an SPA fallback that returns HTML for missing Markdown paths.
 4. Alternatively, share the source KB folder directly through a local path or `file://` URL. Folder peers can search the loaded KB without a published index.
 5. Configure the shared URL or path as a peer's `url`, or run `simp-mcp --simp <url-or-folder>`. Relative peer paths resolve from the declaring KB root.

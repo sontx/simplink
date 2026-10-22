@@ -11,6 +11,7 @@ sources:
   - packages/core/src/cli/search.ts
   - packages/core/src/cli/resolve.ts
   - packages/core/src/cli/context.ts
+  - packages/core/src/cli/simp.ts
 ---
 
 ## KB health
@@ -31,6 +32,13 @@ Both commands load the KB first. If it has any lint error, they print `KB has N 
 - `--choice` must be `choiceId=key` or `procedureId:choiceId=key`, and can be repeated.
 - `--budget` must be an integer of at least 1. The default is 2000.
 - `--format` is `md` (the default) or `json`.
+
+## Unified `simp` CLI
+
+- `simp lint|search|resolve|docs|index` accept the same arguments and apply the same checks as the matching `simp-*` command.
+- An unknown command or option exits with code 2 and suggests the closest command, for example `Did you mean lint?`.
+- Prompts for a missing command, query, goal, or output directory appear only when stdin and stdout are a terminal and no CI environment is detected. Otherwise a missing argument fails as described above.
+- Cancelling a prompt exits with code 130.
 
 ## Exit codes
 

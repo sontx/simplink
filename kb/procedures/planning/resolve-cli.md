@@ -5,6 +5,7 @@ summary: Run simp-resolve with a goal ID and any known states, choices, and tena
 aliases:
   - chạy simp-resolve
   - run simp-resolve
+  - simp resolve
 preconditions:
   - state.authoring.no-lint-errors
 uses:
@@ -14,13 +15,14 @@ constrained_by:
   - constraint.planning.availability-context
 sources:
   - packages/core/src/cli/resolve.ts
+  - packages/core/src/cli/simp.ts
   - packages/core/src/render.ts
 ---
 
 ## Steps
 
-1. Find the goal ID, for example with `simp-search`.
-2. Run `simp-resolve <goalId> --kb <dir>`.
+1. Find the goal ID, for example with `simp-search`. In an interactive terminal you can skip this: `simp resolve --kb <dir>` without a goal ID lists the KB's goals to filter and pick from.
+2. Run `simp-resolve <goalId> --kb <dir>`, or `simp resolve <goalId> --kb <dir>`; both accept the same options.
 3. Add what you already know: `--state <stateId>=true|false` for known states and `--choice <choiceId>=<key>` (or `<procedureId>:<choiceId>=<key>`) for decisions already made.
 4. To evaluate availability, add `--plan <plan>` and `--permission <permission>` (repeatable).
 5. Read the plan: **CHECK** steps verify a state and say what to run if it is false, **RUN** steps run a procedure, and **CHOOSE** steps branch.

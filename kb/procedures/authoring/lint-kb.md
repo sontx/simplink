@@ -5,6 +5,7 @@ summary: Run simp-lint, fix each reported error, and run it again until the KB h
 aliases:
   - chạy simp-lint
   - run simp-lint
+  - simp lint
 preconditions:
   - state.authoring.documents-exist
 produces:
@@ -16,12 +17,13 @@ constrained_by:
   - constraint.authoring.graph-rules
 sources:
   - packages/core/src/cli/lint.ts
+  - packages/core/src/cli/simp.ts
   - packages/core/README.md
 ---
 
 ## Steps
 
-1. Run `simp-lint <dir>`. The directory defaults to `kb`.
+1. Run `simp-lint <dir>`, or `simp lint <dir>` with the unified CLI. The directory defaults to `kb`. In an interactive terminal, `simp lint` shows a progress spinner and frames the findings; piped or in CI it prints the same plain output as `simp-lint`.
 2. Read the findings under each file path. Codes that start with `E` are errors; codes that start with `W` are warnings.
 3. Fix each error in the named file, using the rule for its code.
 4. Run `simp-lint <dir>` again until the final line reports `0 error(s)`.

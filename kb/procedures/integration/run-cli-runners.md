@@ -1,7 +1,7 @@
 ---
 type: procedure
 title: Run KB checks in tests with the CLI runners
-summary: Call runLint, runSearch, runResolve, or runDocs in process with CLI arguments, capture their output, and assert on the exit code.
+summary: Call runLint, runSearch, runResolve, runDocs, or runSimp in process with CLI arguments, capture their output, and assert on the exit code.
 aliases:
   - dùng runLint trong kiểm thử
   - use runLint in tests
@@ -18,6 +18,7 @@ sources:
   - packages/core/src/cli/lint.ts
   - packages/core/src/cli/context.ts
   - packages/core/src/index.ts
+  - packages/core/src/cli/simp.ts
 ---
 
 ## Steps
@@ -27,6 +28,7 @@ sources:
 3. To apply custom validation or lint rules, pass them as `extensions`, for example `{ extensions: { lint: { disable: ["W101"] } } }`.
 4. Assert that the returned code is 0; on failure, report the collected lines.
 5. Check a key plan the same way with `await runResolve(["<goalId>", "--kb", "kb"], { stdout, stderr })`.
+6. To test the unified CLI, call `await runSimp(["lint", "kb"], { stdout, stderr })`. With custom `stdout`, `runSimp` never prompts and prints plain output.
 
 ## Failure handling
 
