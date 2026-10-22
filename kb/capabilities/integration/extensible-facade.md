@@ -20,7 +20,7 @@ sources:
   - packages/core/README.md
 ---
 
-`@sontx/simplink-core` is an ESM package for Node.js 20 or newer, with TypeScript declarations and the bundled schemas.
+`@sontx/simplink-core` is an ESM package for Node.js 22 or newer, with TypeScript declarations and the bundled schemas.
 
 - `createKB(input, extensions?)` accepts a directory path or a document source and returns a snapshot with `graph`, `issues`, and `status` (`root`, `nodes`, `edges`, `errors`, `warnings`).
 - Its methods are `node(id)`, `search(query, opts)` (async), `resolveGoal(id, opts)`, `resolveProcedure(id, opts)`, `render(resolved, opts)` (async), and `docs(opts)`.

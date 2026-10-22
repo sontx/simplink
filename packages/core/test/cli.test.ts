@@ -151,3 +151,35 @@ test("CLI captures rejected search and renderer extensions", async () => {
     assert.match(errors.join("\n"), /failed/);
   }
 });
+
+test("simp dispatches subcommands to the runners and maps usage errors to exit code two", async () => {
+  const lines: string[] = [],
+    errors: string[] = [];
+  const ctx = {
+    stdout: (line: string) => lines.push(line),
+    stderr: (line: string) => errors.push(line),
+  };
+  assert.equal(
+    await core.runSimp(
+      ["lint", root, "--format", "json", "--max-warnings", "-1"],
+      ctx,
+    ),
+    0,
+  );
+  assert.equal(JSON.parse(lines.join("\n")).root, root);
+  lines.length = 0;
+  assert.equal(
+    await core.runSimp(
+      ["search", "zalo", "--kb", root, "--type", "goal", "--format", "json"],
+      ctx,
+    ),
+    0,
+  );
+  assert.ok(JSON.parse(lines.join("\n")).goals.length);
+  assert.equal(await core.runSimp(["--help"], ctx), 0);
+  assert.deepEqual(errors, []);
+  assert.equal(await core.runSimp(["lnt"], ctx), 2);
+  assert.equal(await core.runSimp(["search", "x", "--limit", "0"], ctx), 2);
+  assert.equal(await core.runSimp(["resolve", "--kb", root], ctx), 2);
+  assert.match(errors.join("\n"), /Did you mean lint/);
+});

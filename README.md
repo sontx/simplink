@@ -1,14 +1,14 @@
 # Simplink
 
 A pnpm workspace for Markdown knowledge bases: schema validation, graphs,
-resolution, search, and MCP access. Requires Node.js 20+ and pnpm 12.14.0.
+resolution, search, and MCP access. Requires Node.js 22+ and pnpm 12.14.0.
 
 ## Packages
 
-| Package                | Purpose                                                                      | Commands                                                |
-| ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `@sontx/simplink-core` | Loading, schemas, linting, resolution, search, provider independent KB tools | `simp-lint`, `simp-resolve`, `simp-search`, `simp-docs` |
-| `@sontx/simplink-mcp`  | MCP server with stdio and HTTP transports; depends on core                   | `simp-mcp`, `simp-mcp-http`                             |
+| Package                | Purpose                                                                      | Commands                                                        |
+| ---------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `@sontx/simplink-core` | Loading, schemas, linting, resolution, search, provider independent KB tools | `simp`, `simp-lint`, `simp-resolve`, `simp-search`, `simp-docs` |
+| `@sontx/simplink-mcp`  | MCP server with stdio and HTTP transports; depends on core                   | `simp-mcp`, `simp-mcp-http`                                     |
 
 All packages are ESM and include TypeScript declarations. Core includes the JSON
 schemas and has no dependency on the MCP SDK.

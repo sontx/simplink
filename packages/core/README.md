@@ -1,6 +1,6 @@
 # @sontx/simplink-core
 
-Load, validate, search, resolve, and render Markdown knowledge bases. ESM for Node.js 20+, with TypeScript declarations and bundled schemas. For MCP transports use `@sontx/simplink-mcp`.
+Load, validate, search, resolve, and render Markdown knowledge bases. ESM for Node.js 22+, with TypeScript declarations and bundled schemas. For MCP transports use `@sontx/simplink-mcp`.
 
 ## Library use
 
@@ -74,7 +74,13 @@ const custom = await createKB(
 
 ## CLI and in-process runners
 
-The bins are `simp-lint`, `simp-search`, `simp-resolve`, and `simp-docs`; each supports `--help`.
+`simp` bundles every command (`lint`, `search`, `resolve`, `docs`, `index`). On an interactive terminal it prompts for missing arguments (command, query, goal, output directory) and shows progress; piped or in CI it prints plain output. The single-purpose bins `simp-lint`, `simp-search`, `simp-resolve`, `simp-docs`, and `simp-index` remain; each supports `--help`.
+
+```sh
+simp                      # pick a command interactively
+simp resolve --kb ./kb    # pick a goal from the KB
+simp lint ./kb --max-warnings 0
+```
 
 ```sh
 simp-lint ./kb --format json

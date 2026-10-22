@@ -20,7 +20,7 @@ This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, `@son
 
 ## Build, Test, and Development Commands
 
-Use Node.js 20 or newer and the package-manager version declared in `package.json` (`pnpm@12.14.0`).
+Use Node.js 22 or newer and the package-manager version declared in `package.json` (`pnpm@12.14.0`).
 
 - `pnpm install`: Install dependencies using `pnpm-lock.yaml`.
 - `pnpm build`: Build both packages and declarations in dependency order.

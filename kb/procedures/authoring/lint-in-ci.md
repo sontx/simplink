@@ -21,7 +21,7 @@ sources:
 
 ## Steps
 
-1. Add a CI job that installs Node.js 20 or newer and `@sontx/simplink-core`.
+1. Add a CI job that installs Node.js 22 or newer and `@sontx/simplink-core`.
 2. Run `simp-lint <dir> --max-warnings 0` to fail on any error or warning, or set a higher limit to allow known warnings.
 3. Add `--format json` when the CI system should parse the findings, or `--quiet` to print errors only.
 4. Optionally smoke-test a key plan with `simp-resolve <goalId> --kb <dir>`, which exits with a nonzero code if the KB has errors or the goal is missing.

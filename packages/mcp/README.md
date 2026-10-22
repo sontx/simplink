@@ -1,7 +1,7 @@
 # @sontx/simplink-mcp
 
 Expose Simplink KB tools over MCP using stdio or stateless Streamable HTTP.
-ESM for Node.js 20+, with TypeScript declarations. Depends on
+ESM for Node.js 22+, with TypeScript declarations. Depends on
 `@sontx/simplink-core` and the MCP SDK.
 
 ```ts

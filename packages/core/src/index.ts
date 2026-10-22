@@ -57,6 +57,8 @@ export { runResolve } from "./cli/resolve.js";
 
 export { runDocs } from "./cli/docs.js";
 
+export { runSimp } from "./cli/simp.js";
+
 export type { CliContext } from "./cli/context.js";
 
 export { fsSource, createValidator, SCHEMA_DIR } from "./platform.js";

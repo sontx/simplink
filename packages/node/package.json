@@ -25,7 +25,7 @@
     "prepack": "pnpm build"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
@@ -35,7 +35,9 @@
     "simp-node": "dist/bin.js"
   },
   "dependencies": {
+    "@clack/prompts": "1.8.1",
     "@sontx/simplink-core": "workspace:^",
-    "ajv": "8.17.1"
+    "ajv": "8.17.1",
+    "commander": "14.0.3"
   }
 }

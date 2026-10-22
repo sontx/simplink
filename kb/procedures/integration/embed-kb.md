@@ -22,7 +22,7 @@ sources:
 
 ## Steps
 
-1. Install `@sontx/simplink-core` in a Node.js 20+ ESM project.
+1. Install `@sontx/simplink-core` in a Node.js 22+ ESM project.
 2. Load the KB with `const kb = await createKB("/path/to/kb")`, or pass `memorySource({ "goals/x.md": "..." })` for documents held in memory.
 3. Check `kb.status.errors` and `kb.issues` before serving results.
 4. Find entry points with `const found = await kb.search("user words")` and read `found.goals` and `found.hits`.

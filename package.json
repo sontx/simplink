@@ -14,6 +14,7 @@
     "gen:docs": "node packages/core/dist/docs-cli.js",
     "dev": "tsx packages/core/src/cli.ts kb",
     "start:http": "node packages/mcp/dist/http-bin.js --kb kb",
+    "node": "node packages/node/dist/bin.js",
     "ui": "pnpm --filter @sontx/simplink-ui preview",
     "dev:ui": "pnpm --filter @sontx/simplink-ui dev",
     "prepare": "husky"
@@ -21,7 +22,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "20.17.6",
+    "@types/node": "22.20.5",
     "eslint": "^9.39.5",
     "globals": "^17.13.0",
     "husky": "^9.1.7",
@@ -39,6 +40,6 @@
     "!(*.{js,mjs,cjs,ts,mts,cts})": "prettier --write --ignore-unknown"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
