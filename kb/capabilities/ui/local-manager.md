@@ -32,7 +32,7 @@ sources:
 - **Issues**: lint findings, filterable by **Severity**.
 - **Docs**: an in-memory preview of the exported docs in **Site** or **Graph** layout, with current-page Markdown and full-layout ZIP downloads.
 
-The header shows the error and warning counts, **Search nodes…**, **Reload**, language preferences (English or Vietnamese), and a separate theme toggle showing a sun for light mode and a moon for dark mode. The default theme is light; saved theme choices are preserved. Goal and procedure pages show the resolved **Agent plan**.
+The header shows the error and warning counts, **Search nodes…**, **Reload**, a language button showing **en** or **vi** with a dropdown listing **en English** and **vi Tiếng Việt**, and a separate theme toggle showing a sun for light mode and a moon for dark mode. The default theme is light; saved theme choices are preserved. Goal and procedure pages show the resolved **Agent plan**.
 
 All KB operations run in the browser. There is no UI server API. The header shows the folder name and actions to open another folder or close it. Unsaved memory changes are guarded when closing, switching folders, reloading, or refreshing the page.
 

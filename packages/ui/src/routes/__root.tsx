@@ -36,7 +36,6 @@ import {
   ChevronsUpDown,
   FolderOpen,
   FolderX,
-  Settings2,
   Sparkles,
 } from "lucide-react";
 import { kbQuery, searchQuery } from "../api.js";
@@ -210,10 +209,10 @@ function Shell() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={t("Preferences")}
-                title={t("Preferences")}
+                aria-label={t("Language")}
+                title={t("Language")}
               >
-                <Settings2 />
+                {language}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -225,9 +224,11 @@ function Shell() {
                 }
               >
                 <DropdownMenuRadioItem value="en">
+                  <span className="text-muted-foreground">en</span>
                   <span lang="en">English</span>
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="vi">
+                  <span className="text-muted-foreground">vi</span>
                   <span lang="vi">Tiếng Việt</span>
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
