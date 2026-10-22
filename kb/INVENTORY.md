@@ -7,6 +7,8 @@ This file sits at the KB root, so the loader ignores it. Inventory approved 2026
 
 Synced 2026-10-22 (update mode): the unified `simp` CLI (`packages/core/src/cli/simp.ts`) is folded into the existing lint, search, resolve, docs, index, runner, and CLI-validation nodes as an alternative invocation, not new nodes. `simp-node` readable logs, `--log-format json`, Ctrl+C shutdown, and the `*` allowed origin are covered in `procedure.federation.run-simp-node`, `capability.federation.peer-api`, and `procedure.ui.connect-simp-node`. Node.js 22 baseline updated in integration and CI nodes.
 
+Audited 2026-10-22 against all `main..simp-federation` commits: federation, simp links, lint codes E012/E016/W106–W109, static publishing, UI connection, and `startSimpNode` were already covered. Fixed stale MCP nodes: `simp-mcp` options (`--simp`, peer flags) in `procedure.mcp.start-stdio` and `procedure.mcp.start-http`, `/healthz` `peers` in `constraint.mcp.http-boundary`, and `--simp` startup rules in `constraint.mcp.loaded-snapshot`.
+
 Aliases and goal `when_to_use` will include Vietnamese with diacritics and English. Procedures will use public CLI commands, library APIs, MCP tools, or exact English UI labels.
 
 ## Area: Author and validate a knowledge base

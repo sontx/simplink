@@ -25,9 +25,9 @@ sources:
 
 ## Steps
 
-1. Run `simp-mcp-http --kb <dir> --port 3000`. Set `--host` (default `127.0.0.1`), `--path` (default `/mcp`), and `--max-body` as needed, or use `KB_DIR`, `HOST`, `PORT`, `MCP_PATH`, and `MAX_BODY_BYTES`.
+1. Run `simp-mcp-http --kb <dir> --port 3000`. Set `--host` (default `127.0.0.1`), `--path` (default `/mcp`), and `--max-body` as needed, or use `KB_DIR`, `HOST`, `PORT`, `MCP_PATH`, and `MAX_BODY_BYTES`. The `--simp` and peer flags work as in [Connect MCP to a simp](simp:///procedure.mcp.connect-to-simp-node).
 2. Confirm the JSON log lines `kb loaded` and `listening`, which include the endpoint URL.
-3. Request `GET http://<host>:<port>/healthz` and check `ok` and `kb.errors`.
+3. Request `GET http://<host>:<port>/healthz` and check `ok`, `kb.errors`, and, when peers are configured, each `peers` entry's `ok`.
 4. If clients reach the server through another host name or from a browser, add `--allowed-host <host:port>` and `--allowed-origin <origin>` (repeatable).
 5. If the server is reachable beyond loopback, put it behind a gateway that authenticates requests.
 6. Configure the MCP client with the Streamable HTTP URL `http://<host>:<port>/mcp`.

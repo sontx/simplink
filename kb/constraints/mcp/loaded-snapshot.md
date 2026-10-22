@@ -8,6 +8,7 @@ aliases:
   - restart MCP server to reload
   - MCP serving anyway
 sources:
+  - packages/mcp/src/kb-source.ts
   - packages/mcp/src/bin.ts
   - packages/mcp/src/http-bin.ts
   - packages/core/src/tools/core.ts
@@ -19,3 +20,4 @@ sources:
 - `/healthz` returns `ok: true` whenever the server is running. Read its `kb.errors` count to see whether the KB is healthy.
 - Edits to the KB files are not picked up until the server restarts. For Docker, mount the replacement KB at `/app/kb` and restart the container.
 - The `--kb` value is a local directory, defaulting to `KB_DIR` and then `kb`. The server commands do not clone Git URLs.
+- `--simp` replaces `--kb` with a running simp, static KB URL, or folder as the home product; the two flags cannot be combined. The home source must answer its manifest request at startup, or the server exits with code 2. Declared peers are not contacted at startup, so an unreachable peer does not stop the server.
