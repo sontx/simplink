@@ -41,6 +41,33 @@ interface Workspace {
 const Context = createContext<Workspace | null>(null);
 let nextId = 0;
 
+// Session storage survives a page refresh but not closing the tab, so the token never outlives the tab.
+const REMOTE_SESSION = "simplink-remote-session";
+interface RemoteSession {
+  url: string;
+  token: string;
+}
+
+function saveRemoteSession(session?: RemoteSession) {
+  try {
+    if (session)
+      sessionStorage.setItem(REMOTE_SESSION, JSON.stringify(session));
+    else sessionStorage.removeItem(REMOTE_SESSION);
+  } catch {
+    /* Restoring after a refresh is optional. */
+  }
+}
+
+function remoteSession(): RemoteSession | null {
+  try {
+    return JSON.parse(
+      sessionStorage.getItem(REMOTE_SESSION) ?? "null",
+    ) as RemoteSession | null;
+  } catch {
+    return null;
+  }
+}
+
 export function useWorkspace(): Workspace {
   const workspace = useContext(Context);
   if (!workspace) throw new Error("Open a KB folder first");
@@ -62,13 +89,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return "";
     }
   });
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(() => remoteSession()?.token ?? "");
   const { t } = usePreferences();
   useEffect(() => {
     let cancelled = false;
     opening.current = true;
     void (async () => {
       try {
+        const remote = remoteSession();
+        if (remote) {
+          if (await activate(await remoteStore(remote.url, remote.token)))
+            saveRemoteSession(remote);
+          return;
+        }
         const handle = await lastDirectory();
         if (cancelled) return;
         setLast(handle);
@@ -117,7 +150,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       )
     ) {
       service.close();
-      return;
+      return false;
     }
     active.current?.service.close();
     active.current?.client.clear();
@@ -147,6 +180,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           client.clear();
           active.current = null;
           setWorkspace(null);
+          saveRemoteSession();
         }
       },
       openAnother() {
@@ -165,7 +199,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     };
     active.current = next;
     setWorkspace(next);
+    saveRemoteSession();
     if (handle && (await rememberDirectory(handle))) setLast(handle);
+    return true;
   }
 
   async function open() {
@@ -187,7 +223,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // The token stays in memory; only the URL is remembered.
+  // The URL is remembered across visits; the token only for this tab, so a refresh reconnects.
   async function connect() {
     if (opening.current || !nodeUrl.trim()) return;
     opening.current = true;
@@ -196,7 +232,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setError(undefined);
     setMessage("");
     try {
-      await activate(await remoteStore(nodeUrl, token), undefined, wasDirty);
+      if (
+        await activate(await remoteStore(nodeUrl, token), undefined, wasDirty)
+      )
+        saveRemoteSession({ url: nodeUrl.trim(), token });
       try {
         localStorage.setItem("simplink-node-url", nodeUrl.trim());
       } catch {

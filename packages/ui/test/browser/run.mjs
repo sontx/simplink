@@ -147,7 +147,17 @@ try {
         await page.getByRole("button", { name: "Add goal" }).count(),
         0,
       );
+      // A refresh reconnects with the tab's saved URL and token and keeps the route.
+      await page.reload();
+      await page
+        .getByRole("cell", { name: "Import customers" })
+        .first()
+        .waitFor();
       await folderAction("Close folder");
+      await page.reload();
+      await page
+        .getByRole("button", { name: "Open KB folder", exact: true })
+        .waitFor();
     } finally {
       node.closeAllConnections();
       node.close();
