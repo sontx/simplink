@@ -3,6 +3,7 @@ import type { DocSource } from "./source.js";
 import type { MaybePromise } from "./types.js";
 import type { ValidatorExtension } from "./schema.js";
 import { defaultValidator } from "./platform.js";
+import { localize, rewriteRefs } from "./ids.js";
 import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
 import {
@@ -136,6 +137,10 @@ export async function lintKB(
     nodes.set(doc.derivedId, toNode(doc, doc.derivedId));
   }
 
+  const name = nodes.get("simp")?.data.name;
+  if (typeof name === "string")
+    for (const node of nodes.values())
+      node.data = rewriteRefs(node.data, (ref) => localize(ref, name));
   const graph = buildGraph(nodes);
   issues.push(...lintGraph(graph));
   for (const rule of opts.rules ?? []) issues.push(...(await rule(graph)));

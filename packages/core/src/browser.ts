@@ -37,3 +37,15 @@ export * from "./tools/core.js";
 export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
 
 export * from "./simp-doc.js";
+
+export * from "./ids.js";
+
+export * from "./links.js";
+
+export * from "./federation/protocol.js";
+
+export * from "./federation/service.js";
+
+export * from "./federation/merge.js";
+
+export * from "./federation/kb.js";

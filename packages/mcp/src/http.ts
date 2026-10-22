@@ -18,6 +18,8 @@ export interface McpHttpOptions {
   allowedOrigins?: string[];
   /** Called once per request after the response finishes. */
   onRequest?: (entry: RequestLog) => void;
+  /** Health of directly configured federation peers. */
+  peers?: () => Promise<unknown[]>;
 }
 
 export interface RequestLog {
@@ -86,6 +88,7 @@ export function createMcpHttpHandler(
       return sendJson(res, 200, {
         ok: true,
         kb: { ...tools.status, root: undefined },
+        ...(opts.peers ? { peers: await opts.peers() } : {}),
       });
     }
     if (path !== mcpPath) return sendJson(res, 404, { error: "not found" });

@@ -82,7 +82,7 @@ export function siteGraph(graph: KBGraph): KBGraph {
 }
 
 /** Each directory has a landing page; children are ordered by explicit order, then task-first graph order. */
-export function siteIndexes(graph: KBGraph): DocPage[] {
+export function siteIndexes(graph: KBGraph, homepage?: DocPage): DocPage[] {
   const folders = new Set([""]);
   for (const node of graph.nodes.values()) {
     let folder = path.dirname(node.path);
@@ -157,7 +157,10 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
       .join("\n");
     return {
       path: route,
-      content: `---\ntitle: ${JSON.stringify(heading)}\ndescription: ${JSON.stringify(summary)}\n---\n\n# ${heading}\n\n${summary}${home?.body ? `\n\n${home.body.trim()}` : ""}${links ? `\n\n${links}` : ""}\n`,
+      content:
+        home && homepage
+          ? homepage.content.trimEnd() + (links ? `\n\n${links}` : "") + "\n"
+          : `---\ntitle: ${JSON.stringify(heading)}\ndescription: ${JSON.stringify(summary)}\n---\n\n# ${heading}\n\n${summary}${home?.body ? `\n\n${home.body.trim()}` : ""}${links ? `\n\n${links}` : ""}\n`,
     };
   });
 }

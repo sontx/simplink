@@ -311,7 +311,7 @@ test("tools reuse the facade, await handlers, validate custom schemas and catch 
           },
         },
         handler: async (args, received) => {
-          assert.equal(received, kb);
+          assert.equal(received.local, kb);
           return { content: String((args as { x: number }).x) };
         },
       },

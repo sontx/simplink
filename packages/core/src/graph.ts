@@ -1,3 +1,5 @@
+import { extractBodyLinks } from "./links.js";
+import { localize, isQualified } from "./ids.js";
 import { stripCode } from "./markdown.js";
 import {
   EDGE_KINDS,
@@ -72,7 +74,12 @@ export function buildGraph(nodes: Map<string, KBNode>): KBGraph {
           kind: "choice_option",
           source: "frontmatter",
         });
-    for (const to of extractWikilinks(node.body)) {
+    const ownName = nodes.get("simp")?.data.name;
+    for (const bodyLink of extractBodyLinks(node.body)) {
+      const to = localize(
+        bodyLink.ref,
+        typeof ownName === "string" ? ownName : undefined,
+      );
       if (to !== node.id)
         edges.push({ from: node.id, to, kind: "related", source: "body" });
     }
@@ -86,6 +93,7 @@ export function buildGraph(nodes: Map<string, KBNode>): KBGraph {
   }
   for (const e of edges) {
     out.get(e.from)!.push(e);
+    if (isQualified(e.to) && !inc.has(e.to)) inc.set(e.to, []);
     inc.get(e.to)?.push(e);
   }
   return { nodes, edges, out, in: inc };

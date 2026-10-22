@@ -37,7 +37,8 @@
     "simp-lint": "dist/cli.js",
     "simp-resolve": "dist/resolve-cli.js",
     "simp-search": "dist/search-cli.js",
-    "simp-docs": "dist/docs-cli.js"
+    "simp-docs": "dist/docs-cli.js",
+    "simp-index": "dist/index-cli.js"
   },
   "dependencies": {
     "ajv": "8.17.1",

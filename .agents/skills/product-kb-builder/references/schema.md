@@ -21,6 +21,7 @@ kb/procedures/zalo/send-message.md  →  procedure.zalo.send-message
 
 | Folder          | Type       |
 | --------------- | ---------- |
+| `simp.md` (root) | simp |
 | `goals/`        | goal       |
 | `procedures/`   | procedure  |
 | `capabilities/` | capability |
@@ -29,7 +30,7 @@ kb/procedures/zalo/send-message.md  →  procedure.zalo.send-message
 
 - Segments: lowercase kebab-case `[a-z0-9]+(-[a-z0-9]+)*`. No dots, no underscores, no uppercase.
 - The id is derived from the path. The optional `id:` field must equal it, so omit it.
-- Files directly in `kb/` (e.g. `INVENTORY.md`, `index.md`) are ignored by the loader.
+- Root `simp.md` has ID `simp`. Other files directly in `kb/` (e.g. `INVENTORY.md`, `index.md`) are ignored by the loader.
 - Use the area as the first segment: `procedure.billing.update-card`, `state.billing.card-valid`.
 
 ## 2. Common fields (all types)
@@ -79,6 +80,28 @@ Edges are declared in one direction only; the reverse direction is computed.
 no checkable outcome, or it is always needed). Use `preconditions` + a state when it may already be done:
 the resolver then checks first and fixes only if needed.
 
+### Product manifest and federation
+
+Create the optional root manifest with `node <skill>/scripts/new_node.mjs simp --kb kb`.
+It uses `type: simp`, required `name`, `title`, and `summary`. The stable product name must match
+`^[a-z0-9]+(-[a-z0-9]+)*$`. Optional `docs_url` is an absolute HTTP(S) documentation root.
+`serves` defaults to `[pull]`; use a nonempty unique subset of `[pull, delegate]`.
+`peers` contains entries with required `name` and optional `url`, `mode` (`pull` or `delegate`),
+and HTTP(S) `docs_url`. Peer names must be unique and differ from the owning simp name.
+Peer URLs may identify an HTTP API, static HTTP KB, `file://` URL, or folder path relative to the KB root.
+Keep tokens outside the manifest. Its body becomes the documentation homepage.
+
+Reference a peer as `<simp>:<node-id>` in typed frontmatter fields and choice procedure IDs,
+e.g. `preconditions: [crm:state.customers-imported]`. Target types still apply; a remote state
+cannot appear in `procedures`. Own-name prefixes normalize to local IDs. A remote reference must
+name a declared peer even when its URL is supplied later at runtime.
+
+Publish source Markdown to share a static KB. `simp-index <kb>` writes `simp-index.yaml` and enables
+static search; rerun after changes. Without the index, static peers support lookup and pull plans.
+Folder peers search directly. Static and folder peers only serve pull and never forward.
+`simp-node lint --peers <kb>` checks remote references online; offline lint requires no network.
+Remote tenant availability is not checked and tenant context is not passed to peers.
+
 ## 4. Choices
 
 ```yaml
@@ -107,7 +130,11 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | state      | What "true" means, if `check` needs more detail                        |
 | constraint | The rules and what happens when violated                               |
 
-- Link other nodes with `[[id]]`; links become `related` edges and must resolve (E007).
+- Prefer canonical Markdown links: `[Guide](simp:///procedure.area.task)` locally,
+  `[Import](simp://crm/goal.import#steps)` remotely, or `[CRM](simp://crm)` for a peer homepage.
+  They become `related` edges. Local targets must exist (E007); remote prefixes must be declared (E016).
+- Wikilinks (`[[id]]`, `[[crm:goal.import|Import]]`) remain supported shorthand.
+- A `simp` body introduces the product and links to entry goals; it has no required step section.
 - Code in backticks or fences is ignored for links and step detection.
 - Unverified content: tag `needs-review` and add a body line `Unverified: <what and why>`.
 
@@ -129,6 +156,7 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | E012 | Other schema violation (enum, type)                    | Read the message                                          |
 | E013 | Missing or invalid YAML frontmatter                    | File must start with `---`; quote strings containing `: ` |
 | E014 | Choice not referenced exactly once in steps            | Add or dedupe the `choice:<id>` step                      |
+| E016 | Unknown simp prefix | Declare the peer in root `simp.md` or correct the prefix |
 | E015 | Duplicate choice id or option key                      | Rename                                                    |
 | W101 | Orphan node                                            | Link it from a procedure/goal, or delete it               |
 | W102 | Goal without aliases                                   | Add VI + EN aliases                                       |
@@ -137,6 +165,7 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | W105 | Alias shared by several goals                          | Make aliases specific                                     |
 | W106 | State never produced                                   | Add it to the fix procedure's `produces`                  |
 | W107 | Procedure availability wider than a capability it uses | Narrow `availability`                                     |
+| W109 | Peer unreachable during online lint | Check endpoint, authentication, and network; do not infer missing nodes |
 | W108 | Choice with one option                                 | Remove the choice or add options                          |
 
 YAML gotchas: quote values containing `: `, `#`, or starting with `[`, `{`, `*`, `&`, `!`, `@`.

@@ -220,6 +220,18 @@ importers:
       '@sontx/simplink-core':
         specifier: workspace:^
         version: link:../core
+      '@sontx/simplink-node':
+        specifier: workspace:^
+        version: link:../node
+
+  packages/node:
+    dependencies:
+      '@sontx/simplink-core':
+        specifier: workspace:^
+        version: link:../core
+      ajv:
+        specifier: 8.17.1
+        version: 8.17.1
 
   packages/ui:
     devDependencies:

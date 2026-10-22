@@ -25,7 +25,7 @@ const { values, positionals } = parseArgs({
   },
 });
 const [id] = positionals;
-if (!id || !ID.test(id)) {
+if (!id || (id !== "simp" && !ID.test(id))) {
   console.error(
     `Invalid or missing id "${id ?? ""}". Expected <type>.<seg>[.<seg>…] with lowercase kebab-case segments,\n` +
       `e.g. procedure.billing.update-card. Types: ${Object.keys(FOLDERS).join(", ")}`,
@@ -34,7 +34,7 @@ if (!id || !ID.test(id)) {
 }
 
 const [type, ...segs] = id.split(".");
-const file = path.join(
+const file = id === "simp" ? path.join(values.kb, "simp.md") : path.join(
   values.kb,
   FOLDERS[type],
   ...segs.slice(0, -1),
@@ -53,7 +53,7 @@ const templateDir = path.join(
   "assets",
   "templates",
 );
-const title = values.title ?? humanize(segs.at(-1));
+const title = values.title ?? humanize(segs.at(-1) ?? "product");
 // Quote the title only when YAML needs it.
 const yamlTitle = /[:#\[\]{}&*!|>'"%@`]/.test(title)
   ? JSON.stringify(title)

@@ -241,7 +241,9 @@ function Nodes() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
-                {NODE_TYPES.filter((type) => type !== "goal").map((type) => (
+                {NODE_TYPES.filter(
+                  (type) => type !== "goal" && type !== "simp",
+                ).map((type) => (
                   <DropdownMenuItem
                     key={type}
                     title={enumDescription(type)}

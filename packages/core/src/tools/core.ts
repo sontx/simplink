@@ -1,12 +1,14 @@
 import * as ajv2020 from "ajv/dist/2020.js";
 import type { ValidateFunction } from "ajv/dist/2020.js";
+import { createKB, isKB, type KB, type KBExtensions } from "../kb.js";
 import {
-  createKB,
-  isKB,
-  type KB,
-  type KBExtensions,
-  type KBStatus,
-} from "../kb.js";
+  createFederatedKB,
+  isFederatedKB,
+  type FederatedKB,
+  type FederatedStatus,
+} from "../federation/kb.js";
+import { parseRef } from "../ids.js";
+import type { LookupNode } from "../federation/protocol.js";
 import type { DocSource } from "../source.js";
 import type { ResolveOptions } from "../resolve.js";
 import type { MaybePromise } from "../types.js";
@@ -53,7 +55,7 @@ export interface KBToolSpec {
   /** Public tool name, description, schema, and annotations. */
   definition: ToolDefinition;
   /** Handles validated arguments; throw ToolError for an expected user-facing failure. */
-  handler(args: unknown, kb: KB): MaybePromise<ToolResult>;
+  handler(args: unknown, kb: FederatedKB): MaybePromise<ToolResult>;
 }
 
 /**
@@ -65,7 +67,7 @@ export interface KBTools {
   /** Validates a cloned argument value, applies schema defaults, and dispatches a tool. Unknown tools, invalid arguments, and handler failures return error results. */
   call(name: string, args: unknown): Promise<ToolResult>;
   /** Status of the underlying KB snapshot. */
-  status: KBStatus;
+  status: FederatedStatus;
 }
 
 // ---------- schemas ----------
@@ -90,7 +92,7 @@ const resolveProps = {
   choices: {
     type: "object",
     description:
-      'Pre-selected options for CHOOSE steps: {"<choiceId>": "<optionKey>"} or {"<procedureId>:<choiceId>": "<optionKey>"}.',
+      'Pre-selected options for CHOOSE steps: {"<choiceId>": "<optionKey>"} or {"<procedureId>:<choiceId>": "<optionKey>"} or {"<simp>:<choiceId>": "<optionKey>"} for another product.',
     additionalProperties: { type: "string" },
   },
   token_budget: {
@@ -226,7 +228,7 @@ export interface KBToolsOptions {
   /** Extensions used when loading a new snapshot; forbidden when input is an existing KB. */
   extensions?: KBExtensions;
   /** Transforms the default specs before validation; may add, remove, or replace tools. */
-  tools?: (defaults: KBToolSpec[], kb: KB) => KBToolSpec[];
+  tools?: (defaults: KBToolSpec[], kb: FederatedKB) => KBToolSpec[];
   /**
    * Expose `plan` / `permissions` on resolve_* tools (default true).
    * When false they are removed from the schemas (and rejected if sent); configured tenant defaults still apply.
@@ -291,126 +293,134 @@ export class ToolError extends Error {}
 
 /** Default specs are independent copies and can be replaced or removed before validation. */
 export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
-  const handlers: Record<string, (a: any, kb: KB) => MaybePromise<ToolResult>> =
-    {
-      search_kb: async (a, kb) => {
-        const r = await kb.search(a.query, {
-          types: a.types as NodeType[] | undefined,
-          limit: a.limit,
-        });
-        return json({
-          goals: r.goals.map((g) => ({
-            id: g.id,
-            title: g.title,
-            relevance: r2(g.relevance),
-          })),
-          hits: r.hits.map((h) => ({
-            id: h.id,
-            type: h.type,
-            title: h.title,
-            summary: h.summary,
-            relevance: r2(h.relevance),
-            goals: h.goals,
-          })),
-        });
-      },
-      resolve_goal: async (a, kb) => {
-        const node = await requireNode(kb, a.goal_id, "goal");
-        return {
-          content: (
-            await kb.render(kb.resolveGoal(node, resolveOpts(a)), {
-              tokenBudget: a.token_budget,
-            })
-          ).text,
-        };
-      },
-      resolve_procedure: async (a, kb) => {
-        const node = await requireNode(kb, a.procedure_id, "procedure");
-        return {
-          content: (
-            await kb.render(kb.resolveProcedure(node, resolveOpts(a)), {
-              tokenBudget: a.token_budget,
-            })
-          ).text,
-        };
-      },
-      get_node: async (a, kb) => {
-        const { graph } = kb;
-        const id = await requireNode(kb, a.id);
-        const n = graph.nodes.get(id)!;
-        const fields = Object.fromEntries(
-          Object.entries(n.data).filter(([k]) => !COMMON_KEYS.has(k)),
-        );
-        const body = n.body.trim();
-        const max: number = a.max_body_chars;
-        return json({
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          summary: n.summary,
-          status: n.status === "deprecated" ? "deprecated" : undefined,
-          aliases: n.aliases,
-          tags: n.tags,
-          availability: n.availability,
-          fields: Object.keys(fields).length ? fields : undefined,
-          out: groupEdges(
-            graph.out.get(id)!.map((e) => ({ kind: e.kind, id: e.to })),
-          ),
-          in: groupEdges(
-            graph.in.get(id)!.map((e) => ({ kind: e.kind, id: e.from })),
-          ),
-          body: max > 0 && body ? body.slice(0, max) : undefined,
-          body_truncated: max > 0 && body.length > max ? true : undefined,
-        });
-      },
-      get_related: async (a, kb) => {
-        const { graph } = kb;
-        const id = await requireNode(kb, a.id);
-        const kinds = a.kinds ? new Set<EdgeKind>(a.kinds) : null;
-        const dist = new Map([[id, 0]]);
-        const edges = new Map<string, [string, EdgeKind, string]>();
-        let frontier = [id];
-        let truncated = false;
-        for (let d = 1; d <= a.depth && frontier.length; d++) {
-          const next: string[] = [];
-          for (const cur of frontier) {
-            const cand = [
-              ...(a.direction !== "in"
-                ? graph.out.get(cur)!.map((e) => [e, e.to] as const)
-                : []),
-              ...(a.direction !== "out"
-                ? graph.in.get(cur)!.map((e) => [e, e.from] as const)
-                : []),
-            ];
-            for (const [e, other] of cand) {
-              if ((kinds && !kinds.has(e.kind)) || !graph.nodes.has(other))
+  const handlers: Record<
+    string,
+    (a: any, kb: FederatedKB) => MaybePromise<ToolResult>
+  > = {
+    search_kb: async (a, kb) => {
+      const r = await kb.search(a.query, {
+        types: a.types as NodeType[] | undefined,
+        limit: a.limit,
+      });
+      return json({
+        goals: r.goals.map((g) => ({
+          id: g.id,
+          title: g.title,
+          relevance: r2(g.relevance),
+        })),
+        hits: r.hits.map((h) => ({
+          id: h.id,
+          simp: parseRef(h.id).simp,
+          type: h.type,
+          title: h.title,
+          summary: h.summary,
+          relevance: r2(h.relevance),
+          goals: h.goals,
+        })),
+      });
+    },
+    resolve_goal: async (a, kb) => {
+      const node = await requireNode(kb, a.goal_id, "goal");
+      return {
+        content: (
+          await kb.render(await kb.resolveGoal(node, resolveOpts(a)), {
+            tokenBudget: a.token_budget,
+          })
+        ).text,
+      };
+    },
+    resolve_procedure: async (a, kb) => {
+      const node = await requireNode(kb, a.procedure_id, "procedure");
+      return {
+        content: (
+          await kb.render(await kb.resolveProcedure(node, resolveOpts(a)), {
+            tokenBudget: a.token_budget,
+          })
+        ).text,
+      };
+    },
+    get_node: async (a, kb) => {
+      const id = await requireNode(kb, a.id);
+      const n = (await kb.node(id))!;
+      const fields = Object.fromEntries(
+        Object.entries(n.fields).filter(([k]) => !COMMON_KEYS.has(k)),
+      );
+      const body = (n.body ?? "").trim();
+      const max: number = a.max_body_chars;
+      return json({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        summary: n.summary,
+        status: n.status === "deprecated" ? "deprecated" : undefined,
+        aliases: n.aliases,
+        tags: n.tags,
+        availability: n.availability,
+        fields: Object.keys(fields).length ? fields : undefined,
+        out: groupEdges(n.out.map((e) => ({ kind: e.kind, id: e.to }))),
+        in: groupEdges(n.in.map((e) => ({ kind: e.kind, id: e.from }))),
+        body: max > 0 && body ? body.slice(0, max) : undefined,
+        body_truncated: max > 0 && body.length > max ? true : undefined,
+      });
+    },
+    get_related: async (a, kb) => {
+      const id = await requireNode(kb, a.id);
+      const kinds = a.kinds ? new Set<EdgeKind>(a.kinds) : null;
+      const dist = new Map([[id, 0]]);
+      const known = new Map<string, LookupNode>();
+      const edges = new Map<string, [string, EdgeKind, string]>();
+      let frontier = [id];
+      let truncated = false;
+      for (let d = 1; d <= a.depth && frontier.length; d++) {
+        const batch = await kb.nodes(frontier);
+        for (const [key, n] of batch) known.set(key, n);
+        const next: string[] = [];
+        for (const cur of frontier) {
+          const n = known.get(cur);
+          if (!n) continue;
+          const candidates: [string, EdgeKind, string][] = [
+            ...(a.direction !== "in"
+              ? n.out.map(
+                  (e) => [cur, e.kind, e.to] as [string, EdgeKind, string],
+                )
+              : []),
+            ...(a.direction !== "out"
+              ? n.in.map(
+                  (e) => [e.from, e.kind, cur] as [string, EdgeKind, string],
+                )
+              : []),
+          ];
+          for (const edge of candidates) {
+            const [from, kind, to] = edge;
+            const other = from === cur ? to : from;
+            if (kinds && !kinds.has(kind)) continue;
+            if (!dist.has(other)) {
+              if (dist.size >= a.limit) {
+                truncated = true;
                 continue;
-              if (!dist.has(other)) {
-                if (dist.size >= a.limit) {
-                  truncated = true;
-                  continue;
-                }
-                dist.set(other, d);
-                next.push(other);
               }
-              edges.set(`${e.from}|${e.kind}|${e.to}`, [e.from, e.kind, e.to]);
+              dist.set(other, d);
+              next.push(other);
             }
+            edges.set(`${from}|${kind}|${to}`, edge);
           }
-          frontier = next;
         }
-        return json({
-          root: id,
-          nodes: [...dist].map(([nid, distance]) => {
-            const n = graph.nodes.get(nid)!;
-            return { id: nid, type: n.type, title: n.title, distance };
-          }),
-          edges: [...edges.values()].filter(
-            ([f, , t]) => dist.has(f) && dist.has(t),
-          ),
-          truncated: truncated || undefined,
-        });
-      },
-    };
+        frontier = next;
+      }
+      for (const [key, n] of await kb.nodes(frontier)) known.set(key, n);
+      return json({
+        root: id,
+        nodes: [...dist].flatMap(([nid, distance]) => {
+          const n = known.get(nid);
+          return n ? [{ id: nid, type: n.type, title: n.title, distance }] : [];
+        }),
+        edges: [...edges.values()].filter(
+          ([f, , t]) => known.has(f) && known.has(t),
+        ),
+        truncated: truncated || undefined,
+      });
+    },
+  };
 
   return buildDefinitions(opts).map((definition) => ({
     definition,
@@ -433,12 +443,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = defaultToolSpecs().map(
  * @throws If extensions accompany an existing KB, names are duplicated, schemas are invalid, or initialization fails.
  */
 export async function createKBTools(
-  input: string | DocSource | KB,
+  input: string | DocSource | KB | FederatedKB,
   opts: KBToolsOptions = {},
 ): Promise<KBTools> {
-  if (isKB(input) && opts.extensions !== undefined)
+  if ((isKB(input) || isFederatedKB(input)) && opts.extensions !== undefined)
     throw new Error("extensions cannot be supplied with an existing KB");
-  const kb = isKB(input) ? input : await createKB(input, opts.extensions);
+  const kb = isFederatedKB(input)
+    ? input
+    : await createFederatedKB({
+        local: isKB(input) ? input : await createKB(input, opts.extensions),
+      });
   const { status } = kb;
   const specs = opts.tools
     ? opts.tools(defaultToolSpecs(opts), kb)
@@ -504,12 +518,11 @@ function resolveOpts(a: any): ResolveOptions {
 
 /** Returns the id if it exists (and has the expected type), else throws a ToolError with suggestions. */
 async function requireNode(
-  kb: KB,
+  kb: FederatedKB,
   id: string,
   type?: NodeType,
 ): Promise<string> {
-  const { graph } = kb;
-  const n = graph.nodes.get(id);
+  const n = await kb.node(id);
   if (n && (!type || n.type === type)) return id;
   if (n && type) {
     const hint =
@@ -520,7 +533,8 @@ async function requireNode(
           : "";
     throw new ToolError(`"${id}" is a ${n.type}, not a ${type}.${hint}`);
   }
-  const query = id.split(".").slice(1).join(" ").replace(/-/g, " ") || id;
+  const query =
+    parseRef(id).id.split(".").slice(1).join(" ").replace(/-/g, " ") || id;
   const similar = (
     await kb.search(query, { types: type ? [type] : undefined, limit: 3 })
   ).hits.map((h) => h.id);

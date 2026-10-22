@@ -2,6 +2,7 @@ import { translate, type Language } from "./i18n.js";
 
 const descriptions = new Map<string, string>(
   Object.entries({
+    simp: "A product manifest and knowledge-base homepage.",
     goal: "An outcome you want to achieve.",
     procedure: "Steps to follow to complete a task.",
     capability: "A feature or ability available in the system.",

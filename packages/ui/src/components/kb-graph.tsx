@@ -1,3 +1,4 @@
+import { NODE_TYPES } from "@sontx/simplink-core/browser";
 import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { cn, groupByType } from "../lib/utils.js";
@@ -420,17 +421,15 @@ export function KBGraph({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        {["goal", "procedure", "capability", "state", "constraint"].map(
-          (type) => (
-            <ContextMenuItem
-              key={type}
-              title={enumDescription(type)}
-              onSelect={() => setCreate(type)}
-            >
-              {t("New {type} here…", { type: label(type).toLowerCase() })}
-            </ContextMenuItem>
-          ),
-        )}
+        {NODE_TYPES.map((type) => (
+          <ContextMenuItem
+            key={type}
+            title={enumDescription(type)}
+            onSelect={() => setCreate(type)}
+          >
+            {t("New {type} here…", { type: label(type).toLowerCase() })}
+          </ContextMenuItem>
+        ))}
       </ContextMenuContent>
     </ContextMenu>
   );

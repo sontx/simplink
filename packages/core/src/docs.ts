@@ -1,3 +1,6 @@
+import { parseSimpUri } from "./links.js";
+import { parseRef, localize, idToPath } from "./ids.js";
+import { simpDoc } from "./simp-doc.js";
 import * as path from "./posix-path.js";
 import { getChoices } from "./graph.js";
 import { siteGraph, siteIndexes } from "./docs-layout.js";
@@ -27,6 +30,11 @@ export interface DocPage {
 export interface DocsOptions extends ResolveOptions {
   /** Site is reader-facing; graph preserves the original one-page-per-node layout. */
   layout?: "site" | "graph";
+  remoteLink?: (
+    ref: string,
+    label: string,
+    fragment?: string,
+  ) => string | undefined;
 }
 
 const label = (text: string) => text.replace(/[\\[\]]/g, "\\$&");
@@ -84,6 +92,15 @@ function proseLinks(
       const until = closing ? closing.index + run.length : i + run.length;
       result += text.slice(i, until);
       i = until;
+      continue;
+    }
+    const markdown = /^\[([^\]\n]*)\]\((simp:\/\/[^\s)]*)\)/.exec(
+      text.slice(i),
+    );
+    const simpLink = markdown && parseSimpUri(markdown[2]);
+    if (markdown && simpLink) {
+      result += link(simpLink.ref, markdown[1], simpLink.fragment);
+      i += markdown[0].length;
       continue;
     }
     const wiki = /^\[\[([^\]|#]+)(?:#([^\]|]*))?(?:\|([^\]]*))?\]\]/.exec(
@@ -161,6 +178,20 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
   if (site) graph = siteGraph(graph);
   const pages = [...graph.nodes.values()].map((node) => {
     const link = (id: string, title?: string, fragment?: string): string => {
+      id = localize(id, simpDoc(sourceGraph)?.name);
+      const ref = parseRef(id);
+      if (ref.simp) {
+        const text = title ?? id;
+        const custom = opts.remoteLink?.(id, text, fragment);
+        if (custom !== undefined) return custom;
+        const base = simpDoc(sourceGraph)?.peers.find(
+          (p) => p.name === ref.simp,
+        )?.docsUrl;
+        const remotePath = idToPath(ref.id);
+        if (base && remotePath)
+          return `[${label(text)}](${base.replace(/\/+$/, "")}/${ref.id === "simp" ? "" : remotePath}${fragment === undefined ? "" : `#${fragment}`})`;
+        return `${text} (${ref.simp})`;
+      }
       const target = graph.nodes.get(id);
       if (!target) return id.includes("`") ? code(id) : `\`${id}\``;
       const relative = path.relative(path.dirname(node.path), target.path);
@@ -306,7 +337,10 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
   });
   return site
     ? [
-        ...siteIndexes(graph),
+        ...siteIndexes(
+          graph,
+          pages.find((page) => page.path === "index.md"),
+        ),
         ...pages.filter((page) => page.path !== "index.md"),
       ]
     : pages;

@@ -38,7 +38,7 @@ what you find into node types.
 2. Group findings into **areas** (a menu section or module the product team would recognize).
 3. For each area, list candidate nodes: id, type, title, one line of evidence (file path or doc URL),
    and anything uncertain.
-4. Write `kb/INVENTORY.md` from `assets/templates/INVENTORY.md`. Files at the KB root are ignored by the
+4. Write `kb/INVENTORY.md` from `assets/templates/INVENTORY.md`. Root files other than `simp.md` are ignored by the
    loader, so the inventory never pollutes the graph.
 5. **Stop and ask the user to review the inventory.** Summarize: areas, node counts per type, the goals
    (these define what the agent can help with), and the open questions. Do not draft nodes until the
@@ -59,6 +59,7 @@ For each node:
 - Create the file with `node <skill>/scripts/new_node.mjs <id> --kb kb`. It derives the correct path
   from the id and fills the right template; hand-made paths are the most common lint failure (E002/E004).
 - Fill it from evidence only. Put the evidence paths in `sources:` — update mode depends on them.
+- Prefer `simp://` Markdown body links; use `simp:///goal.area.task` locally and `simp://peer/goal.area.task` remotely. Wikilinks remain supported. Add optional root `simp.md` with the simp template when naming a product or declaring peers.
 - Write steps as the **user** experiences them (UI labels from the i18n files, or public API calls),
   never internal function names.
 - Write `aliases` and `when_to_use` in both Vietnamese (with diacritics) and English, in the words a

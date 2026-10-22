@@ -99,6 +99,22 @@ Aliases and goal `when_to_use` will include Vietnamese with diacritics and Engli
 | state.ui.workspace-running          | state      | The selected KB is open in the local UI              | verified | packages/ui/src/workspace/context.tsx; packages/ui/src/workspace/service.ts                                | Check browser KB metadata and source root; satisfied by launch-workspace.                                                      |
 | constraint.ui.browser-folder-access | constraint | Grant browser folder access and keep memory edits    | verified | packages/ui/src/workspace/service.ts; packages/ui/src/workspace/service.ts; README.md                      | Chromium direct writes; HTTPS/localhost; permission on reopen; memory zip fallback.                                            |
 
+## Area: Link products through simp federation
+
+Federation scope approved by the 2026-10-21 implementation plan; English steps and bilingual aliases follow the existing inventory.
+
+| id                                        | type       | title                                                          | status   | evidence                                                                              | notes                                                        |
+| ----------------------------------------- | ---------- | -------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| simp                                      | simp       | Simplink                                                       | verified | packages/core/src/simp-doc.ts; packages/core/src/docs.ts                              | Root manifest and docs homepage; no configured peers.        |
+| goal.federation.link-products             | goal       | Link products and search guidance across their knowledge bases | verified | packages/core/src/federation/kb.ts; packages/node/src/open-peer.ts                    | User entry point for cross-product guidance.                 |
+| procedure.federation.write-simp-doc       | procedure  | Declare a product simp and its peers                           | verified | packages/core/schemas/simp.schema.json                                                | Identity, homepage, serving modes, peer URLs.                |
+| procedure.federation.reference-other-simp | procedure  | Reference another product's guidance                           | verified | packages/core/src/ids.ts; packages/core/src/links.ts; packages/node/src/lint-peers.ts | Qualified IDs, simp links, offline and online diagnostics.   |
+| procedure.federation.run-simp-node        | procedure  | Run a product's simp peer API                                  | verified | packages/node/src/bin.ts; packages/node/src/http.ts                                   | API, overrides, optional authentication, health.             |
+| procedure.federation.publish-static-simp  | procedure  | Publish a static simp or share a KB folder                     | verified | packages/core/src/simp-index.ts; packages/node/src/open-peer.ts                       | Static index enables search; folder peers search directly.   |
+| procedure.mcp.connect-to-simp-node        | procedure  | Connect MCP to a simp or enable declared peers                 | verified | packages/mcp/src/kb-source.ts                                                         | Local federation and remote or folder home modes.            |
+| capability.federation.peer-api            | capability | Explore and resolve guidance across product knowledge bases    | verified | packages/core/src/federation/protocol.ts; packages/node/src/http.ts                   | Explore, lookup, optional delegate resolve.                  |
+| constraint.federation.mesh-limits         | constraint | Respect federation limits and remote availability              | verified | packages/core/src/federation/service.ts; packages/core/src/federation/prefetch.ts     | Hops, cache, timeout, static limits, availability isolation. |
+
 ## Proposed graph connections
 
 - Authoring procedures produce `state.authoring.documents-exist` and `state.authoring.no-lint-errors`; CLI search, resolution, and docs export check the latter.

@@ -76,6 +76,8 @@ export interface KB {
   resolveGoal(id: string, opts?: ResolveOptions): ResolvedGoal;
   /** Resolves one procedure; throws for a missing or non-procedure identifier. */
   resolveProcedure(id: string, opts?: ResolveOptions): ResolvedGoal;
+  /** Merges configured resolution defaults with per-call values. */
+  resolveOptions(opts?: ResolveOptions): ResolveOptions;
   /** Renders a plan using the configured renderer; synchronous renderers are wrapped in a promise. */
   render(resolved: ResolvedGoal, opts?: RenderOptions): Promise<RenderResult>;
   /** Exports Markdown pages in memory using configured resolution defaults and per-call overrides. */
@@ -148,11 +150,11 @@ export async function createKB(
       warnings: warningCount,
     },
     node: (id) => graph.nodes.get(id),
+    resolveOptions: options,
     search: (query, opts) => search.search(query, opts),
     resolveGoal: (id, opts) => resolveGoal(graph, id, options(opts)),
     resolveProcedure: (id, opts) => resolveProcedure(graph, id, options(opts)),
-    docs: (opts) =>
-      exportDocs(graph, { ...options(opts), layout: opts?.layout }),
+    docs: (opts) => exportDocs(graph, { ...opts, ...options(opts) }),
     render: async (resolved, opts = {}) =>
       (extensions.renderer ?? renderResolvedGoal)(resolved, opts),
   };

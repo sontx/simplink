@@ -20,6 +20,20 @@ const files = Object.fromEntries(
   ]),
 );
 async function smoke() {
+  const federation = await createKB(
+    memorySource({
+      "simp.md":
+        "---\ntype: simp\nname: browser\ntitle: Browser homepage\nsummary: Browser knowledge\npeers: [{name: crm, docs_url: https://docs.example/crm}]\n---\n[Customers](simp://crm/goal.import#steps)\n",
+    }),
+    { validator: compileValidator(schemas) },
+  );
+  const homepage = federation.docs().find((p) => p.path === "index.md");
+  if (
+    federation.status.errors ||
+    !homepage?.content.includes("# Browser homepage") ||
+    !homepage.content.includes("https://docs.example/crm/goals/import.md#steps")
+  )
+    throw new Error("Simp homepage or remote docs link failed");
   const kb = await createKB(memorySource(files), {
     validator: compileValidator(schemas),
   });

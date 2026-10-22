@@ -10,33 +10,33 @@
     "goalId": {
       "title": "goal id",
       "type": "string",
-      "pattern": "^goal(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*:)?goal(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
     },
     "procedureId": {
       "title": "procedure id",
       "type": "string",
-      "pattern": "^procedure(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*:)?procedure(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
     },
     "capabilityId": {
       "title": "capability id",
       "type": "string",
-      "pattern": "^capability(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*:)?capability(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
     },
     "stateId": {
       "title": "state id",
       "type": "string",
-      "pattern": "^state(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*:)?state(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
     },
     "constraintId": {
       "title": "constraint id",
       "type": "string",
-      "pattern": "^constraint(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
+      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*:)?constraint(\\.[a-z0-9]+(-[a-z0-9]+)*)+$"
     },
     "nodeRefs": {
       "type": "array",
       "uniqueItems": true,
       "items": {
-        "$ref": "#/$defs/nodeId"
+        "$ref": "#/$defs/nodeRef"
       }
     },
     "procedureRefs": {
@@ -187,6 +187,11 @@
           }
         }
       }
+    },
+    "nodeRef": {
+      "title": "node reference",
+      "type": "string",
+      "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*:)?(?:(?:goal|procedure|capability|state|constraint)(\\.[a-z0-9]+(-[a-z0-9]+)*)+|simp)$"
     }
   }
 }

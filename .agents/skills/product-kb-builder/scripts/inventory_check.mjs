@@ -47,7 +47,7 @@ for (const line of readFileSync(invPath, "utf8").split("\n")) {
   }
   const get = (name) => cells[header.indexOf(name)] ?? "";
   const id = get("id");
-  if (/^(goal|procedure|capability|state|constraint)\./.test(id))
+  if (id === "simp" || /^(goal|procedure|capability|state|constraint)\./.test(id))
     rows.set(id, (get("status") || "planned").toLowerCase());
 }
 
@@ -69,6 +69,8 @@ const walk = (dir) => {
 };
 for (const folder of Object.keys(TYPES))
   if (existsSync(path.join(kb, folder))) walk(path.join(kb, folder));
+
+if (existsSync(path.join(kb, "simp.md"))) files.set("simp", path.join(kb, "simp.md"));
 
 // --- compare ---
 const problems = [];

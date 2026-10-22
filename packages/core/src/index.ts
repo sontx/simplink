@@ -62,3 +62,19 @@ export type { CliContext } from "./cli/context.js";
 export { fsSource, createValidator, SCHEMA_DIR } from "./platform.js";
 
 export * from "./simp-doc.js";
+
+export * from "./ids.js";
+
+export * from "./links.js";
+
+export * from "./federation/protocol.js";
+
+export * from "./federation/service.js";
+
+export * from "./federation/merge.js";
+
+export * from "./federation/kb.js";
+
+export * from "./simp-index.js";
+
+export { runIndex } from "./cli/index-file.js";

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
-import path from "node:path";
 import { parseArgs } from "node:util";
 import { createKBTools } from "@sontx/simplink-core";
+import { openFederatedKB } from "./kb-source.js";
 import { createMcpHttpHandler } from "./http.js";
 
 const env = process.env;
@@ -10,7 +10,7 @@ const { values } = (() => {
   try {
     return parseArgs({
       options: {
-        kb: { type: "string", default: env.KB_DIR ?? "kb" },
+        kb: { type: "string" },
         host: { type: "string", default: env.HOST ?? "127.0.0.1" },
         port: { type: "string", default: env.PORT ?? "3000" },
         path: { type: "string", default: env.MCP_PATH ?? "/mcp" },
@@ -28,6 +28,12 @@ const { values } = (() => {
           multiple: true,
           default: env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
         },
+        simp: { type: "string" },
+        "simp-token": { type: "string" },
+        "no-peers": { type: "boolean", default: false },
+        peer: { type: "string", multiple: true, default: [] },
+        "peer-token": { type: "string", multiple: true, default: [] },
+        "peer-timeout": { type: "string", default: "2000" },
         help: { type: "boolean", short: "h", default: false },
       },
     });
@@ -42,6 +48,12 @@ if (values.help) {
   const usage = `Usage: simp-mcp-http [--kb dir] [--host h] [--port n] [--path p] [--max-body bytes] [--allowed-host h]... [--allowed-origin o]...
 
 Serves the KB tools over stateless Streamable HTTP, plus GET /healthz.
+  --simp URL        Connect to a simp node, static KB, or folder (exclusive with --kb)
+  --simp-token TOKEN  Bearer token for --simp
+  --no-peers        Disable declared peers
+  --peer name=URL   Override a peer URL (repeatable)
+  --peer-token name=TOKEN  Override a peer token (repeatable)
+  --peer-timeout MS  Peer timeout (default: 2000)
   --kb              KB directory (default: $KB_DIR or kb)
   --host            listen address (default: $HOST or 127.0.0.1)
   --port            listen port (default: $PORT or 3000)
@@ -60,8 +72,28 @@ const log = (entry: Record<string, unknown>) =>
     `${JSON.stringify({ t: new Date().toISOString(), ...entry })}\n`,
   );
 
-const root = path.resolve(values.kb!);
-const tools = await createKBTools(root, { tenantContext: false });
+const kb = await (async () => {
+  try {
+    return await openFederatedKB(
+      {
+        kb: values.kb,
+        simp: values.simp,
+        simpToken: values["simp-token"],
+        noPeers: values["no-peers"],
+        peer: values.peer,
+        peerToken: values["peer-token"],
+        peerTimeout: Number(values["peer-timeout"]),
+      },
+      process.env,
+    );
+  } catch (error) {
+    process.stderr.write(
+      `${(error as Error).message}\nRun simp-mcp-http --help for usage.\n`,
+    );
+    process.exit(2);
+  }
+})();
+const tools = await createKBTools(kb, { tenantContext: false });
 log({ msg: "kb loaded", ...tools.status });
 if (tools.status.errors)
   log({
@@ -71,6 +103,7 @@ if (tools.status.errors)
 
 const server = createServer(
   createMcpHttpHandler(tools, {
+    peers: () => kb.peers(),
     path: values.path,
     maxBodyBytes: Number(values["max-body"]),
     allowedHosts: values["allowed-host"],

@@ -248,6 +248,7 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Capability: "Khả năng",
   State: "Trạng thái",
   Constraint: "Ràng buộc",
+  Simp: "Cơ sở tri thức sản phẩm",
   Procedures: "Quy trình",
   Requires: "Yêu cầu",
   Preconditions: "Điều kiện tiên quyết",
@@ -300,6 +301,8 @@ export const vietnamese: Readonly<Record<string, string>> = {
   down: "xuống dưới",
   "Source editor": "Trình chỉnh sửa mã nguồn",
   "An outcome you want to achieve.": "Kết quả bạn muốn đạt được.",
+  "A product manifest and knowledge-base homepage.":
+    "Thông tin sản phẩm và trang chủ cơ sở tri thức.",
   "Steps to follow to complete a task.":
     "Các bước thực hiện để hoàn thành một tác vụ.",
   "A feature or ability available in the system.":

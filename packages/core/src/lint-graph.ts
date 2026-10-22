@@ -1,3 +1,5 @@
+import { parseRef } from "./ids.js";
+import { simpDoc } from "./simp-doc.js";
 import { orderedItems, section, stripCode } from "./markdown.js";
 import { choiceMarker, getChoices } from "./graph.js";
 import { issue, type Issue, type KBGraph, type KBNode } from "./types.js";
@@ -67,6 +69,12 @@ export function lintGraph(g: KBGraph): Issue[] {
       const target = g.nodes.get(e.to);
       const label =
         e.source === "body" ? `[[${e.to}]]` : `${e.kind} → "${e.to}"`;
+      const { simp } = parseRef(e.to);
+      if (simp) {
+        if (!simpDoc(g)?.peers.some((p) => p.name === simp))
+          at(n, "E016", `${label}: unknown simp "${simp}"`);
+        continue;
+      }
       if (!target) at(n, "E007", `${label} does not exist`);
       else if (n.status === "active" && target.status === "deprecated")
         at(n, "W104", `${label} is deprecated`);
