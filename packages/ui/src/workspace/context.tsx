@@ -19,6 +19,7 @@ import { lastDirectory, rememberDirectory } from "./persist.js";
 import { Button, ErrorMessage } from "../components/ui/primitives.js";
 import { Input } from "../components/ui/input.js";
 import { usePreferences } from "../components/preferences.js";
+import { SimpNetwork } from "../components/simp-network.js";
 import {
   FolderOpen,
   Globe,
@@ -97,6 +98,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const opening = useRef(false);
   const active = useRef<Workspace | null>(null);
+  const content = useRef<HTMLDivElement>(null);
   const [last, setLast] = useState<DirectoryHandle | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<unknown>();
@@ -322,8 +324,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       </main>
     );
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-muted/40 p-4">
-      <div className="w-full max-w-md">
+    <main className="relative flex min-h-dvh items-center justify-center bg-muted/40 p-4">
+      <SimpNetwork avoid={content} />
+      <div ref={content} className="relative w-full max-w-md">
         <div className="mb-8 flex items-center justify-center gap-2.25 text-[26px] font-bold tracking-[-1px]">
           <img
             src={`${import.meta.env.BASE_URL}logo.svg`}
