@@ -10,14 +10,25 @@ const yaml = (
     };
   }
 ).engines.yaml;
+/** File name of the optional static publishing index at the KB root. */
 export const SIMP_INDEX_FILE = "simp-index.yaml";
 
+/** Static publishing index that lets static peers search a KB. */
 export interface SimpIndex {
+  /** Index format version. */
   protocol: 1;
+  /** Simp name from `simp.md`. */
   name: string;
+  /** Sorted node file paths relative to the KB root. */
   files: string[];
 }
 
+/**
+ * Lists a KB's node files for static publishing. Markdown files that are not
+ * node files are left out.
+ *
+ * @throws Error when the KB has no `simp.md`.
+ */
 export async function buildSimpIndex(source: DocSource): Promise<SimpIndex> {
   const docs = await loadDocs(source);
   const simp = docs.find((d) => d.relPath === "simp.md");
@@ -34,10 +45,17 @@ export async function buildSimpIndex(source: DocSource): Promise<SimpIndex> {
   return parseSimpIndex(formatSimpIndex(index));
 }
 
+/** Serializes an index as YAML for {@link SIMP_INDEX_FILE}. */
 export function formatSimpIndex(index: SimpIndex): string {
   return yaml.stringify(index);
 }
 
+/**
+ * Parses and validates an index. Every file must be a node path inside the
+ * KB, which rejects traversal and absolute or remote URLs.
+ *
+ * @throws Error prefixed `invalid index:` when validation fails.
+ */
 export function parseSimpIndex(text: string): SimpIndex {
   try {
     const value = yaml.parse(text) as SimpIndex;

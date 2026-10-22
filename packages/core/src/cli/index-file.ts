@@ -8,6 +8,11 @@ import {
 } from "../simp-index.js";
 import { fsSource } from "../platform.js";
 import type { CliContext } from "./context.js";
+/**
+ * Runs `simp-index [kb]`: writes {@link SIMP_INDEX_FILE} into the KB folder.
+ * Returns the exit code: `0` on success and `2` on errors such as a missing
+ * `simp.md`.
+ */
 export async function runIndex(
   argv: string[],
   ctx: CliContext = {},

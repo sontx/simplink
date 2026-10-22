@@ -30,6 +30,7 @@ export interface DocPage {
 export interface DocsOptions extends ResolveOptions {
   /** Site is reader-facing; graph preserves the original one-page-per-node layout. */
   layout?: "site" | "graph";
+  /** Renders a link to another simp's node; return `undefined` to use the default `docs_url` link or labeled text. */
   remoteLink?: (
     ref: string,
     label: string,

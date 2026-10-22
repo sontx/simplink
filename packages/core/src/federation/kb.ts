@@ -20,46 +20,85 @@ import {
   type SourceStatus,
 } from "./protocol.js";
 
+/**
+ * Options for {@link createFederatedKB}, in one of three shapes: a local KB
+ * with optional peers (standalone), a remote `home` simp that answers
+ * everything (peer mode), or peers only (hub without a KB of its own).
+ */
 export type FederatedKBOptions =
   | {
+      /** Local KB answered in-process. */
       local: KB;
+      /** Peers reached directly. */
       peers?: Peer[];
+      /** Forwarding hops per request. Defaults to `2`. */
       hops?: number;
+      /** Per-peer request timeout in milliseconds. Defaults to `2000`. */
       timeoutMs?: number;
+      /** Preferred resolution mode by peer name; overrides `simp.md` peer modes. */
       modes?: Record<string, ResolutionMode>;
     }
-  | { home: Peer; hops?: number }
   | {
-      local?: undefined;
-      peers: Peer[];
+      /** Remote simp that answers every request, such as an `httpPeer`. */
+      home: Peer;
+      /** Forwarding hops per request. Defaults to `2`. */
       hops?: number;
+    }
+  | {
+      /** No local KB. */
+      local?: undefined;
+      /** Peers reached directly. */
+      peers: Peer[];
+      /** Forwarding hops per request. Defaults to `2`. */
+      hops?: number;
+      /** Per-peer request timeout in milliseconds. Defaults to `2000`. */
       timeoutMs?: number;
+      /** Preferred resolution mode by peer name. */
       modes?: Record<string, ResolutionMode>;
     };
 
+/** KB status plus the name of the simp it represents. */
 export interface FederatedStatus extends KBStatus {
+  /** Simp name, when the KB or home simp has one. */
   simp?: string;
 }
 
+/** Search results across simps, with the status of every simp asked. */
 export interface FederatedSearchResult extends SearchResult {
+  /** Every simp asked, including failures. */
   sources: SourceStatus[];
 }
 
+/**
+ * A KB facade whose reads span simps. IDs of other simps are qualified
+ * (`crm:goal.x`), and unreachable peers produce warnings or failed sources
+ * instead of errors. Tools from `createKBTools` run on this interface.
+ */
 export interface FederatedKB {
+  /** The local KB, when there is one. */
   readonly local?: KB;
+  /** Local KB status, or the home simp's name and error count. */
   readonly status: FederatedStatus;
+  /** Searches the local KB and peers, merging the results. */
   search(query: string, opts?: SearchOptions): Promise<FederatedSearchResult>;
+  /** Fetches one node with its body, or `undefined` when no simp has it. */
   node(id: string): Promise<LookupNode | undefined>;
+  /** Fetches nodes by local or qualified ID; missing IDs are absent from the map. */
   nodes(
     ids: string[],
     opts?: { body?: boolean },
   ): Promise<Map<string, LookupNode>>;
+  /** Resolves a goal, pulling or delegating nodes of other simps as needed. */
   resolveGoal(id: string, opts?: ResolveOptions): Promise<ResolvedGoal>;
+  /** Resolves a procedure, pulling or delegating nodes of other simps as needed. */
   resolveProcedure(id: string, opts?: ResolveOptions): Promise<ResolvedGoal>;
+  /** Renders a plan with the local KB's renderer, or the default renderer without one. */
   render(resolved: ResolvedGoal, opts?: RenderOptions): Promise<RenderResult>;
+  /** Checks each directly configured peer's manifest within the timeout. */
   peers(): Promise<SourceStatus[]>;
 }
 const BRAND = Symbol.for("simplink.federated-kb");
+/** Whether a value was created by {@link createFederatedKB}. */
 export function isFederatedKB(value: unknown): value is FederatedKB {
   return (
     typeof value === "object" &&
@@ -68,6 +107,19 @@ export function isFederatedKB(value: unknown): value is FederatedKB {
   );
 }
 
+/**
+ * Creates a {@link FederatedKB}. With a local KB and no peers or cross-simp
+ * references, it behaves like the local KB.
+ *
+ * @example
+ * ```ts
+ * const kb = await createFederatedKB({
+ *   local: await createKB("kb"),
+ *   peers: [httpPeer("https://crm.example/simp")],
+ * });
+ * const tools = await createKBTools(kb);
+ * ```
+ */
 export async function createFederatedKB(
   opts: FederatedKBOptions,
 ): Promise<FederatedKB> {

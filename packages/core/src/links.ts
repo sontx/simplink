@@ -1,10 +1,19 @@
 import { stripCode } from "./markdown.js";
+/** A node link found in Markdown prose. */
 export interface BodyLink {
+  /** Target reference, qualified (`crm:goal.x`) when it points at another simp. */
   ref: string;
+  /** Heading fragment after `#`, without the `#`. */
   fragment?: string;
+  /** Link text, or the wikilink alias after `|`. */
   label?: string;
 }
 
+/**
+ * Parses a `simp://` URI: `simp://crm/goal.x#steps` targets another simp,
+ * `simp:///goal.x` the current KB, and `simp://crm` that simp's homepage
+ * (`simp`). Returns `undefined` for anything else.
+ */
 export function parseSimpUri(href: string): BodyLink | undefined {
   const m =
     /^simp:\/\/([a-z0-9]+(?:-[a-z0-9]+)*)?(?:\/([^#?\s]*))?(?:#([^\s]*))?$/.exec(
@@ -18,6 +27,10 @@ export function parseSimpUri(href: string): BodyLink | undefined {
   };
 }
 
+/**
+ * Finds `[[wikilinks]]` and `[text](simp://…)` links outside code, keeping the
+ * first link per target reference.
+ */
 export function extractBodyLinks(body: string): BodyLink[] {
   const links = new Map<string, BodyLink>();
   for (const m of stripCode(body).matchAll(

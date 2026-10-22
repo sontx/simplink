@@ -27,17 +27,27 @@ import type {
 } from "./protocol.js";
 import { PROTOCOL_VERSION } from "./protocol.js";
 
+/** Options for {@link createPeerService}. */
 export interface PeerServiceOptions {
+  /** Local KB to answer from; its `simp.md` supplies the simp name and served modes. */
   kb: KB;
+  /** Peers to forward to, or a function returning the current peers. */
   peers?: Peer[] | (() => Peer[]);
+  /** Upper bound on forwarding hops, whatever a request asks. Defaults to `2`. */
   maxHops?: number;
+  /** Per-peer request timeout in milliseconds. Defaults to `2000`. */
   timeoutMs?: number;
+  /** Preferred resolution mode by peer name; overrides `simp.md` peer modes. */
   modes?: Record<string, ResolutionMode>;
+  /** Receives structured entries for failed, unauthorized, and rejected peer responses. */
   log?: (entry: Record<string, unknown>) => void;
 }
 
+/** A {@link Peer} answered in-process from a local KB. */
 export interface PeerService extends Peer {
+  /** The KB this service answers from. */
   readonly kb: KB;
+  /** Lists every local node without bodies. */
   list(): Promise<ListResponse>;
 }
 const COMMON_KEYS = new Set([
@@ -50,6 +60,7 @@ const COMMON_KEYS = new Set([
   "status",
   "availability",
 ]);
+/** Converts a local node to its protocol form, or returns `undefined` when the KB has no such node. */
 export function toLookupNode(
   kb: KB,
   id: string,
@@ -75,6 +86,13 @@ export function toLookupNode(
   };
 }
 
+/**
+ * Creates the in-process side of the simp protocol for a local KB. It answers
+ * from the KB and forwards to peers within the trace's hops, qualifying remote
+ * IDs and rejecting nodes from simps that did not answer. A failing peer
+ * becomes a failed source instead of an error. `resolve` is present only when
+ * `simp.md` serves `delegate`. Serve it over HTTP with `@sontx/simplink-node`.
+ */
 export function createPeerService(opts: PeerServiceOptions): PeerService {
   const { kb } = opts;
   const doc = simpDoc(kb.graph);

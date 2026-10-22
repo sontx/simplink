@@ -8,6 +8,7 @@ import type {
   SourceStatus,
 } from "./protocol.js";
 
+/** Simps whose nodes are accepted from `peer`: the peer itself and every source that answered successfully. */
 export function acceptedOwners(
   peer: string,
   sources: SourceStatus[],
@@ -15,6 +16,11 @@ export function acceptedOwners(
   return new Set([peer, ...sources.filter((s) => s.ok).map((s) => s.simp)]);
 }
 
+/**
+ * Rewrites a peer's explore or lookup response into the caller's view: the
+ * peer's local IDs gain the `peer:` prefix, and IDs qualified with the caller's
+ * own name `own` become local.
+ */
 export function qualifyResponse<T extends ExploreResponse | LookupResponse>(
   res: T,
   peer: string,
@@ -51,6 +57,13 @@ export function qualifyResponse<T extends ExploreResponse | LookupResponse>(
   };
 }
 
+/**
+ * Merges local and already qualified remote search results. Remote relevance
+ * is decayed by 0.9; remote hits also suggest local goals through
+ * `localGraph`. Duplicates keep the highest relevance, ties favour local
+ * results, and limits apply after merging. Each simp appears once in
+ * `sources`, preferring a successful status.
+ */
 export function mergeExplore(
   local: ExploreResponse,
   remote: ExploreResponse[],
@@ -124,6 +137,14 @@ export function mergeExplore(
   };
 }
 
+/**
+ * Rewrites a peer's resolved plan into the caller's view, as
+ * {@link qualifyResponse} does for nodes, including IDs in plan steps and
+ * warnings.
+ *
+ * @throws Error `rejected node` when the plan names a simp that is not an
+ * {@link acceptedOwners | accepted owner}.
+ */
 export function qualifyResolveResponse(
   res: import("./protocol.js").ResolveResponse,
   peer: string,

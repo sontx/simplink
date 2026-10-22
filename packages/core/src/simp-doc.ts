@@ -1,18 +1,31 @@
 import type { KBGraph } from "./types.js";
+/** A peer declared in `simp.md`. */
 export interface SimpPeerDecl {
+  /** Peer simp name used in qualified references. */
   name: string;
+  /** Simp node, static KB, `file:` URL, or folder path relative to the KB root. */
   url?: string;
+  /** Preferred resolution mode; used only when the peer serves it. */
   mode?: "pull" | "delegate";
+  /** Root of the peer's published graph-layout docs, used for remote doc links. */
   docsUrl?: string;
 }
 
+/** The product manifest read from a KB's root `simp.md`. */
 export interface SimpDoc {
+  /** Stable kebab-case simp name; empty when `simp.md` omits it. */
   name: string;
+  /** Product title. */
   title: string;
+  /** Product summary. */
   summary: string;
+  /** Product tags. */
   tags: string[];
+  /** Root of this product's published docs. */
   docsUrl?: string;
+  /** Resolution modes this simp serves; defaults to `["pull"]`. */
   serves: ("pull" | "delegate")[];
+  /** Declared peers. */
   peers: SimpPeerDecl[];
 }
 
