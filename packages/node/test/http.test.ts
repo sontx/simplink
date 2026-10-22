@@ -186,3 +186,26 @@ test("nodes route lists the KB and CORS allows only listed origins", async () =>
     await server.close();
   }
 });
+
+test("allowed origin * gives CORS to any origin and still requires the token", async () => {
+  const kb = await createKB(crmRoot.pathname.replace(/^\/(\w:)/, "$1"));
+  const server = await serve(
+    createSimpNodeHandler({ kb, token: "secret", allowedOrigins: ["*"] }),
+  );
+  try {
+    const ok = await fetch(`${server.url}/simp/v1/nodes`, {
+      headers: { origin: "http://any.test", authorization: "Bearer secret" },
+    });
+    assert.equal(ok.status, 200);
+    assert.equal(
+      ok.headers.get("access-control-allow-origin"),
+      "http://any.test",
+    );
+    const anonymous = await fetch(`${server.url}/simp/v1/nodes`, {
+      headers: { origin: "http://any.test" },
+    });
+    assert.equal(anonymous.status, 401);
+  } finally {
+    await server.close();
+  }
+});

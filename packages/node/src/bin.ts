@@ -126,7 +126,7 @@ peerOptions(
   )
   .option(
     "--allowed-origin <origin>",
-    "allowed CORS origin, repeatable (env ALLOWED_ORIGINS)",
+    "allowed CORS origin, repeatable; * allows any (env ALLOWED_ORIGINS)",
     collect,
     env.ALLOWED_ORIGINS?.split(",").filter(Boolean) ?? [],
   )

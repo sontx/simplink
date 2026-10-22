@@ -26,7 +26,7 @@ export type SimpNodeHandlerOptions = (
   maxBodyBytes?: number;
   /** Host header allowlist; empty allows any host. `/healthz` is exempt. */
   allowedHosts?: string[];
-  /** Origin allowlist; only these origins get CORS headers, and other browser origins are refused. */
+  /** Origin allowlist; only these origins get CORS headers, and other browser origins are refused. `*` allows any origin. */
   allowedOrigins?: string[];
   /** Called once per finished request with method, path, status, and duration. */
   onRequest?: (e: Record<string, unknown>) => void;
@@ -99,10 +99,12 @@ export function createSimpNodeHandler(
         ms: Math.round(performance.now() - started),
       }),
     );
-    // CORS only for origins on the allowlist, so browser apps such as the UI must be listed explicitly.
+    // CORS only for origins on the allowlist (or `*`), so browser apps such as the UI must be listed explicitly.
     const origin = req.headers.origin;
+    const originAllowed = (o: string) =>
+      !!opts.allowedOrigins?.some((a) => a === "*" || a === o);
     const cors: Record<string, string> =
-      origin && opts.allowedOrigins?.includes(origin)
+      origin && originAllowed(origin)
         ? { "access-control-allow-origin": origin, vary: "origin" }
         : {};
     const send = (status: number, body: unknown, allow?: string) =>
@@ -116,9 +118,7 @@ export function createSimpNodeHandler(
     const forbidden =
       (opts.allowedHosts?.length &&
         !opts.allowedHosts.includes(req.headers.host ?? "")) ||
-      (opts.allowedOrigins?.length &&
-        req.headers.origin &&
-        !opts.allowedOrigins.includes(req.headers.origin));
+      (opts.allowedOrigins?.length && origin && !originAllowed(origin));
     const actual = Buffer.from(req.headers.authorization ?? ""),
       expected = Buffer.from(`Bearer ${opts.token}`);
     const authorized =
