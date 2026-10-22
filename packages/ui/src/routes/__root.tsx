@@ -37,6 +37,7 @@ import {
   FolderOpen,
   FolderX,
   Settings2,
+  Sparkles,
 } from "lucide-react";
 import { kbQuery, searchQuery } from "../api.js";
 import {
@@ -266,6 +267,7 @@ function Shell() {
             { to: "/issues", label: "Issues", Icon: TriangleAlert },
             { to: "/docs/$", label: "Docs", Icon: BookOpen },
             { to: "/playground", label: "Playground", Icon: FlaskConical },
+            { to: "/skills", label: "Skills", Icon: Sparkles },
           ].map(({ to, label, Icon }) => (
             <Link
               key={label}

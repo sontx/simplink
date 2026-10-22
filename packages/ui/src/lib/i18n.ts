@@ -349,6 +349,29 @@ export const vietnamese: Readonly<Record<string, string>> = {
     "Vấn đề kiểm tra cần được khắc phục.",
   "A potential problem that should be reviewed.":
     "Vấn đề tiềm ẩn cần được xem xét.",
+  Skills: "Kỹ năng",
+  "AGENT SKILLS": "KỸ NĂNG CHO AGENT",
+  "Skills teach a coding agent how to write and use a Simplink knowledge base.":
+    "Kỹ năng hướng dẫn coding agent cách viết và sử dụng cơ sở tri thức Simplink.",
+  "Uses the Simplink packages from the command line or from code: lint, search, and resolve a KB, export docs, serve it over MCP, run a simp node, or embed KB tools in an app.":
+    "Dùng các gói Simplink qua dòng lệnh hoặc trong mã: kiểm tra, tìm kiếm và lập kế hoạch từ KB, xuất tài liệu, phục vụ qua MCP, chạy simp node hoặc nhúng công cụ KB vào ứng dụng.",
+  "Download skills (.zip)": "Tải kỹ năng (.zip)",
+  "Builds or re-syncs a knowledge base from a product's source code and docs. Use it when the agent can read the codebase.":
+    "Xây dựng hoặc đồng bộ lại cơ sở tri thức từ mã nguồn và tài liệu của sản phẩm. Dùng khi agent đọc được mã nguồn.",
+  "Builds or re-syncs a knowledge base from a documentation site, help center, or folder of doc pages, when no source code is available. Reuses product-kb-builder's references and scripts, so install both.":
+    "Xây dựng hoặc đồng bộ lại cơ sở tri thức từ trang tài liệu, trung tâm trợ giúp hoặc thư mục tài liệu khi không có mã nguồn. Dùng lại tài liệu tham khảo và script của product-kb-builder, nên hãy cài cả hai.",
+  "Try asking:": "Thử yêu cầu:",
+  "Set up in your coding agent": "Cài đặt vào coding agent",
+  "Install the Simplink CLI in the project; the skills run simp-lint, simp-search, and simp-resolve.":
+    "Cài Simplink CLI vào dự án; kỹ năng sẽ chạy simp-lint, simp-search và simp-resolve.",
+  "Unzip the bundle into your agent's skills folder. Keep the folders side by side.":
+    "Giải nén gói vào thư mục kỹ năng của agent. Giữ các thư mục nằm cạnh nhau.",
+  "Other agents: use the agent's skills folder if it supports Agent Skills, or tell it to read the SKILL.md file before starting.":
+    "Agent khác: dùng thư mục kỹ năng của agent nếu hỗ trợ Agent Skills, hoặc yêu cầu agent đọc tệp SKILL.md trước khi bắt đầu.",
+  "Restart the agent, then ask for a knowledge base in plain words. The agent loads the matching skill.":
+    "Khởi động lại agent, rồi yêu cầu tạo cơ sở tri thức bằng lời thường. Agent sẽ tự nạp kỹ năng phù hợp.",
+  "Open the resulting kb folder here to review the graph and fix issues.":
+    "Mở thư mục kb vừa tạo tại đây để xem đồ thị và sửa lỗi.",
 };
 
 export function translate(

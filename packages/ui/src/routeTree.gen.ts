@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as IssuesRouteImport } from './routes/issues'
 import { Route as PlaygroundRouteImport } from './routes/playground'
+import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as NodesIndexRouteImport } from './routes/nodes/index'
 import { Route as NodesIdRouteImport } from './routes/nodes/$id'
@@ -37,6 +38,11 @@ const PlaygroundRoute = PlaygroundRouteImport.update({
   path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SkillsRoute = SkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
   path: '/docs/$',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/graph': typeof GraphRoute
   '/issues': typeof IssuesRoute
   '/playground': typeof PlaygroundRoute
+  '/skills': typeof SkillsRoute
   '/docs/$': typeof DocsSplatRoute
   '/nodes/$id': typeof NodesIdRoute
   '/nodes/': typeof NodesIndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/graph': typeof GraphRoute
   '/issues': typeof IssuesRoute
   '/playground': typeof PlaygroundRoute
+  '/skills': typeof SkillsRoute
   '/docs/$': typeof DocsSplatRoute
   '/nodes/$id': typeof NodesIdRoute
   '/nodes': typeof NodesIndexRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/graph': typeof GraphRoute
   '/issues': typeof IssuesRoute
   '/playground': typeof PlaygroundRoute
+  '/skills': typeof SkillsRoute
   '/docs/$': typeof DocsSplatRoute
   '/nodes/$id': typeof NodesIdRoute
   '/nodes/': typeof NodesIndexRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/graph'
     | '/issues'
     | '/playground'
+    | '/skills'
     | '/docs/$'
     | '/nodes/$id'
     | '/nodes/'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/graph'
     | '/issues'
     | '/playground'
+    | '/skills'
     | '/docs/$'
     | '/nodes/$id'
     | '/nodes'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/graph'
     | '/issues'
     | '/playground'
+    | '/skills'
     | '/docs/$'
     | '/nodes/$id'
     | '/nodes/'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   GraphRoute: typeof GraphRoute
   IssuesRoute: typeof IssuesRoute
   PlaygroundRoute: typeof PlaygroundRoute
+  SkillsRoute: typeof SkillsRoute
   DocsSplatRoute: typeof DocsSplatRoute
   NodesIdRoute: typeof NodesIdRoute
   NodesIndexRoute: typeof NodesIndexRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/skills': {
+      id: '/skills'
+      path: '/skills'
+      fullPath: '/skills'
+      preLoaderRoute: typeof SkillsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs/$': {
       id: '/docs/$'
       path: '/docs/$'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   GraphRoute: GraphRoute,
   IssuesRoute: IssuesRoute,
   PlaygroundRoute: PlaygroundRoute,
+  SkillsRoute: SkillsRoute,
   DocsSplatRoute: DocsSplatRoute,
   NodesIdRoute: NodesIdRoute,
   NodesIndexRoute: NodesIndexRoute,
