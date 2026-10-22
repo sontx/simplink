@@ -35,3 +35,5 @@ export * from "./kb.js";
 export * from "./tools/core.js";
 
 export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
+
+export * from "./simp-doc.js";

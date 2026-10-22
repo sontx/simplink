@@ -304,5 +304,10 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       content: sections.filter(Boolean).join("\n\n") + "\n",
     };
   });
-  return site ? [...siteIndexes(graph), ...pages] : pages;
+  return site
+    ? [
+        ...siteIndexes(graph),
+        ...pages.filter((page) => page.path !== "index.md"),
+      ]
+    : pages;
 }

@@ -83,7 +83,14 @@
           "$ref": "#/$defs/nodeId"
         },
         "type": {
-          "enum": ["goal", "procedure", "capability", "state", "constraint"]
+          "enum": [
+            "goal",
+            "procedure",
+            "capability",
+            "state",
+            "constraint",
+            "simp"
+          ]
         },
         "title": {
           "type": "string",
@@ -128,10 +135,15 @@
             "path": {
               "type": "string",
               "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*/)*[a-z0-9]+(?:-[a-z0-9]+)*\\.md$",
-              "not": { "pattern": "(^|/)index\\.md$" },
+              "not": {
+                "pattern": "(^|/)index\\.md$"
+              },
               "description": "Relative publication path. index.md is reserved for generated landing pages."
             },
-            "order": { "type": "integer", "minimum": 0 }
+            "order": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }

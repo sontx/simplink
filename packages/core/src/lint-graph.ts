@@ -50,6 +50,18 @@ export function lintGraph(g: KBGraph): Issue[] {
   for (const n of g.nodes.values()) {
     const out = g.out.get(n.id)!;
 
+    if (n.type === "simp" && Array.isArray(n.data.peers)) {
+      const names = new Set<string>();
+      for (const peer of n.data.peers) {
+        const name = peer?.name;
+        if (typeof name !== "string") continue;
+        if (name === n.data.name)
+          at(n, "E012", `peers: "${name}" is this simp's own name`);
+        if (names.has(name)) at(n, "E012", `duplicate peer "${name}"`);
+        names.add(name);
+      }
+    }
+
     // E007 dangling references, W104 references to deprecated nodes
     for (const e of out) {
       const target = g.nodes.get(e.to);
@@ -101,7 +113,11 @@ export function lintGraph(g: KBGraph): Issue[] {
       at(n, "E011", "goal body contains steps; move them to a procedure");
 
     // W101 orphan (goals are entry points)
-    if (n.type !== "goal" && !g.in.get(n.id)!.some((e) => e.from !== n.id))
+    if (
+      n.type !== "goal" &&
+      n.type !== "simp" &&
+      !g.in.get(n.id)!.some((e) => e.from !== n.id)
+    )
       at(n, "W101", "no inbound references (orphan)");
 
     if (n.type === "goal" && n.aliases.length === 0)

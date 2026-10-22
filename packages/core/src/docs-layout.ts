@@ -47,6 +47,8 @@ export function siteGraph(graph: KBGraph): KBGraph {
   const paths = new Set<string>();
   const nodes = new Map(
     [...graph.nodes].map(([id, node]) => {
+      if (node.type === "simp")
+        return [id, { ...node, path: "index.md" }] as const;
       const docs = settings(node);
       const [, ...segments] = node.path.split("/");
       const filename = segments.pop()!;
@@ -91,10 +93,13 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
   }
   return [...folders].map((folder) => {
     const route = folder ? `${folder}/index.md` : "index.md";
-    const heading = folder ? title(path.basename(folder)) : "Documentation";
+    const home = !folder ? graph.nodes.get("simp") : undefined;
+    const heading = folder
+      ? title(path.basename(folder))
+      : (home?.title ?? "Documentation");
     const summary = folder
       ? `Browse ${heading.toLowerCase()}.`
-      : "Browse guides, requirements, and troubleshooting.";
+      : (home?.summary ?? "Browse guides, requirements, and troubleshooting.");
     const entries: {
       path: string;
       title: string;
@@ -121,8 +126,9 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
     }
     for (const node of graph.nodes.values()) {
       if (
+        node.type !== "simp" &&
         (path.dirname(node.path) === "." ? "" : path.dirname(node.path)) ===
-        folder
+          folder
       )
         entries.push({
           path: node.path,
@@ -151,7 +157,7 @@ export function siteIndexes(graph: KBGraph): DocPage[] {
       .join("\n");
     return {
       path: route,
-      content: `---\ntitle: ${JSON.stringify(heading)}\ndescription: ${JSON.stringify(summary)}\n---\n\n# ${heading}\n\n${summary}${links ? `\n\n${links}` : ""}\n`,
+      content: `---\ntitle: ${JSON.stringify(heading)}\ndescription: ${JSON.stringify(summary)}\n---\n\n# ${heading}\n\n${summary}${home?.body ? `\n\n${home.body.trim()}` : ""}${links ? `\n\n${links}` : ""}\n`,
     };
   });
 }

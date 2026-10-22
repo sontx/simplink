@@ -30,6 +30,7 @@ export function deriveId(relPath: string): {
   folderType?: NodeType;
   derivedId?: string;
 } {
+  if (relPath === "simp.md") return { folderType: "simp", derivedId: "simp" };
   const [folder, ...rest] = relPath.replace(/\.md$/, "").split("/");
   const folderType = FOLDER_TO_TYPE[folder];
   if (!folderType || rest.length === 0) return { folderType };
@@ -94,7 +95,7 @@ export async function loadDocs(input: string | DocSource): Promise<RawDoc[]> {
     .filter(
       (f) =>
         f.relPath.endsWith(".md") &&
-        f.relPath.includes("/") &&
+        (f.relPath === "simp.md" || f.relPath.includes("/")) &&
         !f.relPath.split("/").some((s) => s.startsWith(".")),
     )
     .sort((a, b) =>

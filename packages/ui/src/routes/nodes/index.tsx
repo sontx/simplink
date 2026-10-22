@@ -1,3 +1,4 @@
+import { NODE_TYPES } from "@sontx/simplink-core/browser";
 import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
 import { useMemo, useState } from "react";
@@ -82,7 +83,6 @@ export const Route = createFileRoute("/nodes/")({
 
 type NodeRow = NodeSummary & { in: number; out: number; issues: number };
 
-const NODE_TYPES = ["goal", "procedure", "capability", "state", "constraint"];
 const PAGE_SIZES = [10, 20, 50, 100];
 
 const features = tableFeatures({

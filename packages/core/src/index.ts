@@ -60,3 +60,5 @@ export { runDocs } from "./cli/docs.js";
 export type { CliContext } from "./cli/context.js";
 
 export { fsSource, createValidator, SCHEMA_DIR } from "./platform.js";
+
+export * from "./simp-doc.js";

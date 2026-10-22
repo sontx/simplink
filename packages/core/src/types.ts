@@ -12,6 +12,7 @@ export const NODE_TYPES = [
   "capability",
   "state",
   "constraint",
+  "simp",
 ] as const;
 
 /**

@@ -8,7 +8,9 @@ import capability from "@sontx/simplink-core/schemas/capability.schema.json" wit
 import state from "@sontx/simplink-core/schemas/state.schema.json" with { type: "json" };
 import constraint from "@sontx/simplink-core/schemas/constraint.schema.json" with { type: "json" };
 
-const schemasByType = { goal, procedure, capability, state, constraint };
+import simp from "@sontx/simplink-core/schemas/simp.schema.json" with { type: "json" };
+
+const schemasByType = { goal, procedure, capability, state, constraint, simp };
 export const schemas = [defs, ...Object.values(schemasByType)] as const;
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
