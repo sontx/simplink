@@ -95,3 +95,35 @@ test("get_related skips dangling refs before applying the limit", async () => {
   );
   assert.equal(result.truncated, undefined);
 });
+test("get_related fetches no more neighbours than free slots", async () => {
+  const local = await createKB(
+    memorySource({
+      "simp.md": simp("x"),
+      "procedures/send.md": proc(
+        "send",
+        "requires: [procedure.a, procedure.b, procedure.c, procedure.d]\n",
+      ),
+      "procedures/a.md": proc("a"),
+      "procedures/b.md": proc("b"),
+      "procedures/c.md": proc("c"),
+      "procedures/d.md": proc("d"),
+    }),
+  );
+  const fed = await createFederatedKB({ local });
+  const looked: string[] = [];
+  const counted = Object.create(fed);
+  counted.nodes = (ids: string[], options?: object) => {
+    looked.push(...ids);
+    return fed.nodes(ids, options);
+  };
+  const r = await (
+    await createKBTools(counted)
+  ).call("get_related", {
+    id: "procedure.send",
+    depth: 1,
+    direction: "out",
+    limit: 3,
+  });
+  assert.equal(JSON.parse(r.content).truncated, true);
+  assert.deepEqual(looked, ["procedure.a", "procedure.b"]);
+});

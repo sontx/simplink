@@ -86,6 +86,9 @@ export async function createFederatedKB(
           modes: opts.modes,
         });
   const manifest = await service.manifest();
+  const crossRefs = [...(local?.graph.out.values() ?? [])].some((edges) =>
+    edges.some((e) => parseRef(e.to).simp),
+  );
   const direct = !("home" in opts) ? (opts.peers ?? []) : [opts.home];
   const modes = !("home" in opts)
     ? {
@@ -118,8 +121,8 @@ export async function createFederatedKB(
     options: ResolveOptions = {},
   ) {
     const normalized = localize(id, manifest.name);
-    // No peers: skip the federated overlay copy of the whole graph.
-    if (local && !direct.length)
+    // No peers and no cross-simp refs: skip the federated overlay copy of the whole graph.
+    if (local && !direct.length && !crossRefs)
       return kind === "goal"
         ? local.resolveGoal(normalized, options)
         : local.resolveProcedure(normalized, options);

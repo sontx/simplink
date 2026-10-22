@@ -179,3 +179,15 @@ test("peers() honours timeoutMs without a local KB", async () => {
   });
   assert.equal((await kb.peers())[0].ok, false);
 });
+
+test("cross-simp refs without peers still warn as unreachable", async () => {
+  const local = await product("x", ["crm"], {
+    "procedures/send.md": proc("Send", "requires: [crm:procedure.import]\n"),
+  });
+  const kb = await createFederatedKB({ local });
+  assert.ok(
+    (await kb.resolveProcedure("procedure.send")).warnings.includes(
+      'unreachable node "crm:procedure.import"',
+    ),
+  );
+});

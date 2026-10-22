@@ -395,23 +395,36 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
             candidates.push([edge[0] === cur ? edge[2] : edge[0], edge]);
           }
         }
-        // Fetch neighbours before admitting them so dangling refs never take a slot.
-        const unknown = [...new Set(candidates.map(([other]) => other))].filter(
-          (other) => !known.has(other),
-        );
-        for (const [key, n] of await kb.nodes(unknown)) known.set(key, n);
+        // Fetch unknown neighbours only for free slots, before admitting them,
+        // so dangling refs never take a slot.
+        const tried = new Set<string>();
         const next: string[] = [];
-        for (const [other, edge] of candidates) {
-          if (!known.has(other)) continue;
-          if (!dist.has(other)) {
-            if (dist.size >= a.limit) {
-              truncated = true;
-              continue;
-            }
-            dist.set(other, d);
-            next.push(other);
+        for (let i = 0; i < candidates.length;) {
+          const batch: string[] = [];
+          let j = i;
+          for (; j < candidates.length; j++) {
+            const other = candidates[j][0];
+            if (known.has(other) || tried.has(other)) continue;
+            if (dist.size + batch.length < a.limit) batch.push(other);
+            else if (batch.length) break;
+            // ponytail: unfetched neighbour past the limit counts as truncation even if dangling.
+            else truncated = true;
+            tried.add(other);
           }
-          edges.set(edge.join("|"), edge);
+          for (const [key, n] of await kb.nodes(batch)) known.set(key, n);
+          for (; i < j; i++) {
+            const [other, edge] = candidates[i];
+            if (!known.has(other)) continue;
+            if (!dist.has(other)) {
+              if (dist.size >= a.limit) {
+                truncated = true;
+                continue;
+              }
+              dist.set(other, d);
+              next.push(other);
+            }
+            edges.set(edge.join("|"), edge);
+          }
         }
         frontier = next;
       }

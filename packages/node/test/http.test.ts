@@ -132,3 +132,18 @@ test("HTTP auth is optional, pull-only resolve absent, and host/origin allowlist
     await restricted.close();
   }
 });
+
+test("healthz stays public for hosts outside the allowlist", async () => {
+  const service = createPeerService({
+    kb: await createKB(crmRoot.pathname.replace(/^\/(\w:)/, "$1")),
+  });
+  const server = await serve(
+    createSimpNodeHandler({ service, allowedHosts: ["kb.example.com"] }),
+  );
+  try {
+    assert.equal((await fetch(`${server.url}/healthz`)).status, 200);
+    assert.equal((await fetch(`${server.url}/simp/v1/manifest`)).status, 403);
+  } finally {
+    await server.close();
+  }
+});

@@ -106,10 +106,6 @@ export function createSimpNodeHandler(
         send(405, { error: "method not allowed" }, "GET");
         return;
       }
-      if (forbidden) {
-        send(403, { error: "forbidden" });
-        return;
-      }
       // Health stays public, but probing and listing peers requires the token.
       if (!authorized) {
         send(200, { ok: true, kb: { ...service.kb.status, root: undefined } });
