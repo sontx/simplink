@@ -26,6 +26,8 @@ isolated. This design lets simps link to each other so that:
   documents reference Y's nodes, in both pull and delegate mode.
 - A peer failure degrades results (warnings, partial results) and never fails a
   request.
+- A simp published as static files over HTTP, or present as a local folder, can
+  be a peer without running a simp node.
 
 ## 2. Decisions
 
@@ -36,6 +38,7 @@ isolated. This design lets simps link to each other so that:
 | Frontmatter and wikilink references | `<simp>:<node-id>`, for example `crm:goal.import-customers`.                                                                                     |
 | Markdown link references            | `simp://<simp>/<node-id>`; homepage `simp://<simp>`; local `simp:///<node-id>`.                                                                  |
 | Resolution                          | Pull (default) and delegate. A peer advertises the modes it serves; the consumer picks one of them.                                              |
+| Peer sources                        | A peer URL points to a simp node, a static HTTP KB, or a local folder (`file://` or a path). The consumer detects which (§5a).                   |
 | Auth                                | Optional bearer token per node, off by default.                                                                                                  |
 | Tenant                              | Not passed between peers in v1. Remote availability is not evaluated.                                                                            |
 | Packaging                           | Network-free federation in `core`; HTTP node and HTTP peer client in a new `@sontx/simplink-node` package.                                       |
@@ -75,15 +78,19 @@ Zalo OA helps teams reach followers on Zalo.
 
 New `packages/core/schemas/simp.schema.json`, reusing `$defs.common`:
 
-| Field                                  | Required | Rule                                                                                                                                                              |
-| -------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`                                 | yes      | `simp`                                                                                                                                                            |
-| `name`                                 | yes      | `^[a-z0-9]+(-[a-z0-9]+)*$`                                                                                                                                        |
-| `title`, `summary`                     | yes      | as `common`                                                                                                                                                       |
-| `aliases`, `tags`, `related`, `status` | no       | as `common`                                                                                                                                                       |
-| `docs_url`                             | no       | absolute `http(s)` URL                                                                                                                                            |
-| `serves`                               | no       | non-empty unique subset of `[pull, delegate]`; default `[pull]`                                                                                                   |
-| `peers`                                | no       | array of `{name (required, simp name pattern), url (optional, absolute http(s) URL), mode (optional, pull or delegate)}`; names unique; must not equal own `name` |
+| Field                                  | Required | Rule                                                                                                                                                                                              |
+| -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                                 | yes      | `simp`                                                                                                                                                                                            |
+| `name`                                 | yes      | `^[a-z0-9]+(-[a-z0-9]+)*$`                                                                                                                                                                        |
+| `title`, `summary`                     | yes      | as `common`                                                                                                                                                                                       |
+| `aliases`, `tags`, `related`, `status` | no       | as `common`                                                                                                                                                                                       |
+| `docs_url`                             | no       | absolute `http(s)` URL                                                                                                                                                                            |
+| `serves`                               | no       | non-empty unique subset of `[pull, delegate]`; default `[pull]`                                                                                                                                   |
+| `peers`                                | no       | array of `{name (required, simp name pattern), url (optional; see below), mode (optional, pull or delegate), docs_url (optional, absolute http(s) URL)}`; names unique; must not equal own `name` |
+
+`peers[].url` is an absolute `http(s)://` URL, a `file://` URL, or a filesystem
+path. A relative path resolves against the KB root. §5a describes how the
+consumer treats each kind.
 
 `unevaluatedProperties: false` applies, as in the other schemas. Tokens are
 never stored in `simp.md`.
@@ -172,7 +179,11 @@ fields` (raw frontmatter), `body` (when requested), and `out` and `in` edges.
 - A node forwards only to peers not in `visited`, after adding its own name to
   `visited` and decrementing `hops`. With `hops` 0 it answers locally only.
 - `lookup` and `resolve` forward a qualified ID to the peer that owns it, so X
-  reaches CRM through Y when X has no CRM entry.
+  reaches CRM through Y when X has no CRM entry. When the owner is not a direct
+  peer, the request goes to direct peers that list the owner in their manifest
+  `peers`, or to all eligible direct peers when none does.
+- A `resolve` for a local target federates the simp's own cross-simp
+  dependencies (pull through its peers), so a delegated plan is complete.
 - Each peer call has a timeout (default 2000 ms).
 - `sources: [{simp, ok, error?, ms}]` reports which simps answered.
 
@@ -182,6 +193,94 @@ fields` (raw frontmatter), `body` (when requested), and `out` and `in` edges.
   `Authorization: Bearer <token>`; otherwise 401.
 - Without a token, no auth is required.
 - `/healthz` never requires auth.
+
+## 5a. Static and folder peers
+
+A peer does not have to run a simp node. A KB can also be used as:
+
+- a **static HTTP peer**: the KB folder published as plain files on any HTTP
+  server (CDN, GitHub Pages, nginx), or
+- a **folder peer**: a KB folder on local disk.
+
+`simp.md` has no field for the peer kind. The consumer detects it from the URL.
+
+### Detection
+
+| URL                  | Kind                                                                                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file://…` or a path | Folder peer                                                                                                                                                             |
+| `http(s)://…`        | `GET <url>/v1/manifest` returns JSON with `protocol` → simp node. Otherwise `GET <url>/simp.md` has frontmatter `type: simp` → static HTTP peer. Otherwise unreachable. |
+
+- The detected kind is cached together with the manifest (60 s).
+- The `simp.md` check also rejects SPA fallbacks that answer every path with
+  HTML.
+
+### Paths from IDs
+
+A node ID maps one-to-one to its file path (`deriveId` and `FOLDER_TO_TYPE` in
+core):
+
+| ID                                  | Path                                      |
+| ----------------------------------- | ----------------------------------------- |
+| `crm:procedure.broadcast.send-zalo` | `<url>/procedures/broadcast/send-zalo.md` |
+| `crm:goal.import-customers`         | `<url>/goals/import-customers.md`         |
+| `crm:simp`                          | `<url>/simp.md`                           |
+
+An ID must match the ID pattern before a URL is built from it, so it cannot
+escape `<url>`.
+
+### Index file (`simp-index.yaml`)
+
+HTTP cannot list directories. Search and incoming edges need the full file
+list, so a static HTTP peer can publish an optional index at its root:
+
+```yaml
+protocol: 1
+name: crm
+files:
+  - goals/import-customers.md
+  - procedures/import/csv.md
+```
+
+- `files` are the `.md` paths that `loadDocs` accepts, sorted.
+- The loader drops root-level files other than `simp.md`, so the index never
+  becomes a node.
+- There is no index by default.
+
+The core bin `simp-index [kb]` (default `kb`) writes or re-syncs
+`<kb>/simp-index.yaml` from the current files. It uses the filesystem only.
+Re-running it on unchanged files gives the same output. It fails when the KB
+has no `simp.md`. A stale index lists removed files (they become `missing`) and
+leaves new files out of search.
+
+### Behavior
+
+| Capability                            | Static, no index                 | Static with index, or folder |
+| ------------------------------------- | -------------------------------- | ---------------------------- |
+| `lookup`, pull resolution, `get_node` | Per-ID `GET`; 404 → `missing`    | From the loaded KB           |
+| `explore` (search)                    | Skipped; not listed in `sources` | Yes                          |
+| `in` edges, goal surfacing            | Empty                            | Yes                          |
+| Delegate                              | No                               | No                           |
+
+- **Loaded KB**: a folder peer uses `createKB(fsSource(root))`, and ignores any
+  index because it can list the folder. A static peer with an index fetches
+  every listed file and uses `createKB(memorySource(files))`. Both are wrapped
+  in `createPeerService({kb, peers: []})`, so they answer like a node with no
+  peers. The KB reloads on the manifest TTL; a static peer reloads only when
+  the index body changes.
+- **Static peer without an index**: each `lookup` fetches the derived URLs in
+  parallel and parses them with `parseDoc`. `out` edges come from the
+  document's own frontmatter refs and body links.
+- **Manifest**: built from the peer's `simp.md` (`name`, `title`, `summary`,
+  `tags`, `docs_url`, `peers` names). `serves` is always `[pull]`. `errors` is
+  the lint error count when the KB is loaded, otherwise 0.
+- **Mesh**: folder and static peers are leaves. They do not forward requests,
+  and the consumer does not follow their `peers`.
+- **Limits** (static HTTP): at most 5000 files and 20 MB per KB; only URLs
+  under `<url>` on the same origin. Redirects are followed manually (at most 3)
+  and only when the target is also under `<url>`.
+- **Auth** (static HTTP): the peer token, when set, is sent as
+  `Authorization: Bearer <token>` on every `GET`.
 
 ## 6. Federation in core
 
@@ -241,9 +340,14 @@ mode can run without a KB.
 - During prefetch, a reference to a procedure owned by a delegate-mode peer
   becomes one `resolve` call. It passes the states known so far and the choices
   for that simp (keys `crm:choiceId`).
-- The result becomes a fragment node in the overlay: its steps are the
-  fragment's top alternative, its `produces` are the alternative's produced
-  states, and its warnings are carried into the plan.
+- The result becomes a placeholder node in the overlay whose `produces` are the
+  states guaranteed after the remote plan: checked states, `produces` of
+  unconditional run steps, states fixed by conditional steps, and states from
+  selected choice options. Side effects of conditional steps are not included.
+- After resolution, the remote top-alternative plan replaces the placeholder
+  step. Step conditions (`when`) and choices are kept, and the placeholder's own
+  condition is added to each spliced step. Its warnings are carried into the
+  plan.
 
 ### Mode selection per peer
 
@@ -252,6 +356,9 @@ mode can run without a KB.
 2. Otherwise `pull` if served, else `delegate`.
 3. If neither is possible, the reference becomes a missing-node warning (the
    existing path in `resolve.ts`).
+
+Folder and static peers serve only `pull`, so a preferred `delegate` falls back
+to `pull`.
 
 ### Availability
 
@@ -266,10 +373,20 @@ New package depending on `@sontx/simplink-core`.
 
 - `createSimpNodeHandler({kb, peers, token?, maxHops, timeoutMs})` returns a
   Node HTTP request handler for the peer API.
-- `httpPeer(url, {name, token?, timeoutMs, fetch?})` returns a `Peer`. It caches
-  the manifest for 60 s and sends the bearer token when set.
+- `httpPeer(url, {name?, token?, timeoutMs, fetch?})` returns a `Peer`. It caches
+  the manifest for 60 s and sends the bearer token when set. Without `name`, the
+  first manifest sets it (MCP `--simp` uses this); later manifests with another
+  name are rejected.
+- `openPeer(url, {name?, token?, timeoutMs, fetch?, kbRoot})` detects the peer
+  kind (§5a) and returns a `Peer` for a simp node (`httpPeer`), a static HTTP
+  KB, or a folder. `kbRoot` resolves relative paths. `loadPeerConfig`, the
+  node, MCP, and online lint open peers through it.
 - `loadPeerConfig(manifest, overrides)` merges `simp.md` peers with runtime
   overrides.
+
+Static and folder peer code lives in this package, so core stays network-free.
+It reuses core's `fsSource`, `memorySource`, `parseDoc`, and
+`createPeerService`.
 
 ### Bin `simp-node`
 
@@ -299,11 +416,12 @@ New package depending on `@sontx/simplink-core`.
 | Mode                 | Flags                                      | Behavior                                                                                                                                     |
 | -------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Standalone (default) | `--kb <dir>`                               | Loads the KB in-process. Federates peers declared in `simp.md` through `createFederatedKB` and `httpPeer`. `--no-peers` disables federation. |
-| Peer                 | `--simp <url>` and optional `--simp-token` | No local KB. Uses `createFederatedKB({peers: [httpPeer(url)]})`.                                                                             |
+| Peer                 | `--simp <url>` and optional `--simp-token` | No local KB. Uses `createFederatedKB({peers: [openPeer(url)]})`. `<url>` may be a simp node, a static HTTP KB, or a folder.                  |
 
 `--kb` and `--simp` together is an argument error. Both `simp-mcp` and
 `simp-mcp-http` support both modes. `@sontx/simplink-mcp` depends on
-`@sontx/simplink-node` for `httpPeer`.
+`@sontx/simplink-node` for `openPeer`. In peer mode against a static simp
+without an index, search returns no results.
 
 ### Tools
 
@@ -330,13 +448,21 @@ Tool names do not change.
 | Peer P returns a node owned by a simp that is neither P nor a simp listed as `ok` in P's `sources` | Node rejected and logged (spoofing protection)                                         |
 | Invalid request body                                                                               | 400 with Ajv errors                                                                    |
 | KB has lint errors                                                                                 | Serve; `manifest.errors` reports the count                                             |
+| Static peer `simp.md` missing or not `type: simp`; folder without `simp.md`                        | Peer unreachable (W109 in online lint; failed `sources` entry)                         |
+| Static index invalid, over the limits, or lists an invalid path                                    | Failed `sources` entry with `error: "invalid index"`                                   |
+| Static file returns 404                                                                            | Node reported in `missing`                                                             |
 
 ## 10. UI (v1)
 
 - The docs preview renders `simp.md` as the homepage.
-- Remote `simp://` links and qualified wikilinks link to `<docs_url>/<page>`
-  when the peer's `docs_url` is known, otherwise render as labeled text, for
-  example "CRM import guide (CRM)".
+- Remote `simp://` links and qualified wikilinks link to
+  `<docs_url>/<ID-derived path>#<fragment>` when the `simp.md` peer entry has
+  `docs_url`, for example `[CRM import guide](simp://crm/goal.import-customers#steps)`
+  → `https://docs.example/crm/goals/import-customers.md#steps`. A homepage link
+  (`simp://crm`) goes to `<docs_url>/`. Without `docs_url` the link renders as
+  labeled text, for example "CRM import guide (crm)".
+- The ID-derived path matches the peer's graph-layout export. It does not match
+  pages moved by a frontmatter docs path or the site layout; those links break.
 - Missing local targets keep the inline-code rendering.
 - No peer connections from the browser.
 
@@ -350,11 +476,19 @@ Use `node:test` and `node:assert/strict`.
   patterns; E016; `simp://` links and qualified wikilinks become edges; merged
   search ranking; goal surfacing through remote refs; pull prefetch and overlay
   graph; delegate fragments and `produces`; mode selection; warning paths. Uses
-  in-memory peers.
+  in-memory peers. `simp-index` writes sorted YAML, gives the same output on a
+  rerun, and fails without `simp.md`; the loader ignores `simp-index.yaml`.
 - **node**: HTTP API contract; auth on and off; hop limit; loop detection (X↔Y);
   forwarding X→Y→CRM; per-peer timeout and partial results; spoofing rejection;
   online lint. Uses 2–3 real servers on ephemeral ports with fixtures under
   `test/fixtures/mesh/{zalo-oa,crm,hub}/`.
+- **node, static and folder peers**: a static file server on an ephemeral port
+  (`node:http` and `fs`) serving `test/fixtures/mesh/crm` with and without
+  `simp-index.yaml`. Covers detection (node, static, SPA fallback), pull
+  resolution without an index, search with an index, a traversal path in the
+  index rejected, the size limit, and the token header. Folder peers via
+  `file://` and a relative path: search and pull work, and a missing `simp.md`
+  is a failed source.
 - **mcp**: `--simp` mode against a node fixture; standalone with declared peers;
   `--kb` with `--simp` rejected.
 - Existing suites pass unchanged.
@@ -362,8 +496,9 @@ Use `node:test` and `node:assert/strict`.
 ## 12. Knowledge base updates
 
 Add `kb/` nodes for: writing `simp.md`, referencing other simps, running a simp
-node, connecting MCP to a simp, and mesh constraints (hop limit, no tenant
-pass-through, optional auth). Document `simp://` as the canonical body link
+node, connecting MCP to a simp, publishing a simp as static files or a folder
+(including `simp-index` to enable search), and mesh constraints (hop limit, no
+tenant pass-through, optional auth). Document `simp://` as the canonical body link
 form and wikilinks as supported shorthand, in `kb/` and in
 `.agents/skills/product-kb-builder/` (schema reference and templates). Existing
 `kb/` wikilinks are not rewritten. Update `kb/INVENTORY.md`. `pnpm lint:kb` must pass.
@@ -376,3 +511,6 @@ form and wikilinks as supported shorthand, in `kb/` and in
 - Caching other than manifests
 - Hot reload
 - Docker image changes
+- Forwarding through folder or static peers, and delegate mode on them
+- Automatic `simp-index.yaml` regeneration (watchers or hooks)
+- Folder peers in the browser UI
