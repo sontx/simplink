@@ -26,7 +26,7 @@ sources:
 3. To remove a relationship, select **×** next to its target.
 4. To connect two nodes on the canvas, drag from one node to another, then pick the relationship kind in **Connect nodes**.
 5. For a goal or procedure, select **Plan** to view the **Agent plan** that an agent would receive.
-6. To edit `choices` or body links, select **Open editor** and change them in the **Source** tab.
+6. To edit `choices` or body links, select **Open editor** (**View source** in a read-only workspace) and change them in the **Source** tab.
 
 ## Failure handling
 

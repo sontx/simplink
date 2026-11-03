@@ -134,6 +134,8 @@ export interface Issue {
   path: string;
   /** Human-readable diagnostic explanation. */
   message: string;
+  /** 1-based line in the source file, when the diagnostic points at one. */
+  line?: number;
 }
 
 /**
@@ -141,13 +143,20 @@ export interface Issue {
  * @param code - Diagnostic identifier.
  * @param path - Document path relative to the KB root.
  * @param message - Human-readable explanation.
+ * @param line - Optional 1-based source line; omitted from the result when undefined.
  * @returns The diagnostic with its inferred severity.
  */
-export const issue = (code: string, path: string, message: string): Issue => ({
+export const issue = (
+  code: string,
+  path: string,
+  message: string,
+  line?: number,
+): Issue => ({
   code,
   severity: code.startsWith("E") ? "error" : "warning",
   path,
   message,
+  ...(line !== undefined ? { line } : {}),
 });
 
 /**

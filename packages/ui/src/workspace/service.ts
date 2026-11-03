@@ -82,7 +82,18 @@ export class WorkspaceService {
     );
     this.pageCache.clear();
     this.stale = false;
-    return { status: kb.status, issues: kb.issues };
+    return this.lint();
+  }
+
+  // Issues and counts, preferring the store's own lint (a simp node's) over the rebuilt copy's.
+  private lint() {
+    const issues = this.store.issues;
+    if (!issues) return { status: this.kb.status, issues: this.kb.issues };
+    const errors = issues.filter((i) => i.severity === "error").length;
+    return {
+      status: { ...this.kb.status, errors, warnings: issues.length - errors },
+      issues,
+    };
   }
 
   // The store already holds the change, so a failed rebuild marks the KB stale instead of failing the write.
@@ -92,7 +103,7 @@ export class WorkspaceService {
     } catch (error) {
       this.stale = true;
       console.error(error);
-      return { status: this.kb.status, issues: this.kb.issues };
+      return this.lint();
     }
   }
 
@@ -112,8 +123,7 @@ export class WorkspaceService {
 
   snapshot(): Snapshot {
     return {
-      status: this.kb.status,
-      issues: this.kb.issues,
+      ...this.lint(),
       nodes: [...this.kb.graph.nodes.values()].map(
         ({ id, type, path, title, summary, status, tags }) => ({
           id,

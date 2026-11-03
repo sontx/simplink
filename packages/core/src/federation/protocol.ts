@@ -1,4 +1,4 @@
-import type { Availability, EdgeKind, NodeType } from "../types.js";
+import type { Availability, EdgeKind, Issue, NodeType } from "../types.js";
 import type { GoalHit, SearchHit } from "../search.js";
 import type { ResolvedGoal } from "../resolve.js";
 
@@ -31,6 +31,8 @@ export interface SimpManifest {
   peers: string[];
   /** Lint error count of the loaded KB. */
   errors: number;
+  /** Lint diagnostics of the loaded KB, with source lines; omitted by older simps. */
+  issues?: Issue[];
 }
 
 /** Forwarding state carried by every request to bound fan-out and stop loops. */

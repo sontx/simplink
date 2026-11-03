@@ -25,7 +25,7 @@ sources:
 
 1. Run `simp-lint <dir>`, or `simp lint <dir>` with the unified CLI. The directory defaults to `kb`. In an interactive terminal, `simp lint` shows a progress spinner and frames the findings; piped or in CI it prints the same plain output as `simp-lint`.
 2. Read the findings under each file path. Codes that start with `E` are errors; codes that start with `W` are warnings.
-3. Fix each error in the named file, using the rule for its code.
+3. Fix each error in the named file, starting at the reported `line N:` when there is one, using the rule for its code.
 4. Run `simp-lint <dir>` again until the final line reports `0 error(s)`.
 5. Review the remaining warnings, and fix the ones that show real gaps, such as orphans (`W101`) or goals without aliases (`W102`).
 

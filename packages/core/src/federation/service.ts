@@ -195,6 +195,7 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
         ...(doc?.docsUrl ? { docs_url: doc.docsUrl } : {}),
         peers: doc?.peers.map((p) => p.name) ?? [],
         errors: kb.status.errors,
+        issues: kb.issues,
       };
     },
     async list() {

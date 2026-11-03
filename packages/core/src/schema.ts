@@ -13,6 +13,8 @@ export interface SchemaFinding {
   code: string;
   /** Human-readable diagnostic explanation. */
   message: string;
+  /** Frontmatter path the finding points at, e.g. `["procedures", 1]`; used to report a source line. */
+  field?: (string | number)[];
 }
 
 /**
@@ -64,42 +66,56 @@ export function compileValidator(
   };
 }
 
+// JSON pointer to path segments; array indexes become numbers.
+const pointerPath = (pointer: string): (string | number)[] =>
+  pointer
+    .split("/")
+    .slice(1)
+    .map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"))
+    .map((s) => (/^\d+$/.test(s) ? Number(s) : s));
+
 function toFinding(err: ErrorObject): SchemaFinding | null {
   // type/id are checked against folder/path by the caller (E003/E002).
   if (err.instancePath === "/type" || err.instancePath === "/id") return null;
   const field = err.instancePath.slice(1).replace(/\//g, ".") || "(root)";
+  const at = pointerPath(err.instancePath);
+  const located = (finding: SchemaFinding, path = at): SchemaFinding =>
+    path.length ? { ...finding, field: path } : finding;
   const p = err.params as Record<string, unknown>;
   switch (err.keyword) {
     case "required":
-      return {
+      return located({
         code: "E006",
         message: `missing required field "${p.missingProperty}"`,
-      };
+      });
     case "minItems":
-      return {
+      return located({
         code: "E006",
         message: `"${field}" must have at least ${p.limit} item(s)`,
-      };
+      });
     case "unevaluatedProperties":
     case "additionalProperties": {
       const key = String(p.unevaluatedProperty ?? p.additionalProperty);
-      return {
-        code: "E005",
-        message: `unknown key "${field === "(root)" ? key : `${field}.${key}`}"`,
-      };
+      return located(
+        {
+          code: "E005",
+          message: `unknown key "${field === "(root)" ? key : `${field}.${key}`}"`,
+        },
+        [...at, key],
+      );
     }
     case "pattern": {
       const kind =
         (err.parentSchema as { title?: string } | undefined)?.title ?? "id";
-      return {
+      return located({
         code: "E008",
         message: `${field}: "${String(err.data)}" is not a valid ${kind}`,
-      };
+      });
     }
     default:
-      return {
+      return located({
         code: "E012",
         message: `${field} ${err.message ?? "is invalid"}`,
-      };
+      });
   }
 }

@@ -1,6 +1,7 @@
 import {
   idToPath,
   newTrace,
+  type Issue,
   type LookupNode,
   type SourceFile,
 } from "@sontx/simplink-core/browser";
@@ -17,6 +18,8 @@ export interface KBStore {
   readonly readOnly?: boolean;
   readonly dirty?: boolean;
   readonly assets?: Record<string, Blob>;
+  /** Authoritative lint issues from the source, refreshed by list(); replaces local lint. */
+  readonly issues?: Issue[];
   list(): Promise<SourceFile[]>;
   read(relPath: string): Promise<string>;
   write(
@@ -175,6 +178,30 @@ export function nodeMarkdown(n: LookupNode): string {
   return `---\n${stringify(data)}---\n${n.body ?? ""}`;
 }
 
+// Keeps well-formed issues from an untrusted manifest; undefined when the node sends none.
+export function manifestIssues(value: unknown): Issue[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.flatMap((item: Record<string, unknown> | null): Issue[] =>
+    item &&
+    typeof item.code === "string" &&
+    typeof item.path === "string" &&
+    typeof item.message === "string" &&
+    (item.severity === "error" || item.severity === "warning")
+      ? [
+          {
+            code: item.code,
+            severity: item.severity,
+            path: item.path,
+            message: item.message,
+            ...(Number.isInteger(item.line) && (item.line as number) > 0
+              ? { line: item.line as number }
+              : {}),
+          },
+        ]
+      : [],
+  );
+}
+
 // Read-only snapshot of a simp node's own KB: list every node, then fetch bodies through lookup.
 export async function remoteStore(
   url: string,
@@ -182,13 +209,9 @@ export async function remoteStore(
 ): Promise<KBStore> {
   const base = url.trim().replace(/\/+$/, "");
   // A bare origin means the default /simp base path.
-  const peer = httpPeer(
-    new URL(base).pathname === "/" ? `${base}/simp` : base,
-    {
-      token: token || undefined,
-      timeoutMs: 30000,
-    },
-  );
+  const peerUrl = new URL(base).pathname === "/" ? `${base}/simp` : base;
+  const peerOptions = { token: token || undefined, timeoutMs: 30000 };
+  const peer = httpPeer(peerUrl, peerOptions);
   const manifest = await peer.manifest().catch((error: Error) => {
     // Browsers report CORS refusals and unreachable hosts as the same TypeError.
     throw error instanceof TypeError
@@ -201,11 +224,24 @@ export async function remoteStore(
   const readOnly = () => {
     throw new Error("Remote KBs are read-only");
   };
+  // The node lints its original files, including ones that never become nodes;
+  // re-linting the rebuilt copies would lose invalid values and line numbers.
+  let issues = manifestIssues(manifest.issues);
+  let listed = false;
   return {
     name: manifest.title || manifest.name,
     kind: "remote",
     readOnly: true,
+    get issues() {
+      return issues;
+    },
     async list() {
+      // The peer caches its manifest; a fresh client sees issues after a node reload.
+      if (listed)
+        issues = manifestIssues(
+          (await httpPeer(peerUrl, peerOptions).manifest()).issues,
+        );
+      listed = true;
       const ids = (await peer.list!()).nodes.map((n) => n.id);
       for (const key of Object.keys(files)) delete files[key];
       // ponytail: fixed batches of 200; add a server-side page size if lookups hit maxBodyBytes.

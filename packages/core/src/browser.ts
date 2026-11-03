@@ -13,6 +13,8 @@ export { buildGraph, extractWikilinks, goalsOf } from "./graph.js";
 
 export { lintGraph } from "./lint-graph.js";
 
+export { locateSource, type SourceLocator } from "./source-lines.js";
+
 export {
   lintKB,
   type LintResult,

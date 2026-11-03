@@ -343,7 +343,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             {t("Open a knowledge base")}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {t("Choose a local folder of Markdown nodes to explore and edit.")}
+            {t(
+              "Open a local folder of Markdown nodes to explore and edit, or connect to a simp node to browse it read-only.",
+            )}
           </p>
           {!window.isSecureContext && (
             <p

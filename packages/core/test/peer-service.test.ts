@@ -15,6 +15,22 @@ test("manifest reflects simp.md", async () => {
   assert.equal(manifest.errors, 0);
 });
 
+test("manifest lists the KB's lint issues with source lines", async () => {
+  const service = createPeerService({
+    kb: await product("x", [], {
+      "goals/a.md": goal(["procedure.missing"]),
+    }),
+  });
+  const manifest = await service.manifest();
+  const dangling = manifest.issues?.find((i) => i.code === "E007");
+  assert.equal(dangling?.path, "goals/a.md");
+  assert.equal(typeof dangling?.line, "number");
+  assert.equal(
+    manifest.errors,
+    manifest.issues?.filter((i) => i.severity === "error").length,
+  );
+});
+
 test("explore returns local hits with sources", async () => {
   const service = createPeerService({
     kb: await product("x", [], {

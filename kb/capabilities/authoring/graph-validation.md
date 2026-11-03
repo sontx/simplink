@@ -16,6 +16,6 @@ sources:
   - packages/core/src/kb.ts
 ---
 
-Validation loads every Markdown file, checks paths and frontmatter against the bundled JSON schemas, builds the graph, and runs the graph rules. Each finding has a code (`E*` for errors, `W*` for warnings), a file path, and a message. Findings are sorted by path, with errors before warnings.
+Validation loads every Markdown file, checks paths and frontmatter against the bundled JSON schemas, builds the graph, and runs the graph rules. Each finding has a code (`E*` for errors, `W*` for warnings), a file path, and a message. Most findings also have a `line`, the 1-based line in the source file: the frontmatter field, list item, or body text that caused it, or the YAML error position. Findings about the whole file, such as a missing required field or an orphan node, have no line. `simp-lint` prints it as `line 12:` before the message. Findings are sorted by path, with errors before warnings.
 
-The same validation runs in `simp-lint`, when an application loads a KB, when an MCP server starts, and in the local UI's Issues view. A KB with errors still loads, but the search, resolve, and docs CLIs refuse it.
+The same validation runs in `simp-lint`, when an application loads a KB, when an MCP server starts, and in the local UI's Issues view. The UI groups findings by file and opens the editor at a finding's line. A KB with errors still loads, but the search, resolve, and docs CLIs refuse it.

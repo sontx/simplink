@@ -75,7 +75,9 @@ Exit code 1 on any error or when --max-warnings is exceeded.`);
           current = i.path;
           stdout(`\n${i.path}`);
         }
-        stdout(`  ${i.code}  ${i.message}`);
+        stdout(
+          `  ${i.code}  ${i.line !== undefined ? `line ${i.line}: ` : ""}${i.message}`,
+        );
       }
       const mark = result.errorCount ? "✖" : "✔";
       stdout(

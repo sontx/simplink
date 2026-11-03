@@ -3,6 +3,7 @@ import { simpDoc } from "./simp-doc.js";
 import { orderedItems, section, stripCode } from "./markdown.js";
 import { choiceMarker, getChoices } from "./graph.js";
 import { issue, type Issue, type KBGraph, type KBNode } from "./types.js";
+import type { SourceLocator } from "./source-lines.js";
 
 const SUMMARY_MAX = 200;
 const ORDERED_ITEM = /^\s*\d+\.\s+\S/m;
@@ -42,26 +43,46 @@ function findRequiresCycles(g: KBGraph): string[][] {
 /**
  * Checks graph references, dependency cycles, document structure, and authoring conventions.
  * @param g - Graph with adjacency indexes, normally produced by buildGraph.
+ * @param locate - Optional source locator per node; when given, diagnostics carry source lines.
  * @returns Graph diagnostics; does not perform frontmatter schema validation.
  */
-export function lintGraph(g: KBGraph): Issue[] {
+export function lintGraph(
+  g: KBGraph,
+  locate?: (node: KBNode) => SourceLocator | undefined,
+): Issue[] {
   const issues: Issue[] = [];
-  const at = (n: KBNode, code: string, msg: string) =>
-    issues.push(issue(code, n.path, msg));
+  const at = (n: KBNode, code: string, msg: string, line?: number) =>
+    issues.push(issue(code, n.path, msg, line));
+  // Line finders that tolerate a missing locator.
+  const field = (n: KBNode, ...path: (string | number)[]) =>
+    locate?.(n)?.field(path);
+  const text = (n: KBNode, value: string) =>
+    locate?.(n)?.frontmatterText(value);
+  const bodyText = (n: KBNode, ...values: string[]) => {
+    const source = locate?.(n);
+    for (const value of values) {
+      const line = source?.bodyText(value);
+      if (line !== undefined) return line;
+    }
+    return undefined;
+  };
+  const refLine = (n: KBNode, e: { to: string; source: string }) =>
+    e.source === "body" ? bodyText(n, `[[${e.to}`, e.to) : text(n, e.to);
 
   for (const n of g.nodes.values()) {
     const out = g.out.get(n.id)!;
 
     if (n.type === "simp" && Array.isArray(n.data.peers)) {
       const names = new Set<string>();
-      for (const peer of n.data.peers) {
+      n.data.peers.forEach((peer, index) => {
         const name = peer?.name;
-        if (typeof name !== "string") continue;
+        if (typeof name !== "string") return;
+        const line = field(n, "peers", index, "name");
         if (name === n.data.name)
-          at(n, "E012", `peers: "${name}" is this simp's own name`);
-        if (names.has(name)) at(n, "E012", `duplicate peer "${name}"`);
+          at(n, "E012", `peers: "${name}" is this simp's own name`, line);
+        if (names.has(name)) at(n, "E012", `duplicate peer "${name}"`, line);
         names.add(name);
-      }
+      });
     }
 
     // E007 dangling references, W104 references to deprecated nodes
@@ -72,12 +93,12 @@ export function lintGraph(g: KBGraph): Issue[] {
       const { simp } = parseRef(e.to);
       if (simp) {
         if (!simpDoc(g)?.peers.some((p) => p.name === simp))
-          at(n, "E016", `${label}: unknown simp "${simp}"`);
+          at(n, "E016", `${label}: unknown simp "${simp}"`, refLine(n, e));
         continue;
       }
-      if (!target) at(n, "E007", `${label} does not exist`);
+      if (!target) at(n, "E007", `${label} does not exist`, refLine(n, e));
       else if (n.status === "active" && target.status === "deprecated")
-        at(n, "W104", `${label} is deprecated`);
+        at(n, "W104", `${label} is deprecated`, refLine(n, e));
     }
 
     // E010 / E011 body structure
@@ -86,7 +107,12 @@ export function lintGraph(g: KBGraph): Issue[] {
       const steps = section(body, "Steps");
       if (steps === null) at(n, "E010", `missing "## Steps" section`);
       else if (!ORDERED_ITEM.test(steps))
-        at(n, "E010", `"## Steps" has no ordered list`);
+        at(
+          n,
+          "E010",
+          `"## Steps" has no ordered list`,
+          bodyText(n, "## Steps"),
+        );
     }
     // E014/E015/W108 choices
     if (n.type === "procedure") {
@@ -95,8 +121,24 @@ export function lintGraph(g: KBGraph): Issue[] {
         .map(choiceMarker)
         .filter((m): m is string => !!m);
       const ids = new Set<string>();
-      for (const c of choices) {
-        if (ids.has(c.id)) at(n, "E015", `duplicate choice id "${c.id}"`);
+      const rawChoices = n.data.choices as { id?: unknown }[];
+      choices.forEach((c) => {
+        const line = field(
+          n,
+          "choices",
+          rawChoices.findIndex((raw) => raw?.id === c.id),
+        );
+        if (ids.has(c.id))
+          at(
+            n,
+            "E015",
+            `duplicate choice id "${c.id}"`,
+            field(
+              n,
+              "choices",
+              rawChoices.map((raw) => raw?.id).lastIndexOf(c.id),
+            ),
+          );
         ids.add(c.id);
         const refs = markers.filter((m) => m === c.id).length;
         if (refs !== 1)
@@ -104,21 +146,38 @@ export function lintGraph(g: KBGraph): Issue[] {
             n,
             "E014",
             `choice "${c.id}" must be referenced exactly once in ## Steps as "choice:${c.id}" (found ${refs})`,
+            refs > 1 ? bodyText(n, `choice:${c.id}`) : line,
           );
         const keys = c.options.map((o) => o.key);
         for (const k of new Set(keys.filter((k, i) => keys.indexOf(k) !== i)))
-          at(n, "E015", `choice "${c.id}" has duplicate option key "${k}"`);
+          at(
+            n,
+            "E015",
+            `choice "${c.id}" has duplicate option key "${k}"`,
+            line,
+          );
         if (c.options.length === 1)
-          at(n, "W108", `choice "${c.id}" has only one option`);
-      }
+          at(n, "W108", `choice "${c.id}" has only one option`, line);
+      });
       for (const m of new Set(markers))
-        if (!ids.has(m)) at(n, "E014", `step references unknown choice "${m}"`);
+        if (!ids.has(m))
+          at(
+            n,
+            "E014",
+            `step references unknown choice "${m}"`,
+            bodyText(n, `choice:${m}`),
+          );
     }
     if (
       n.type === "goal" &&
       (section(body, "Steps") !== null || ORDERED_ITEM.test(body))
     )
-      at(n, "E011", "goal body contains steps; move them to a procedure");
+      at(
+        n,
+        "E011",
+        "goal body contains steps; move them to a procedure",
+        bodyText(n, "## Steps") ?? firstOrderedLine(n, locate),
+      );
 
     // W101 orphan (goals are entry points)
     if (
@@ -129,12 +188,13 @@ export function lintGraph(g: KBGraph): Issue[] {
       at(n, "W101", "no inbound references (orphan)");
 
     if (n.type === "goal" && n.aliases.length === 0)
-      at(n, "W102", "goal has no aliases");
+      at(n, "W102", "goal has no aliases", field(n, "aliases"));
     if (n.summary.length > SUMMARY_MAX)
       at(
         n,
         "W103",
         `summary is ${n.summary.length} chars (max ${SUMMARY_MAX})`,
+        field(n, "summary"),
       );
 
     // W106 state never produced
@@ -159,6 +219,7 @@ export function lintGraph(g: KBGraph): Issue[] {
             n,
             "W107",
             `availability.plans is wider than ${cap.id} (${capPlans.join(", ")})`,
+            field(n, "availability", "plans") ?? refLine(n, e),
           );
         const missing = (cap.availability.permissions ?? []).filter(
           (p) => !(n.availability?.permissions ?? []).includes(p),
@@ -168,6 +229,7 @@ export function lintGraph(g: KBGraph): Issue[] {
             n,
             "W107",
             `availability.permissions lacks ${missing.join(", ")} required by ${cap.id}`,
+            field(n, "availability", "permissions") ?? refLine(n, e),
           );
       }
     }
@@ -175,12 +237,12 @@ export function lintGraph(g: KBGraph): Issue[] {
 
   // E009 requires cycles
   for (const cycle of findRequiresCycles(g)) {
-    issues.push(
-      issue(
-        "E009",
-        g.nodes.get(cycle[0])!.path,
-        `dependency cycle (requires/choices): ${cycle.join(" → ")}`,
-      ),
+    const first = g.nodes.get(cycle[0])!;
+    at(
+      first,
+      "E009",
+      `dependency cycle (requires/choices): ${cycle.join(" → ")}`,
+      text(first, cycle[1]),
     );
   }
 
@@ -195,7 +257,10 @@ export function lintGraph(g: KBGraph): Issue[] {
   }
   for (const [alias, owners] of aliasOwners) {
     if (owners.length < 2) continue;
-    for (const n of owners)
+    for (const n of owners) {
+      const index = n.aliases.findIndex(
+        (a) => a.trim().toLowerCase() === alias,
+      );
       at(
         n,
         "W105",
@@ -203,8 +268,21 @@ export function lintGraph(g: KBGraph): Issue[] {
           .filter((o) => o !== n)
           .map((o) => o.id)
           .join(", ")}`,
+        field(n, "aliases", index),
       );
+    }
   }
 
   return issues;
+}
+
+// Line of the first ordered-list item in a node's body.
+function firstOrderedLine(
+  n: KBNode,
+  locate?: (node: KBNode) => SourceLocator | undefined,
+): number | undefined {
+  const item = stripCode(n.body)
+    .split("\n")
+    .find((line) => ORDERED_ITEM.test(line));
+  return item === undefined ? undefined : locate?.(n)?.bodyText(item);
 }

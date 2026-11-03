@@ -1,9 +1,21 @@
 import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
-import { lazy, Suspense, useEffect, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, CircleCheck } from "lucide-react";
 import { kbQuery, nodeQuery } from "../../api.js";
+import { IssueCounts, IssueList } from "../../components/issue-list.js";
+import { Kbd, KbdGroup } from "../../components/ui/kbd.js";
+import { groupIssuesByFile, nextFileWithIssues } from "../../lib/issues.js";
 import {
   Badge,
   Button,
@@ -21,12 +33,17 @@ import {
   TabsContent,
 } from "../../components/ui/tabs.js";
 import { KBGraph } from "../../components/kb-graph.js";
-import { issueClass, Plan } from "../../components/inspector.js";
+import { Plan } from "../../components/inspector.js";
 export const Route = createFileRoute("/nodes/$id")({
-  validateSearch: (s: Record<string, unknown>): { tab?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { tab?: string; line?: number } => ({
     tab: ["overview", "source", "docs"].includes(String(s.tab))
       ? String(s.tab)
       : "overview",
+    ...(Number.isInteger(Number(s.line)) && Number(s.line) > 0
+      ? { line: Number(s.line) }
+      : {}),
   }),
   component: NodePage,
 });
@@ -34,6 +51,12 @@ export const Route = createFileRoute("/nodes/$id")({
 const muted = "text-muted-foreground";
 const actions = "mt-4.5 flex flex-wrap items-center gap-2.25";
 const SourceEditor = lazy(() => import("../../components/source-editor.js"));
+type EditorInstance = Parameters<
+  NonNullable<ComponentProps<typeof SourceEditor>["onMount"]>
+>[0];
+const isMac =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 function NodePage() {
   const { id } = Route.useParams();
@@ -45,16 +68,48 @@ function NodeContent() {
   const { t, label, enumDescription, theme } = usePreferences();
 
   const { id } = Route.useParams();
-  const { tab } = Route.useSearch();
+  const { tab, line } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: detail, error } = useQuery(nodeQuery(service, id));
   const { data: kb } = useQuery(kbQuery(service));
+  // Stable per snapshot, so editor markers only move after a save.
+  const files = useMemo(
+    () => groupIssuesByFile(kb?.issues ?? [], kb?.nodes ?? []),
+    [kb],
+  );
   const client = useQueryClient();
   const [raw, setRaw] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [plan, setPlan] = useState(false);
+  // Whether the file had issues when it was last saved, to confirm a fix.
+  const [hadIssues, setHadIssues] = useState(false);
+  const saveShortcut = useRef(() => {});
+  const editor = useRef<EditorInstance>(undefined);
+  // Moves the caret to a source line and centres it.
+  const goToLine = (target: number) => {
+    const instance = editor.current;
+    if (!instance) return;
+    instance.revealLineInCenter(target);
+    instance.setPosition({ lineNumber: target, column: 1 });
+    instance.focus();
+  };
   const dirty = raw !== undefined && raw !== detail?.raw;
+  useEffect(() => {
+    if (tab !== "source") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        event.key.toLowerCase() === "s"
+      ) {
+        event.preventDefault();
+        saveShortcut.current();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [tab]);
   useEffect(() => {
     setDraftDirty(dirty);
     return () => setDraftDirty(false);
@@ -110,7 +165,32 @@ function NodeContent() {
           : []),
       filename === "index.md" ? "overview.md" : filename,
     ].join("/");
-  const issues = kb?.issues.filter((i) => i.path === node.path) ?? [];
+  const file = files.find((group) => group.path === node.path);
+  const issues = file?.issues ?? [];
+  const { next, position, total } = nextFileWithIssues(files, node.path);
+  const canSave = dirty && !save.isPending && !service.store.readOnly;
+  // A remote node's issue lines refer to its original files, not this rebuilt source.
+  const localLines = service.store.kind !== "remote";
+  const saveFile = () => {
+    if (!canSave) return;
+    setHadIssues(issues.length > 0);
+    save.mutate();
+  };
+  saveShortcut.current = saveFile;
+  const nextLink = next?.node && (
+    <Button variant="ghost" size="xs" asChild>
+      <Link
+        to="/nodes/$id"
+        params={{ id: next.node.id }}
+        search={{ tab: "source" }}
+      >
+        {position > 0 && total > 1
+          ? t("Next file ({position} of {total})", { position, total })
+          : t("Next file with issues")}
+        <ArrowRight data-icon="inline-end" />
+      </Link>
+    </Button>
+  );
   return (
     <Page>
       <Link to="/nodes" className={`text-[11px] ${muted}`}>
@@ -248,15 +328,67 @@ function NodeContent() {
                 ? t("Unsaved changes")
                 : saved
                   ? service.store.kind === "memory"
-                    ? "Saved in memory"
+                    ? t("Saved in memory")
                     : t("Saved to disk")
                   : t("Markdown source")}
             </span>
           </div>
+          {issues.length > 0 ? (
+            <div className="mt-4 rounded-lg border border-border bg-card px-3.5 py-3">
+              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span className="text-xs font-medium">
+                  <IssueCounts
+                    errors={file?.errors ?? 0}
+                    warnings={file?.warnings ?? 0}
+                  />{" "}
+                  <span className="font-normal text-muted-foreground">
+                    {t("in this file")}
+                  </span>
+                </span>
+                {nextLink}
+              </div>
+              <IssueList
+                issues={issues}
+                onLine={localLines ? goToLine : undefined}
+              />
+            </div>
+          ) : (
+            saved &&
+            hadIssues && (
+              <div
+                role="status"
+                className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <CircleCheck className="size-4 text-primary" aria-hidden />
+                  {t("No issues left in this file.")}
+                </span>
+                {nextLink ??
+                  (kb?.issues.length ? (
+                    <Link
+                      to="/issues"
+                      search={{ severity: "" }}
+                      className="text-xs"
+                    >
+                      {t("View remaining issues")}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {t("Every file is clean.")}
+                    </span>
+                  ))}
+              </div>
+            )
+          )}
           <div className="mt-4 h-[52dvh] min-h-80 overflow-hidden rounded-md border border-input">
             <Suspense fallback={t("Loading node…")}>
               <SourceEditor
                 nodeType={node.type}
+                issues={localLines ? issues : undefined}
+                onMount={(instance) => {
+                  editor.current = instance;
+                  if (line) goToLine(line);
+                }}
                 theme={theme === "dark" ? "vs-dark" : "light"}
                 value={raw ?? detail.raw}
                 options={{
@@ -264,7 +396,8 @@ function NodeContent() {
                   readOnly: save.isPending || service.store.readOnly,
                   automaticLayout: true,
                   minimap: { enabled: false },
-                  lineNumbers: "off",
+                  lineNumbers: "on",
+                  lineNumbersMinChars: 3,
                   fontSize: 12,
                   tabSize: 2,
                   quickSuggestions: {
@@ -288,22 +421,21 @@ function NodeContent() {
             <div className={actions}>
               <Button
                 variant="default"
-
-                disabled={save.isPending || !dirty}
-                onClick={() => save.mutate()}
+                disabled={!canSave}
+                onClick={saveFile}
+                aria-keyshortcuts={isMac ? "Meta+S" : "Control+S"}
               >
                 {save.isPending ? t("Saving…") : t("Save file")}
               </Button>
+              <KbdGroup aria-hidden className="mr-2">
+                <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
+                <Kbd>S</Kbd>
+              </KbdGroup>
               <Button variant="destructive" onClick={() => setDeleting(true)}>
                 {t("Delete file")}
               </Button>
             </div>
           )}
-          {issues.map((i, index) => (
-            <div key={index} className={issueClass(i.severity)}>
-              {i.code} · {i.message}
-            </div>
-          ))}
         </TabsContent>
         <TabsContent value="docs">
           <NodeDocs docPath={docPath} nodePath={node.path} />

@@ -248,9 +248,13 @@ export function Inspector({
         })}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-t border-border bg-card px-5.75 py-3.5 max-[1100px]:px-4.25">
-        <Button variant="default" asChild>
+        {/* Read-only workspaces have nothing to edit, so the action is not primary. */}
+        <Button
+          variant={service.store.readOnly ? "outline" : "default"}
+          asChild
+        >
           <Link to="/nodes/$id" params={{ id }} search={{ tab: "source" }}>
-            {t("Open editor")}
+            {service.store.readOnly ? t("View source") : t("Open editor")}
           </Link>
         </Button>
         {["goal", "procedure"].includes(node.type) && (

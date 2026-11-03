@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Editor, { loader, type EditorProps } from "@monaco-editor/react";
-import type { NodeType } from "@sontx/simplink-core";
+import type { Issue, NodeType } from "@sontx/simplink-core";
 import * as monaco from "monaco-editor/editor/editor.api.js";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
 import {
@@ -90,10 +90,43 @@ monaco.languages.registerCompletionItemProvider(languageId, {
 
 export default function SourceEditor({
   nodeType,
+  issues,
   onMount,
   ...props
-}: EditorProps & { nodeType: NodeType }) {
+}: EditorProps & { nodeType: NodeType; issues?: readonly Issue[] }) {
   const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor>();
+  // Saved-file lint issues with a line become whole-line markers.
+  useEffect(() => {
+    const model = editor?.getModel();
+    if (!model || model.isDisposed()) return;
+    monaco.editor.setModelMarkers(
+      model,
+      "lint",
+      (issues ?? []).flatMap((issue) =>
+        issue.line !== undefined && issue.line <= model.getLineCount()
+          ? [
+              {
+                startLineNumber: issue.line,
+                startColumn:
+                  model.getLineFirstNonWhitespaceColumn(issue.line) || 1,
+                endLineNumber: issue.line,
+                endColumn: model.getLineMaxColumn(issue.line),
+                message: issue.message,
+                code: issue.code,
+                severity:
+                  issue.severity === "error"
+                    ? monaco.MarkerSeverity.Error
+                    : monaco.MarkerSeverity.Warning,
+                source: "simp-lint",
+              },
+            ]
+          : [],
+      ),
+    );
+    return () => {
+      if (!model.isDisposed()) monaco.editor.setModelMarkers(model, "lint", []);
+    };
+  }, [editor, issues]);
   useEffect(() => {
     const model = editor?.getModel();
     if (!model) return;

@@ -26,8 +26,8 @@ sources:
 ## Steps
 
 1. Open **Issues**, and set **Severity** to **Errors** to start with blocking findings.
-2. For an issue on a loaded node, select **Source ↗** to open that file in the editor, fix it, and select **Save file**.
-3. For an issue marked `Fix this file on disk, then Reload`, edit the file in another editor; files with path or YAML errors are not loaded as nodes.
+2. For a file that loaded as a node, select **Fix in source** (or a finding's **Line**) to open it in the editor, fix it, and select **Save file**. Use **Next file** to move on. Open **What these codes mean** below the list for a plain explanation of each code.
+3. A file marked "This file can't be opened here" has path or YAML errors and did not load as a node. Edit it in another editor.
 4. In directory mode, select **Reload** after editing files outside the UI. In memory mode, Reload keeps your in-memory edits and does not reread the original folder; download the zip before opening the folder again.
 5. Repeat until **Issues** shows **All clear**, or only warnings you accept.
 

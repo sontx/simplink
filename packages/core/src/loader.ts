@@ -19,6 +19,8 @@ export interface RawDoc {
   body: string;
   /** YAML or missing-frontmatter diagnostic; omitted when parsing succeeds. */
   parseError?: string;
+  /** Original file text, used to point diagnostics at source lines. */
+  raw?: string;
 }
 
 const ID_SEGMENT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -55,6 +57,7 @@ export function parseDoc(relPath: string, raw: string): RawDoc {
       ...(!raw.trimStart().startsWith("---")
         ? { parseError: "missing frontmatter block" }
         : {}),
+      raw,
     };
   } catch (err) {
     return {
@@ -63,6 +66,7 @@ export function parseDoc(relPath: string, raw: string): RawDoc {
       data: {},
       body: "",
       parseError: (err as Error).message.split("\n")[0],
+      raw,
     };
   }
 }

@@ -13,7 +13,7 @@ sources:
   - packages/node/src/server.ts
 ---
 
-The peer API provides `GET /simp/v1/manifest`, `GET /simp/v1/nodes` (every local node without bodies, never forwarded), and `POST /simp/v1/explore`, `/simp/v1/lookup`, and, when delegate is served, `/simp/v1/resolve`. Its protocol version is 1. `GET /healthz` is public and reports KB status; it probes and lists peers only for requests with the bearer token. The base path can be configured. Browser apps need their origin in the node's allowed origins, or the `*` entry that allows any origin; only those origins get CORS headers, and preflights are answered without the token.
+The peer API provides `GET /simp/v1/manifest` (product identity, peers, serving modes, the lint error count, and `issues`, the KB's lint findings with source lines; older nodes omit `issues`), `GET /simp/v1/nodes` (every local node without bodies, never forwarded), and `POST /simp/v1/explore`, `/simp/v1/lookup`, and, when delegate is served, `/simp/v1/resolve`. Its protocol version is 1. `GET /healthz` is public and reports KB status; it probes and lists peers only for requests with the bearer token. The base path can be configured. Browser apps need their origin in the node's allowed origins, or the `*` entry that allows any origin; only those origins get CORS headers, and preflights are answered without the token.
 
 Search and lookup keep local IDs unqualified and use `<simp>:<node-id>` for remote results. [Write a manifest](simp:///procedure.federation.write-simp-doc) to declare product identity and peers. [Reference another simp](simp:///procedure.federation.reference-other-simp) without changing that product's IDs.
 

@@ -6,6 +6,7 @@ import { defaultValidator } from "./platform.js";
 import { localize, rewriteRefs } from "./ids.js";
 import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
+import { locateSource, type SourceLocator } from "./source-lines.js";
 import {
   FOLDER_TO_TYPE,
   issue,
@@ -43,6 +44,15 @@ export interface LintResult {
   errorCount: number;
   /** Number of warning diagnostics. */
   warningCount: number;
+}
+
+// gray-matter hands js-yaml the text after "---", newline included, so its
+// 1-based YAML line numbers already match the file.
+function yamlErrorLine(doc: RawDoc): number | undefined {
+  const match =
+    /at line (\d+), column \d+/.exec(doc.parseError ?? "") ??
+    /\((\d+):\d+\)/.exec(doc.parseError ?? "");
+  return match ? Number(match[1]) : undefined;
 }
 
 const strings = (v: unknown): string[] =>
@@ -94,10 +104,13 @@ export async function lintKB(
   const validate = opts.validator ?? defaultValidator();
   const issues: Issue[] = [];
   const nodes = new Map<string, KBNode>();
+  const locators = new Map<string, SourceLocator>();
 
   for (const doc of await loadDocs(root)) {
-    const add = (code: string, msg: string) =>
-      issues.push(issue(code, doc.relPath, msg));
+    const source = locateSource(doc.raw ?? "");
+    locators.set(doc.relPath, source);
+    const add = (code: string, msg: string, line?: number) =>
+      issues.push(issue(code, doc.relPath, msg, line));
     if (!doc.folderType) {
       add(
         "E003",
@@ -113,21 +126,23 @@ export async function lintKB(
       continue;
     }
     if (doc.parseError) {
-      add("E013", `frontmatter: ${doc.parseError}`);
+      add("E013", `frontmatter: ${doc.parseError}`, yamlErrorLine(doc));
       continue;
     }
     if (doc.data.type !== doc.folderType)
       add(
         "E003",
         `type "${String(doc.data.type)}" does not match folder type "${doc.folderType}"`,
+        source.field(["type"]),
       );
     if (doc.data.id !== undefined && doc.data.id !== doc.derivedId)
       add(
         "E002",
         `id "${String(doc.data.id)}" does not match path-derived id "${doc.derivedId}"`,
+        source.field(["id"]),
       );
     for (const f of await validate(doc.folderType, doc.data))
-      add(f.code, f.message);
+      add(f.code, f.message, f.field && source.field(f.field));
 
     const existing = nodes.get(doc.derivedId);
     if (existing) {
@@ -142,7 +157,7 @@ export async function lintKB(
     for (const node of nodes.values())
       node.data = rewriteRefs(node.data, (ref) => localize(ref, name));
   const graph = buildGraph(nodes);
-  issues.push(...lintGraph(graph));
+  issues.push(...lintGraph(graph, (node) => locators.get(node.path)));
   for (const rule of opts.rules ?? []) issues.push(...(await rule(graph)));
   const disabled = new Set(opts.disable);
   for (let i = issues.length - 1; i >= 0; i--)
@@ -151,7 +166,8 @@ export async function lintKB(
     (a, b) =>
       a.path.localeCompare(b.path) ||
       (a.severity === b.severity ? 0 : a.severity === "error" ? -1 : 1) ||
-      a.code.localeCompare(b.code),
+      a.code.localeCompare(b.code) ||
+      (a.line ?? 0) - (b.line ?? 0),
   );
 
   const errorCount = issues.filter((i) => i.severity === "error").length;

@@ -62,6 +62,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   },
 );
 
+// Where edits go, shown in the rail footer and the knowledge base menu.
+const storeModes = {
+  directory: {
+    label: "FOLDER",
+    detail: "Folder: changes save straight to disk.",
+  },
+  memory: {
+    label: "MEMORY",
+    detail: "In memory: download the KB to keep changes.",
+  },
+  remote: {
+    label: "REMOTE",
+    detail: "Remote simp node: read-only.",
+  },
+} as const;
+
 function WorkspaceError({ error }: { error: unknown }) {
   const { t } = usePreferences();
   return (
@@ -88,6 +104,7 @@ function Shell() {
   const [q, setQ] = useState("");
   const results = useQuery(searchQuery(service, q));
   const navigate = useNavigate();
+  const mode = storeModes[service.store.kind];
   const issueCount = (kb?.status.errors ?? 0) + (kb?.status.warnings ?? 0);
   const issueSummary = `${kb?.status.errors ?? 0} ${t("errors")} · ${kb?.status.warnings ?? 0} ${t("warnings")}`;
   const reload = useMutation({
@@ -151,8 +168,11 @@ function Shell() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-60">
-              <DropdownMenuLabel className="truncate">
-                {service.store.name}
+              <DropdownMenuLabel className="flex flex-col gap-0.5">
+                <span className="truncate">{service.store.name}</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {t(mode.detail)}
+                </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={openAnother}>
@@ -291,8 +311,16 @@ function Shell() {
               <span>{t(label)}</span>
             </Link>
           ))}
-          <div className="mt-auto text-center text-[8px] leading-loose tracking-[1px] text-muted-foreground max-[780px]:hidden">
-            {t("LOCAL KB")}
+          <div
+            title={t(mode.detail)}
+            className="mt-auto text-center text-[8px] leading-loose tracking-[1px] text-muted-foreground max-[780px]:hidden"
+          >
+            {t(mode.label)}
+            {service.store.readOnly && (
+              <span className="block text-[10px] tracking-normal">
+                {t("Read-only")}
+              </span>
+            )}
             <span className="block text-[10px] tracking-normal">
               {kb?.status.nodes ?? 0} {t("nodes")}
             </span>
