@@ -32,7 +32,13 @@ export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
 
   const plan = useQuery(planQuery(service, id));
   return (
-    <Dialog open onOpenChange={onClose} title={t("Agent plan")} sheet>
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title={t("Agent plan")}
+      sheet
+      resizeKey="simplink.planDrawerWidth"
+    >
       <ErrorMessage error={plan.error} />
       {plan.isPending ? (
         <p>{t("Resolving plan…")}</p>
