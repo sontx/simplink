@@ -1,0 +1,370 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T00:00:00Z",
+  "title": "Design System: Simplink",
+  "extensions": {
+    "colorMeta": {
+      "simp-pink": {
+        "role": "primary",
+        "displayName": "Simp Pink",
+        "canonical": "#db2777",
+        "dark": "#f472b6",
+        "tonalRamp": [
+          "#500724",
+          "#831843",
+          "#9d174d",
+          "#be185d",
+          "#db2777",
+          "#ec4899",
+          "#f9a8d4",
+          "#fce7f3"
+        ]
+      },
+      "simp-pink-ring": {
+        "role": "primary",
+        "displayName": "Simp Pink Ring",
+        "canonical": "#ec4899",
+        "dark": "#ec4899",
+        "tonalRamp": [
+          "#500724",
+          "#831843",
+          "#be185d",
+          "#db2777",
+          "#ec4899",
+          "#f472b6",
+          "#f9a8d4",
+          "#fdf2f8"
+        ]
+      },
+      "blush-wash": {
+        "role": "primary",
+        "displayName": "Blush Wash",
+        "canonical": "#fce7f3",
+        "dark": "#392334"
+      },
+      "petal-mist": {
+        "role": "neutral",
+        "displayName": "Petal Mist",
+        "canonical": "#fff1f5",
+        "dark": "#2c2433"
+      },
+      "deep-berry": {
+        "role": "primary",
+        "displayName": "Deep Berry",
+        "canonical": "#9d174d",
+        "dark": "#f9a8d4"
+      },
+      "mulberry": {
+        "role": "primary",
+        "displayName": "Mulberry",
+        "canonical": "#831843",
+        "dark": "#f9a8d4"
+      },
+      "lavender-paper": {
+        "role": "neutral",
+        "displayName": "Lavender Paper",
+        "canonical": "#faf9fc",
+        "dark": "#17131d",
+        "tonalRamp": [
+          "#17131d",
+          "#211b28",
+          "#2c2433",
+          "#4a4152",
+          "#75636c",
+          "#b8aabd",
+          "#e8e5ed",
+          "#faf9fc"
+        ]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "dark": "#211b28"
+      },
+      "plum-ink": {
+        "role": "neutral",
+        "displayName": "Plum Ink",
+        "canonical": "#302b3b",
+        "dark": "#f1eaf4"
+      },
+      "dusty-mauve": {
+        "role": "neutral",
+        "displayName": "Dusty Mauve",
+        "canonical": "#75636c",
+        "dark": "#b8aabd"
+      },
+      "lilac-hairline": {
+        "role": "neutral",
+        "displayName": "Lilac Hairline",
+        "canonical": "#e8e5ed",
+        "dark": "oklch(1 0 0 / 10%)"
+      },
+      "rose-input-edge": {
+        "role": "neutral",
+        "displayName": "Rose Input Edge",
+        "canonical": "#e7d6df",
+        "dark": "oklch(1 0 0 / 15%)"
+      },
+      "alarm-red": {
+        "role": "status",
+        "displayName": "Alarm Red",
+        "canonical": "#dc2626",
+        "dark": "oklch(0.704 0.191 22.216)"
+      },
+      "amber-ochre": {
+        "role": "status",
+        "displayName": "Amber Ochre",
+        "canonical": "#946200",
+        "dark": "#e5b96c"
+      },
+      "goal-rose": {
+        "role": "node-type",
+        "displayName": "Goal Rose",
+        "canonical": "#c17889",
+        "dark": "#e6a2b4"
+      },
+      "goal-rose-wash": {
+        "role": "node-type",
+        "displayName": "Goal Rose Wash",
+        "canonical": "#fbf0f3",
+        "dark": "#402734"
+      },
+      "procedure-blue": {
+        "role": "node-type",
+        "displayName": "Procedure Blue",
+        "canonical": "#5e8dbb",
+        "dark": "#95bde6"
+      },
+      "procedure-blue-wash": {
+        "role": "node-type",
+        "displayName": "Procedure Blue Wash",
+        "canonical": "#edf3fa",
+        "dark": "#233347"
+      },
+      "capability-sage": {
+        "role": "node-type",
+        "displayName": "Capability Sage",
+        "canonical": "#5b9d88",
+        "dark": "#8dceb5"
+      },
+      "capability-sage-wash": {
+        "role": "node-type",
+        "displayName": "Capability Sage Wash",
+        "canonical": "#edf7f2",
+        "dark": "#20392f"
+      },
+      "state-ochre": {
+        "role": "node-type",
+        "displayName": "State Ochre",
+        "canonical": "#b88b4d",
+        "dark": "#e5bd7d"
+      },
+      "state-ochre-wash": {
+        "role": "node-type",
+        "displayName": "State Ochre Wash",
+        "canonical": "#fbf5e9",
+        "dark": "#3b3021"
+      }
+    },
+    "typographyMeta": {
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Header 'simplink' wordmark; 'simp' in Simp Pink."
+      },
+      "headline": { "displayName": "Headline", "purpose": "Page titles (h1)." },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and dialog titles (h2)."
+      },
+      "body": { "displayName": "Body", "purpose": "UI text, tables, forms." },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, small buttons, node titles, h3."
+      },
+      "eyebrow": {
+        "displayName": "Eyebrow",
+        "purpose": "Uppercase panel kickers such as NODE INSPECTOR."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Node IDs, frontmatter, inline code."
+      },
+      "docs-display": {
+        "displayName": "Docs Display",
+        "purpose": "Rendered Markdown h1 in the Docs preview only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "node-rest",
+        "value": "0 2px 7px #44354c08",
+        "purpose": "Barely-there settle under graph nodes."
+      },
+      {
+        "name": "selection-halo",
+        "value": "0 0 0 3px color-mix(in oklab, var(--ring) 12%, transparent)",
+        "purpose": "Selected graph node."
+      },
+      {
+        "name": "drawer-cast",
+        "value": "-10px 0 30px #3b204410",
+        "purpose": "Inspector or plan drawer overlaying content."
+      },
+      {
+        "name": "canvas-controls",
+        "value": "0 1px 6px #41344712",
+        "purpose": "React Flow zoom controls."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "200ms ease-out",
+        "purpose": "Inspector fade-in, node border and shadow changes."
+      },
+      {
+        "name": "network-pulse",
+        "value": "300ms",
+        "purpose": "Receiving ring on the open-screen simp network."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion disables all animation and transitions globally."
+      }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "480px" },
+      { "name": "compact", "value": "780px" },
+      { "name": "search-collapse", "value": "900px" },
+      { "name": "narrow", "value": "1100px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one Simp Pink action per view.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>New node</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; background: var(--primary, #db2777); color: var(--primary-foreground, #ffffff); font: 500 14px 'Geist Variable', sans-serif; cursor: pointer; transition: all 150ms; } .ds-btn-primary:hover { background: color-mix(in srgb, var(--primary, #db2777) 80%, transparent); } .ds-btn-primary:focus-visible { outline: none; border-color: var(--ring, #ec4899); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring, #ec4899) 50%, transparent); } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Blush-tinted supporting action.",
+      "html": "<button class=\"ds-btn-secondary\">Preview plan</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; background: var(--secondary, #fce7f3); color: var(--secondary-foreground, #831843); font: 500 14px 'Geist Variable', sans-serif; cursor: pointer; transition: all 150ms; } .ds-btn-secondary:hover { background: color-mix(in oklch, var(--secondary, #fce7f3), var(--foreground, #302b3b) 5%); } .ds-btn-secondary:focus-visible { outline: none; border-color: var(--ring, #ec4899); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring, #ec4899) 50%, transparent); } .ds-btn-secondary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Hairline button on lavender paper; also the header search trigger.",
+      "html": "<button class=\"ds-btn-outline\">Reload</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--border, #e8e5ed); border-radius: 10px; background: var(--background, #faf9fc); color: var(--foreground, #302b3b); font: 500 14px 'Geist Variable', sans-serif; cursor: pointer; transition: all 150ms; } .ds-btn-outline:hover { background: var(--muted, #fff1f5); } .ds-btn-outline:focus-visible { outline: none; border-color: var(--ring, #ec4899); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring, #ec4899) 50%, transparent); } .ds-btn-outline:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Red wash, never a solid red fill.",
+      "html": "<button class=\"ds-btn-destructive\">Delete node</button>",
+      "css": ".ds-btn-destructive { display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; background: color-mix(in srgb, var(--destructive, #dc2626) 10%, transparent); color: var(--destructive, #dc2626); font: 500 14px 'Geist Variable', sans-serif; cursor: pointer; transition: all 150ms; } .ds-btn-destructive:hover { background: color-mix(in srgb, var(--destructive, #dc2626) 20%, transparent); } .ds-btn-destructive:focus-visible { outline: none; border-color: color-mix(in srgb, var(--destructive, #dc2626) 40%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive, #dc2626) 20%, transparent); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Transparent field with a rose-tinted edge.",
+      "html": "<input class=\"ds-input\" placeholder=\"Filter by title or ID\" />",
+      "css": ".ds-input { height: 32px; width: 240px; padding: 4px 10px; border: 1px solid var(--input, #e7d6df); border-radius: 10px; background: transparent; color: var(--foreground, #302b3b); font: 400 14px 'Geist Variable', sans-serif; outline: none; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: var(--muted-foreground, #75636c); } .ds-input:focus-visible { border-color: var(--ring, #ec4899); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring, #ec4899) 50%, transparent); }"
+    },
+    {
+      "name": "Node Type Badges",
+      "kind": "chip",
+      "refersTo": "badge-type-goal",
+      "description": "Pill chips coloured by node type via --type-color / --type-bg.",
+      "html": "<span class=\"ds-badge ds-goal\">goal</span> <span class=\"ds-badge ds-procedure\">procedure</span> <span class=\"ds-badge ds-capability\">capability</span> <span class=\"ds-badge ds-state\">state</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; height: 20px; padding: 2px 8px; border-radius: 26px; background: var(--type-bg); color: var(--type-color); font: 500 12px 'Geist Variable', sans-serif; white-space: nowrap; } .ds-goal { --type-color: #c17889; --type-bg: #fbf0f3; } .ds-procedure { --type-color: #5e8dbb; --type-bg: #edf3fa; } .ds-capability { --type-color: #5b9d88; --type-bg: #edf7f2; } .ds-state { --type-color: #b88b4d; --type-bg: #fbf5e9; }"
+    },
+    {
+      "name": "Nav Rail",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Icon-over-label rail items; active fills Blush Wash and turns Simp Pink.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item ds-active\" href=\"#\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"5\" cy=\"6\" r=\"3\"/><circle cx=\"19\" cy=\"6\" r=\"3\"/><circle cx=\"12\" cy=\"18\" r=\"3\"/><path d=\"M7.5 7.5 10.5 16\"/><path d=\"M16.5 7.5 13.5 16\"/></svg>Graph</a><a class=\"ds-rail-item\" href=\"#\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 12h18\"/><path d=\"M3 6h18\"/><path d=\"M3 18h18\"/></svg>Nodes</a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-icon\"><svg width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><span class=\"ds-count\">3</span></span>Issues</a></nav>",
+      "css": ".ds-rail { display: flex; flex-direction: column; gap: 10px; width: 80px; padding: 24px 8px; background: var(--card, #ffffff); border-right: 1px solid var(--border, #e8e5ed); } .ds-rail-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px; border-radius: 7px; color: var(--muted-foreground, #75636c); font: 400 10px 'Geist Variable', sans-serif; text-decoration: none; transition: background 150ms, color 150ms; } .ds-rail-item:hover, .ds-rail-item.ds-active { background: var(--accent, #fce7f3); color: var(--primary, #db2777); } .ds-rail-item:focus-visible { outline: 2px solid color-mix(in srgb, var(--ring, #ec4899) 50%, transparent); } .ds-rail-icon { position: relative; } .ds-count { position: absolute; top: -6px; left: 12px; min-width: 16px; padding: 0 4px; border-radius: 999px; background: var(--destructive, #dc2626); color: var(--background, #faf9fc); font: 600 9px/16px 'Geist Variable', sans-serif; text-align: center; }"
+    },
+    {
+      "name": "Graph Node",
+      "kind": "custom",
+      "refersTo": "graph-node",
+      "description": "Signature map card: type badge, title, type-coloured left edge, issue bubble.",
+      "html": "<div class=\"ds-node ds-procedure\"><span class=\"ds-node-badge\">procedure</span><strong class=\"ds-node-title\">Connect an MCP client</strong><span class=\"ds-node-count\">2</span></div> <div class=\"ds-node ds-goal ds-selected\"><span class=\"ds-node-badge\">goal</span><strong class=\"ds-node-title\">Open the browser workspace</strong></div>",
+      "css": ".ds-node { position: relative; display: inline-block; vertical-align: top; box-sizing: border-box; width: 230px; height: 90px; margin: 8px; padding: 13px 15px; background: var(--card, #ffffff); border: 1px solid var(--border, #e8e5ed); border-left: 3px solid var(--type-color); border-radius: 7px; box-shadow: 0 2px 7px #44354c08; transition: box-shadow 200ms, border-color 200ms; } .ds-node.ds-selected { border-left-color: var(--primary, #db2777); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring, #ec4899) 12%, transparent); } .ds-goal { --type-color: #c17889; --type-bg: #fbf0f3; } .ds-procedure { --type-color: #5e8dbb; --type-bg: #edf3fa; } .ds-node-badge { display: inline-flex; align-items: center; height: 20px; padding: 2px 8px; border-radius: 26px; background: var(--type-bg); color: var(--type-color); font: 500 12px 'Geist Variable', sans-serif; } .ds-node-title { display: block; margin-top: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--foreground, #302b3b); font: 550 12px 'Geist Variable', sans-serif; } .ds-node-count { position: absolute; top: -7px; right: -6px; width: 22px; height: 22px; box-sizing: border-box; border: 2px solid var(--card, #ffffff); border-radius: 999px; background: var(--destructive, #dc2626); color: #fff; font: 400 10px/18px 'Geist Variable', sans-serif; text-align: center; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Cartographer's Desk",
+    "overview": "Simplink is a drafting desk for mapping product knowledge. The desk is quiet: violet-tinted paper (`lavender-paper`), white card surfaces, plum ink, and hairline lilac borders. The map is where colour lives. Four muted node-type hues (rose, blue, sage, ochre) mark goals, procedures, capabilities and states across graph nodes, badges and type dots. One brand accent, **Simp Pink**, marks what the author is touching right now: the active view, the selected node, the primary action, a link.\n\nControls should feel **soft and approachable**: gently rounded, tinted rather than outlined in grey, and calm at the density needed for long editing sessions next to an editor and a terminal. Structure comes from tonal layers and hairlines, not shadows. Problems are the exception: error red and warning ochre may interrupt anywhere, because \"problems first\" is a product principle.\n\nThe system rejects four looks: generic grey shadcn (no tint, no type colour), neon dev-tool dark, marketing gloss (gradients, glass, hero type inside the app), and rainbow chrome (node-type colours leaking into navigation, buttons or page frame).",
+    "keyCharacteristics": [
+      "Violet-tinted neutrals everywhere. No pure greys in the light theme's foreground, border or background roles.",
+      "One brand accent (Simp Pink) for selection, the active state and primary action.",
+      "Four node-type colours, each with a wash, used only for knowledge-graph semantics.",
+      "Flat at rest. Lift only appears on overlays, drawers and selection.",
+      "Geist Variable throughout. Cascadia Code for source and IDs.",
+      "Full light and dark themes; light is the default."
+    ],
+    "rules": [
+      {
+        "name": "The One Pen Rule",
+        "body": "Simp Pink means \"this is active, selected or the next action.\" Never use it for decoration, section fills or illustration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Map Ink Rule",
+        "body": "Node-type colours belong to knowledge-graph semantics only: badges, node left-edges, type dots and graph filters. They never colour navigation, buttons or page chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tinted Paper Rule",
+        "body": "Neutrals carry a violet cast. A new surface or text colour that reads as neutral grey is a bug.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Not Face Rule",
+        "body": "Build hierarchy with Geist weights between 550 and 700 and with tracking. Never add a second sans or a serif to the workspace.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Scales Rule",
+        "body": "App chrome stays compact (9–25px). Reading scale (14–32px, generous margins) applies only inside `.markdown` previews.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lift On State Rule",
+        "body": "A surface at rest has no shadow beyond a node settle. Shadows mean floating (overlay, drawer, popover) or selected.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** reach for theme tokens (`bg-card`, `text-muted-foreground`, `border-border`, `--type-color`) instead of literal colours, and define every new colour for both light and dark.",
+      "**Do** keep Simp Pink for the active, selected or primary action, at most one primary button per view.",
+      "**Do** carry node type through the `--type-color` / `--type-bg` class mechanism so badges, nodes and dots stay in sync.",
+      "**Do** separate surfaces with lilac hairlines and tonal steps, and keep controls at 32px with a 10px radius.",
+      "**Do** keep errors and warnings visible in chrome (count bubbles, banners) using Alarm Red and Amber Ochre washes.",
+      "**Do** respect `prefers-reduced-motion`. The global reset already disables animation and transitions."
+    ],
+    "donts": [
+      "**Don't** fall back to generic grey shadcn: untinted neutrals, stock `neutral` greys, or missing type colours.",
+      "**Don't** drift into neon dev-tool dark. Dark mode is plum (#17131d), not black, and has no glowing accents.",
+      "**Don't** add marketing gloss inside the app: gradients, glassmorphism, oversized hero type or decorative illustration.",
+      "**Don't** let node-type colours leak into navigation, buttons or page chrome (rainbow chrome).",
+      "**Don't** add resting shadows to cards or panels. Lift is reserved for overlays, drawers and selection.",
+      "**Don't** use a solid red fill for destructive buttons. Use the 10% red wash with red text."
+    ]
+  }
+}

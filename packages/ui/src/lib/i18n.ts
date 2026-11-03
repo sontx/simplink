@@ -96,8 +96,8 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Light: "Sáng",
   Dark: "Tối",
   "Open a knowledge base": "Mở cơ sở tri thức",
-  "Choose a local folder of Markdown nodes to explore and edit.":
-    "Chọn một thư mục cục bộ chứa các nút Markdown để khám phá và chỉnh sửa.",
+  "Open a local folder of Markdown nodes to explore and edit, or connect to a simp node to browse it read-only.":
+    "Mở một thư mục cục bộ chứa các nút Markdown để khám phá và chỉnh sửa, hoặc kết nối tới một simp node để xem ở chế độ chỉ đọc.",
   "Folder access requires HTTPS or localhost.":
     "Truy cập thư mục yêu cầu HTTPS hoặc localhost.",
   "Open KB folder": "Mở thư mục cơ sở tri thức",
@@ -118,7 +118,16 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Nodes: "Nút",
   Issues: "Vấn đề",
   Docs: "Tài liệu",
-  "LOCAL KB": "CƠ SỞ TRI THỨC CỤC BỘ",
+  FOLDER: "THƯ MỤC",
+  MEMORY: "BỘ NHỚ",
+  REMOTE: "TỪ XA",
+  "Read-only": "Chỉ đọc",
+  "Folder: changes save straight to disk.":
+    "Thư mục: thay đổi được lưu thẳng vào đĩa.",
+  "In memory: download the KB to keep changes.":
+    "Trong bộ nhớ: tải KB xuống để giữ thay đổi.",
+  "Remote simp node: read-only.": "Simp node từ xa: chỉ đọc.",
+  "View source": "Xem mã nguồn",
   nodes: "nút",
   "Search knowledge": "Tìm kiếm tri thức",
   "Search titles and aliases…": "Tìm theo tiêu đề và tên khác…",
@@ -227,9 +236,75 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Warnings: "Cảnh báo",
   "All clear": "Không có vấn đề",
   "No issues match this view.": "Không có vấn đề phù hợp với chế độ xem này.",
-  issues: "vấn đề",
-  "Source ↗": "Mã nguồn ↗",
-  "Fix this file on disk, then Reload": "Sửa tệp trên đĩa, sau đó tải lại",
+  "1 error": "1 lỗi",
+  "{count} errors": "{count} lỗi",
+  "1 warning": "1 cảnh báo",
+  "{count} warnings": "{count} cảnh báo",
+  "in 1 file": "trong 1 tệp",
+  "in {count} files": "trong {count} tệp",
+  "in this file": "trong tệp này",
+  "Line {line}": "Dòng {line}",
+  "Fix in source": "Sửa trong mã nguồn",
+  "This file can't be opened here. Fix it in your editor, then Reload.":
+    "Không thể mở tệp này tại đây. Hãy sửa trong trình soạn thảo của bạn, rồi tải lại.",
+  "This file can't be opened here. Download the KB to keep your edits, fix the file in your editor, then open the folder again.":
+    "Không thể mở tệp này tại đây. Hãy tải KB xuống để giữ các chỉnh sửa, sửa tệp trong trình soạn thảo của bạn, rồi mở lại thư mục.",
+  "Fix this file in the simp node's own folder.":
+    "Hãy sửa tệp này trong thư mục của chính simp node.",
+  "What these codes mean": "Ý nghĩa của các mã",
+  "Two files have the same ID; only the first is loaded.":
+    "Hai tệp có cùng ID; chỉ tệp đầu tiên được nạp.",
+  "The id field does not match the file path. Remove it.":
+    "Trường id không khớp với đường dẫn tệp. Hãy xóa nó.",
+  "The file is outside a type folder, or its type does not match the folder.":
+    "Tệp nằm ngoài thư mục loại, hoặc loại của nó không khớp với thư mục.",
+  "The file path cannot form an ID. Use lowercase kebab-case names.":
+    "Đường dẫn tệp không tạo được ID. Hãy dùng tên kebab-case viết thường.",
+  "The frontmatter has a key this node type does not allow.":
+    "Frontmatter có khóa mà loại nút này không cho phép.",
+  "A required field or list item is missing.":
+    "Thiếu một trường hoặc mục danh sách bắt buộc.",
+  "A reference points to a node that does not exist.":
+    "Một tham chiếu trỏ tới nút không tồn tại.",
+  "A reference has the wrong node type for this field.":
+    "Một tham chiếu có loại nút không đúng cho trường này.",
+  "Requirements or choice options form a cycle.":
+    "Các yêu cầu hoặc lựa chọn tạo thành vòng lặp.",
+  "A procedure needs a ## Steps section with a numbered list.":
+    "Quy trình cần mục ## Steps có danh sách đánh số.",
+  "Goals cannot contain steps; move them to a procedure.":
+    "Mục tiêu không được chứa các bước; hãy chuyển chúng sang một quy trình.",
+  "A value has the wrong type or is not one of the allowed values.":
+    "Một giá trị sai kiểu hoặc không thuộc các giá trị cho phép.",
+  "The frontmatter is missing or is not valid YAML.":
+    "Thiếu frontmatter hoặc frontmatter không phải YAML hợp lệ.",
+  "Each choice must appear exactly once in ## Steps as choice:<id>.":
+    "Mỗi lựa chọn phải xuất hiện đúng một lần trong ## Steps dưới dạng choice:<id>.",
+  "Choice IDs or option keys are repeated.":
+    "ID lựa chọn hoặc khóa phương án bị lặp lại.",
+  "A qualified reference names a simp that is not declared as a peer.":
+    "Một tham chiếu đầy đủ nhắc tới simp chưa được khai báo là peer.",
+  "Nothing links to this node.": "Không có gì liên kết tới nút này.",
+  "This goal has no aliases, so it is harder to find.":
+    "Mục tiêu này không có bí danh nên khó tìm hơn.",
+  "The summary is longer than 200 characters.":
+    "Phần tóm tắt dài hơn 200 ký tự.",
+  "An active node references a deprecated one.":
+    "Một nút đang hoạt động tham chiếu tới nút đã ngừng dùng.",
+  "Another goal uses the same alias.": "Một mục tiêu khác dùng cùng bí danh.",
+  "No procedure produces this state.":
+    "Không có quy trình nào tạo ra trạng thái này.",
+  "This procedure is available more widely than a capability it uses.":
+    "Quy trình này khả dụng rộng hơn một năng lực mà nó sử dụng.",
+  "This choice has only one option.": "Lựa chọn này chỉ có một phương án.",
+  "A peer was unreachable, so remote references were not checked.":
+    "Không kết nối được một peer nên chưa kiểm tra các tham chiếu từ xa.",
+  "Saved in memory": "Đã lưu trong bộ nhớ",
+  "Next file ({position} of {total})": "Tệp tiếp theo ({position}/{total})",
+  "Next file with issues": "Tệp tiếp theo có vấn đề",
+  "No issues left in this file.": "Tệp này không còn vấn đề nào.",
+  "View remaining issues": "Xem các vấn đề còn lại",
+  "Every file is clean.": "Mọi tệp đều không có vấn đề.",
   Overview: "Tổng quan",
   Documentation: "Tài liệu",
   "Docs layout": "Bố cục tài liệu",
