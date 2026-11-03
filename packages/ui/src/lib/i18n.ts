@@ -146,6 +146,7 @@ export const vietnamese: Readonly<Record<string, string>> = {
     "Nhấp chuột phải vào vùng đồ thị để tạo nút.",
   "Agent plan": "Kế hoạch cho tác tử",
   "Resolving plan…": "Đang lập kế hoạch…",
+  "No documentation for this node.": "Nút này chưa có tài liệu.",
   "Loading node…": "Đang tải nút…",
   "Add {type}": "Thêm {type}",
   "Find {type}…": "Tìm {type}…",

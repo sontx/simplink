@@ -49,6 +49,35 @@ export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
+export function Docs({
+  title,
+  body,
+  onClose,
+}: {
+  title: string;
+  body: string;
+  onClose: () => void;
+}) {
+  const { t } = usePreferences();
+  return (
+    <Dialog
+      open
+      onOpenChange={onClose}
+      title={title}
+      sheet
+      resizeKey="simplink.docsDrawerWidth"
+    >
+      {body.trim() ? (
+        <Markdown content={body} />
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          {t("No documentation for this node.")}
+        </p>
+      )}
+    </Dialog>
+  );
+}
+
 export function Inspector({
   id,
   className,
@@ -64,6 +93,7 @@ export function Inspector({
   const { data: schema } = useQuery(schemaQuery(service));
   const [adding, setAdding] = useState<string>();
   const [plan, setPlan] = useState(false);
+  const [docs, setDocs] = useState(false);
   const client = useQueryClient();
   const patch = useMutation({
     mutationFn: ({ kind, targets }: { kind: string; targets: string[] }) =>
@@ -82,132 +112,142 @@ export function Inspector({
     );
   const { node, out } = detail;
   return (
-    <aside className={cn(inspectorClass, className)}>
-      <Badge type={node.type}>{label(node.type)}</Badge>
-      <h2 className="mt-3.25 mb-2.5 text-[18px] tracking-[-0.4px]">
-        {node.title}
-      </h2>
-      <code className="mb-3.5 block text-[10px] wrap-anywhere text-muted-foreground">
-        {id}
-      </code>
-      <p className="text-xs leading-[1.7] text-muted-foreground">
-        {node.summary}
-      </p>
-      {kb?.issues
-        .filter((i) => i.path === node.path)
-        .map((i, index) => (
-          <div key={index} className={issueClass(i.severity)}>
-            {i.code} {i.message}
-          </div>
-        ))}
-      <h3 className="mt-6.25 border-t border-border pt-5.5">
-        {t("Relationships")}
-      </h3>
-      <ErrorMessage error={patch.error} />
-      {Object.entries(schema?.[node.type] ?? {}).map(([kind, type]) => {
-        const targets = out
-          .filter((e) => e.kind === kind && e.source === "frontmatter")
-          .map((e) => e.to);
-        return (
-          <section className="mb-3" key={kind}>
-            <div className="my-1.5 flex items-center justify-between gap-3">
-              <strong
-                title={enumDescription(kind)}
-                className="text-[10px] font-medium text-muted-foreground"
-              >
-                {label(kind)}
-              </strong>
-              {!service.store.readOnly && (
-                <Popover
-                  open={adding === kind}
-                  onOpenChange={(open) => setAdding(open ? kind : undefined)}
+    <aside
+      className={cn(
+        inspectorClass,
+        "flex flex-col overflow-hidden! p-0! max-[1100px]:p-0!",
+        className,
+      )}
+    >
+      <div className="min-h-0 flex-1 overflow-auto px-5.75 py-6.75 max-[1100px]:px-4.25 max-[1100px]:py-5.5">
+        <Badge type={node.type}>{label(node.type)}</Badge>
+        <h2 className="mt-3.25 mb-2.5 text-[18px] tracking-[-0.4px]">
+          {node.title}
+        </h2>
+        <code className="mb-3.5 block text-[10px] wrap-anywhere text-muted-foreground">
+          {id}
+        </code>
+        <p className="text-xs leading-[1.7] text-muted-foreground">
+          {node.summary}
+        </p>
+        {kb?.issues
+          .filter((i) => i.path === node.path)
+          .map((i, index) => (
+            <div key={index} className={issueClass(i.severity)}>
+              {i.code} {i.message}
+            </div>
+          ))}
+        <h3 className="mt-6.25 border-t border-border pt-5.5">
+          {t("Relationships")}
+        </h3>
+        <ErrorMessage error={patch.error} />
+        {Object.entries(schema?.[node.type] ?? {}).map(([kind, type]) => {
+          const targets = out
+            .filter((e) => e.kind === kind && e.source === "frontmatter")
+            .map((e) => e.to);
+          return (
+            <section className="mb-3" key={kind}>
+              <div className="my-1.5 flex items-center justify-between gap-3">
+                <strong
+                  title={enumDescription(kind)}
+                  className="text-[10px] font-medium text-muted-foreground"
                 >
-                  <PopoverTrigger asChild>
+                  {label(kind)}
+                </strong>
+                {!service.store.readOnly && (
+                  <Popover
+                    open={adding === kind}
+                    onOpenChange={(open) => setAdding(open ? kind : undefined)}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={t("Add {type}", { type: label(kind) })}
+                      >
+                        +
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-0" align="end">
+                      <Command>
+                        <CommandInput
+                          placeholder={t("Find {type}…", { type: label(type) })}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {t("No matching targets.")}
+                          </CommandEmpty>
+                          {groupByType(
+                            kb?.nodes.filter(
+                              (n) =>
+                                (type === "node" || n.type === type) &&
+                                !targets.includes(n.id),
+                            ) ?? [],
+                            (n) => n.type,
+                          ).map(([group, nodes]) => (
+                            <CommandGroup key={group} heading={label(group)}>
+                              {nodes.map((n) => (
+                                <CommandItem
+                                  key={n.id}
+                                  value={`${n.title} ${n.id}`}
+                                  onSelect={() =>
+                                    patch.mutate({
+                                      kind,
+                                      targets: [...targets, n.id],
+                                    })
+                                  }
+                                >
+                                  <div className="flex min-w-0 flex-col">
+                                    <span className="truncate">{n.title}</span>
+                                    <span className="truncate text-xs text-muted-foreground">
+                                      {n.id}
+                                    </span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+              {targets.map((target) => (
+                <div
+                  className="my-1.5 flex items-center justify-between gap-3"
+                  key={target}
+                >
+                  <Link
+                    to="/graph"
+                    search={{ focus: target }}
+                    className="truncate text-[10px] text-muted-foreground"
+                  >
+                    {target}
+                  </Link>
+                  {!service.store.readOnly && (
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      aria-label={t("Add {type}", { type: label(kind) })}
+                      aria-label={t("Remove {target}", { target })}
+                      disabled={patch.isPending}
+                      onClick={() =>
+                        patch.mutate({
+                          kind,
+                          targets: targets.filter((t) => t !== target),
+                        })
+                      }
                     >
-                      +
+                      ×
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-72 p-0" align="end">
-                    <Command>
-                      <CommandInput
-                        placeholder={t("Find {type}…", { type: label(type) })}
-                      />
-                      <CommandList>
-                        <CommandEmpty>{t("No matching targets.")}</CommandEmpty>
-                        {groupByType(
-                          kb?.nodes.filter(
-                            (n) =>
-                              (type === "node" || n.type === type) &&
-                              !targets.includes(n.id),
-                          ) ?? [],
-                          (n) => n.type,
-                        ).map(([group, nodes]) => (
-                          <CommandGroup key={group} heading={label(group)}>
-                            {nodes.map((n) => (
-                              <CommandItem
-                                key={n.id}
-                                value={`${n.title} ${n.id}`}
-                                onSelect={() =>
-                                  patch.mutate({
-                                    kind,
-                                    targets: [...targets, n.id],
-                                  })
-                                }
-                              >
-                                <div className="flex min-w-0 flex-col">
-                                  <span className="truncate">{n.title}</span>
-                                  <span className="truncate text-xs text-muted-foreground">
-                                    {n.id}
-                                  </span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        ))}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-            {targets.map((target) => (
-              <div
-                className="my-1.5 flex items-center justify-between gap-3"
-                key={target}
-              >
-                <Link
-                  to="/graph"
-                  search={{ focus: target }}
-                  className="truncate text-[10px] text-muted-foreground"
-                >
-                  {target}
-                </Link>
-                {!service.store.readOnly && (
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={t("Remove {target}", { target })}
-                    disabled={patch.isPending}
-                    onClick={() =>
-                      patch.mutate({
-                        kind,
-                        targets: targets.filter((t) => t !== target),
-                      })
-                    }
-                  >
-                    ×
-                  </Button>
-                )}
-              </div>
-            ))}
-          </section>
-        );
-      })}
-      <div className="mt-4.5 flex flex-wrap items-center gap-2.25">
+                  )}
+                </div>
+              ))}
+            </section>
+          );
+        })}
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-t border-border bg-card px-5.75 py-3.5 max-[1100px]:px-4.25">
         <Button variant="default" asChild>
           <Link to="/nodes/$id" params={{ id }} search={{ tab: "source" }}>
             {t("Open editor")}
@@ -218,8 +258,18 @@ export function Inspector({
             {t("Plan")}
           </Button>
         )}
+        <Button variant="outline" onClick={() => setDocs(true)}>
+          {t("Docs")}
+        </Button>
       </div>
       {plan && <Plan id={id} onClose={() => setPlan(false)} />}
+      {docs && (
+        <Docs
+          title={node.title}
+          body={node.body}
+          onClose={() => setDocs(false)}
+        />
+      )}
     </aside>
   );
 }
