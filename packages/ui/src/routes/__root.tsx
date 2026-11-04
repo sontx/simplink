@@ -129,6 +129,12 @@ function Shell() {
   }, []);
   return (
     <div className="flex h-dvh flex-col">
+      <a
+        href="#content"
+        className="sr-only z-50 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground! focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:ring-3 focus:ring-ring/50 focus:outline-none"
+      >
+        {t("Skip to content")}
+      </a>
       <header className="flex h-17 shrink-0 items-center gap-6.25 border-b bg-card px-6.25 max-[1100px]:gap-3.75 max-[780px]:h-14.5 max-[780px]:gap-2.5 max-[780px]:px-3.25">
         <div className="flex min-w-0 items-center gap-2">
           <Link
@@ -218,7 +224,8 @@ function Shell() {
             )}
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
-            {theme === "dark" ? <Moon /> : <Sun />}
+            {/* The icon shows the theme the button switches to, like its label. */}
+            {theme === "dark" ? <Sun /> : <Moon />}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -299,7 +306,10 @@ function Shell() {
         onDismiss={() => download.reset()}
       />
       <div className="flex min-h-0 flex-1">
-        <nav className="flex w-20 shrink-0 flex-col gap-2.5 border-r bg-card px-2 py-6 max-[780px]:w-14.5 max-[780px]:px-1 max-[780px]:py-3.75">
+        <nav
+          aria-label={t("Workspace")}
+          className="flex w-20 shrink-0 flex-col gap-2.5 border-r bg-card px-2 py-6 max-[780px]:w-14.5 max-[780px]:px-1 max-[780px]:py-3.75"
+        >
           {[
             { to: "/graph", label: "Graph", Icon: GitBranch },
             { to: "/nodes", label: "Nodes", Icon: List },
@@ -312,14 +322,14 @@ function Shell() {
               key={label}
               to={to}
               params={to === "/docs/$" ? { _splat: "" } : undefined}
-              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
+              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
             >
               <span className="relative">
-                <Icon size={19} className="max-[780px]:w-4.25" />
+                <Icon aria-hidden size={19} className="max-[780px]:w-4.25" />
                 {to === "/issues" && issueCount > 0 && (
                   <span
+                    aria-hidden
                     title={issueSummary}
-                    aria-label={issueSummary}
                     className={`absolute -top-1.5 left-3 min-w-4 rounded-full px-1 text-center text-[9px] leading-4 font-semibold text-background ${kb?.status.errors ? "bg-destructive" : "bg-warning"}`}
                   >
                     {issueCount > 99 ? "99+" : issueCount}
@@ -327,31 +337,38 @@ function Shell() {
                 )}
               </span>
               <span>{t(label)}</span>
+              {to === "/issues" && issueCount > 0 && (
+                <span className="sr-only">({issueSummary})</span>
+              )}
             </Link>
           ))}
           <div
             title={t(mode.detail)}
-            className="mt-auto text-center text-[8px] leading-loose tracking-[1px] text-muted-foreground max-[780px]:hidden"
+            className="mt-auto text-center text-[9px] leading-loose tracking-[1px] text-muted-foreground max-[780px]:hidden"
           >
             {t(mode.label)}
             {service.store.readOnly && (
-              <span className="block text-[10px] tracking-normal">
+              <span className="block text-[11px] tracking-normal">
                 {t("Read-only")}
               </span>
             )}
-            <span className="block text-[10px] tracking-normal">
+            <span className="block text-[11px] tracking-normal">
               {kb?.status.nodes ?? 0} {t("nodes")}
             </span>
           </div>
         </nav>
-        <div className="relative min-w-0 flex-1 overflow-auto">
+        <main
+          id="content"
+          tabIndex={-1}
+          className="relative min-w-0 flex-1 overflow-auto outline-none"
+        >
           <ErrorMessage
             error={error ?? reload.error}
             className="mx-10.5 mt-6 max-[1100px]:mx-7 max-[780px]:mx-4.5"
             onDismiss={error ? undefined : () => reload.reset()}
           />
           <Outlet />
-        </div>
+        </main>
       </div>
       <Dialog open={open} onOpenChange={setOpen} title={t("Search knowledge")}>
         <Command shouldFilter={false}>

@@ -116,16 +116,7 @@ function SectionTitle({
   className?: string;
   children: ReactNode;
 }) {
-  return (
-    <h3
-      className={cn(
-        "mb-3 mt-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase",
-        className,
-      )}
-    >
-      {children}
-    </h3>
-  );
+  return <h3 className={cn("mt-0 mb-3", className)}>{children}</h3>;
 }
 
 function Options({
@@ -231,9 +222,7 @@ function Playground() {
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           <Eyebrow>{t("KNOWLEDGE TOOLS")}</Eyebrow>
-          <h1 className="mt-1.25 mb-2 max-[780px]:text-[22px]">
-            {t("Playground")}
-          </h1>
+          <h1 className="mt-1.25 mb-2">{t("Playground")}</h1>
           <p className="text-muted-foreground">
             {t("Explore your knowledge base and try a plan.")}
           </p>
@@ -773,7 +762,7 @@ function Results({
     <div className="space-y-5">
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-lg font-semibold my-0">{nodeLink(data.id)}</h3>
+          <h3 className="my-0 text-xl font-semibold">{nodeLink(data.id)}</h3>
           {data.type && <Badge type={data.type}>{label(data.type)}</Badge>}
           {data.body && (
             <span className="ml-auto">

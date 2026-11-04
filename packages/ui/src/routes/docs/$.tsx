@@ -1,10 +1,13 @@
 import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleAlert, Download } from "lucide-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { docsQuery, kbQuery, pageQuery } from "../../api.js";
-import { ErrorMessage } from "../../components/ui/primitives.js";
+import {
+  ErrorMessage,
+  sectionHeading,
+} from "../../components/ui/primitives.js";
 import { Button } from "../../components/ui/button.js";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs.js";
 import {
@@ -21,8 +24,6 @@ export const Route = createFileRoute("/docs/$")({
   component: Docs,
 });
 
-const navHeading =
-  "text-[11px] font-semibold tracking-[0.06em] text-foreground uppercase";
 const pagerLink =
   "max-w-[50%] flex-1 rounded-lg border px-4 py-3 font-medium text-foreground hover:border-primary hover:text-primary";
 const pagerLabel =
@@ -135,10 +136,8 @@ function Docs() {
         <li key={child.name} className={depth === 0 ? "mt-4.5" : undefined}>
           <div
             className={cn(
-              navHeading,
-              depth === 0
-                ? "px-2 pb-1.5"
-                : "px-2 pt-2 pb-0.5 text-xs font-medium tracking-normal normal-case",
+              sectionHeading,
+              depth === 0 ? "px-2 pb-1.5" : "px-2 pt-2 pb-0.5",
             )}
           >
             {label(child.name)}
@@ -157,7 +156,7 @@ function Docs() {
     );
   return (
     <div className="flex h-full min-h-125 bg-card">
-      <aside className="flex w-65 shrink-0 flex-col overflow-auto border-r text-[13px] max-[780px]:w-47.5">
+      <aside className="flex w-65 shrink-0 flex-col overflow-auto border-r text-sm max-[780px]:w-47.5">
         <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b bg-card px-4 pt-4.5 pb-3.5">
           <span className="text-sm font-semibold">{t("Documentation")}</span>
           <Tabs
@@ -194,13 +193,33 @@ function Docs() {
       </aside>
       <div className="min-w-0 flex-1 overflow-auto">
         <div className="flex justify-center gap-12 px-12 pt-10 pb-16 max-[780px]:px-5 max-[780px]:pt-6 max-[780px]:pb-12">
-          <main className="min-w-0 max-w-190 flex-1">
+          <article className="min-w-0 max-w-190 flex-1">
             {!!kb?.status.errors && (
-              <div className="mb-6 rounded-md border border-border bg-warning/10 px-3.5 py-2.5 text-xs text-warning">
-                {t(
-                  "{count} lint errors · Preview is available, but simp-docs would refuse to export.",
-                  { count: kb.status.errors },
-                )}
+              <div
+                role="status"
+                className="mb-6 flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive/10 px-3.5 py-2.5 text-xs leading-5 text-foreground"
+              >
+                <CircleAlert
+                  aria-hidden
+                  className="mt-0.5 size-4 shrink-0 text-destructive"
+                />
+                <span className="min-w-0">
+                  <span className="error font-medium text-(--type-ink)">
+                    {t(
+                      kb.status.errors === 1
+                        ? "1 lint error"
+                        : "{count} lint errors",
+                      { count: kb.status.errors },
+                    )}
+                  </span>
+                  {" · "}
+                  {t(
+                    "Preview is available, but simp-docs would refuse to export.",
+                  )}{" "}
+                  <Link to="/issues" search={{ severity: "error" }}>
+                    {t("Fix in Issues")}
+                  </Link>
+                </span>
               </div>
             )}
             {page.data && (
@@ -291,10 +310,12 @@ function Docs() {
                 )}
               </div>
             )}
-          </main>
+          </article>
           {toc.length > 1 && (
             <aside className="sticky top-0 flex w-50 shrink-0 flex-col gap-0.5 self-start text-xs max-[1100px]:hidden">
-              <div className={cn(navHeading, "mb-2")}>{t("On this page")}</div>
+              <div className={cn(sectionHeading, "mb-2")}>
+                {t("On this page")}
+              </div>
               {toc.map((h) => (
                 <a
                   key={h.id}

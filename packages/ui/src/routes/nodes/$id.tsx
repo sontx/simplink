@@ -27,6 +27,7 @@ import {
   Badge,
   Button,
   ErrorMessage,
+  Glossary,
   Page,
 } from "../../components/ui/primitives.js";
 import { Markdown } from "../../components/markdown.js";
@@ -282,7 +283,7 @@ function NodeContent() {
       <div className="mt-5.5 mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:items-start max-[780px]:gap-2.5">
         <div>
           <Badge type={node.type}>{label(node.type)}</Badge>
-          <h1 className="mt-1.25 mb-2 max-[780px]:text-[22px]">{node.title}</h1>
+          <h1 className="mt-1.25 mb-2">{node.title}</h1>
           <code className={muted}>{id}</code>
         </div>
         <div className="flex flex-wrap items-center gap-2.25 max-[780px]:justify-end">
@@ -326,14 +327,7 @@ function NodeContent() {
                   className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-[11px] max-[480px]:grid-cols-1 max-[480px]:gap-1"
                 >
                   <dt className="text-muted-foreground">{label(key)}</dt>
-                  <dd
-                    title={
-                      ["type", "status", "severity"].includes(key)
-                        ? enumDescription(String(value))
-                        : undefined
-                    }
-                    className="m-0 wrap-anywhere text-muted-foreground"
-                  >
+                  <dd className="m-0 wrap-anywhere text-muted-foreground">
                     {key === "sources" && Array.isArray(value) ? (
                       <SourceFiles
                         sources={value.filter(
@@ -344,6 +338,12 @@ function NodeContent() {
                     ) : (
                       <FrontmatterValue value={value} />
                     )}
+                    {["type", "status", "severity"].includes(key) &&
+                      enumDescription(String(value)) && (
+                        <span className="block">
+                          {enumDescription(String(value))}
+                        </span>
+                      )}
                   </dd>
                 </div>
               ))}
@@ -365,7 +365,7 @@ function NodeContent() {
                     className="flex flex-wrap items-center gap-2.5 py-2"
                     key={kind}
                   >
-                    <Badge title={enumDescription(kind)}>{label(kind)}</Badge>
+                    <Badge>{label(kind)}</Badge>
                     {edges?.map((edge, index) => {
                       const target = dir === "out" ? edge.to : edge.from;
                       return (
@@ -386,14 +386,28 @@ function NodeContent() {
                 )}
               </section>
             ))}
+            <Glossary
+              className="mt-2"
+              summary={t("What these relationships mean")}
+              entries={[
+                ...new Set(
+                  [...detail.out, ...detail.in].map((edge) => edge.kind),
+                ),
+              ].map((kind) => ({
+                key: kind,
+                term: label(kind),
+                description: enumDescription(kind),
+              }))}
+            />
           </div>
-          <div className="mt-6 flex h-105 overflow-hidden rounded-[7px] border border-border max-[1100px]:mt-0 [&_.react-flow__minimap]:hidden">
+          <div className="mt-6 flex h-105 overflow-hidden rounded-[7px] border border-border max-[1100px]:mt-0">
             {kb && (
               <KBGraph
                 kb={kb}
                 focus={id}
                 depth={1}
                 editable={false}
+                minimap={false}
                 onFocus={(focus) =>
                   void navigate({ to: "/graph", search: { focus } })
                 }

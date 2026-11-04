@@ -412,12 +412,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     <main className="relative flex min-h-dvh items-center justify-center bg-muted/40 p-4">
       <SimpNetwork avoid={content} />
       <div ref={content} className="relative w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-2.25 text-[26px] font-bold tracking-[-1px]">
+        <div className="mb-8 flex items-center justify-center gap-2.25 text-[23px] font-bold tracking-[-1px]">
           <img
             src={`${import.meta.env.BASE_URL}logo.svg`}
             alt=""
-            width={30}
-            height={30}
+            width={26}
+            height={26}
           />
           <span>
             <span className="text-primary">simp</span>link

@@ -37,7 +37,7 @@ const unopenedFileHint = {
 
 function Issues() {
   const { service } = useWorkspace();
-  const { t, label, enumDescription } = usePreferences();
+  const { t, label } = usePreferences();
 
   const { data: kb } = useQuery(kbQuery(service));
   const { severity } = Route.useSearch();
@@ -54,12 +54,10 @@ function Issues() {
   ).find((item) => !severity || item.issue.severity === severity);
   return (
     <Page>
-      <div className="mb-7 flex items-end justify-between gap-6.25 max-[780px]:items-start max-[780px]:gap-2.5">
-        <div>
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6.25 gap-y-4 max-[780px]:gap-x-2.5">
+        <div className="min-w-0">
           <Eyebrow>{t("VALIDATION")}</Eyebrow>
-          <h1 className="mt-1.25 mb-1.5 max-[780px]:text-[22px]">
-            {t("Issues")}
-          </h1>
+          <h1 className="mt-1.25 mb-1.5">{t("Issues")}</h1>
           {files.length > 0 && (
             <p className="mb-0 text-sm text-muted-foreground">
               <IssueCounts
@@ -73,7 +71,7 @@ function Issues() {
             </p>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2.25">
+        <div className="flex flex-wrap items-center gap-2.25">
           <Select
             value={severity || "all"}
             onValueChange={(value) =>
@@ -82,27 +80,14 @@ function Issues() {
               })
             }
           >
-            <SelectTrigger
-              aria-label={t("Severity")}
-              title={enumDescription(severity, "issue")}
-            >
+            <SelectTrigger aria-label={t("Severity")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="all">{t("All severities")}</SelectItem>
-                <SelectItem
-                  value="error"
-                  title={enumDescription("error", "issue")}
-                >
-                  {t("Errors")}
-                </SelectItem>
-                <SelectItem
-                  value="warning"
-                  title={enumDescription("warning", "issue")}
-                >
-                  {t("Warnings")}
-                </SelectItem>
+                <SelectItem value="error">{t("Errors")}</SelectItem>
+                <SelectItem value="warning">{t("Warnings")}</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

@@ -73,7 +73,7 @@ export function Markdown({
   return (
     <article
       className={cn(
-        "markdown text-[13px] leading-[1.75] text-foreground",
+        "markdown text-sm leading-[1.75] text-foreground",
         className,
       )}
     >

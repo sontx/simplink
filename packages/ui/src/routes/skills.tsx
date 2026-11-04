@@ -66,9 +66,7 @@ function Skills() {
       <div className="mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:flex-col max-[780px]:items-start max-[780px]:gap-2.5">
         <div>
           <Eyebrow>{t("AGENT SKILLS")}</Eyebrow>
-          <h1 className="mt-1.25 mb-2 max-[780px]:text-[22px]">
-            {t("Skills")}
-          </h1>
+          <h1 className="mt-1.25 mb-2">{t("Skills")}</h1>
           <p className="text-muted-foreground">
             {t(
               "Skills teach a coding agent how to write and use a Simplink knowledge base.",

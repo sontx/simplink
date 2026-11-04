@@ -22,46 +22,22 @@
   --accent-foreground: #9d174d;
   --destructive: #dc2626;
   --warning: #946200;
+  --success: #2f7d5b;
   --border: #e8e5ed;
   --input: #e7d6df;
   --ring: #ec4899;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
 
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
   --font-mono: "Cascadia Code", Consolas, monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-warning: var(--warning);
+  --color-success: var(--success);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -102,22 +78,10 @@
   --accent-foreground: #f9a8d4;
   --destructive: oklch(0.704 0.191 22.216);
   --warning: #e5b96c;
+  --success: #7fcfa6;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: #ec4899;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {
@@ -166,7 +130,7 @@
   }
   button:disabled {
     opacity: 0.5;
-    cursor: wait;
+    cursor: not-allowed;
   }
   * {
     @apply border-border outline-ring/50;
@@ -188,70 +152,118 @@
 }
 
 @layer components {
-  /* Node type tokens, read by badges, graph nodes and type dots. */
+  /* Node type tokens, read by badges, graph nodes and type dots.
+     --type-color marks edges, dots and fills; --type-ink is the text colour,
+     at least 4.5:1 on --type-bg, the card and the page in both themes. */
   .goal,
   .constraint {
     --type-color: #c17889;
+    --type-ink: #975263;
     --type-bg: #fbf0f3;
   }
   .procedure {
     --type-color: #5e8dbb;
+    --type-ink: #3d6b97;
     --type-bg: #edf3fa;
   }
   .capability {
     --type-color: #5b9d88;
+    --type-ink: #317461;
     --type-bg: #edf7f2;
   }
   .state {
     --type-color: #b88b4d;
+    --type-ink: #8c6120;
     --type-bg: #fbf5e9;
   }
   .dark .goal,
   .dark .constraint {
     --type-color: #e6a2b4;
+    --type-ink: #e6a2b4;
     --type-bg: #402734;
   }
   .dark .procedure {
     --type-color: #95bde6;
+    --type-ink: #95bde6;
     --type-bg: #233347;
   }
   .dark .capability {
     --type-color: #8dceb5;
+    --type-ink: #8dceb5;
     --type-bg: #20392f;
   }
   .dark .state {
     --type-color: #e5bd7d;
+    --type-ink: #e5bd7d;
     --type-bg: #3b3021;
   }
   .error {
     --type-color: var(--destructive);
+    --type-ink: #b91c1c;
     --type-bg: color-mix(in srgb, var(--destructive) 12%, var(--card));
   }
   .warning {
     --type-color: var(--warning);
+    --type-ink: #8b5900;
     --type-bg: color-mix(in srgb, var(--warning) 12%, var(--card));
+  }
+  .dark .error {
+    --type-ink: var(--destructive);
+  }
+  .dark .warning {
+    --type-ink: var(--warning);
   }
   .success {
     --type-color: var(--foreground);
+    --type-ink: var(--foreground);
     --type-bg: var(--muted);
   }
-  /* React Flow renders these elements itself. */
+  /* React Flow renders these elements itself; its stock themes are neutral
+     grey, so map them onto the tinted tokens for both themes. */
+  .react-flow {
+    --xy-background-color: var(--background);
+    --xy-controls-button-background-color: var(--card);
+    --xy-controls-button-background-color-hover: var(--muted);
+    --xy-controls-button-color: var(--foreground);
+    --xy-controls-button-color-hover: var(--foreground);
+    --xy-controls-button-border-color: var(--border);
+    --xy-minimap-background-color: var(--card);
+    --xy-edge-label-background-color: var(--card);
+    --xy-edge-label-color: var(--muted-foreground);
+    --xy-connectionline-stroke: var(--ring);
+    --xy-attribution-background-color: transparent;
+    --xy-handle-background-color: var(--muted-foreground);
+    --xy-handle-border-color: var(--card);
+  }
+  .react-flow__node .react-flow__handle {
+    width: 7px !important;
+    height: 7px !important;
+    border-width: 2px !important;
+  }
+  .react-flow__attribution a {
+    color: var(--muted-foreground);
+  }
   .react-flow__controls {
     box-shadow: 0 1px 6px #41344712 !important;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
   }
   .react-flow__controls-button {
     border-bottom-color: var(--border) !important;
   }
   .react-flow__minimap {
+    --xy-minimap-mask-background-color: color-mix(
+      in srgb,
+      var(--background) 70%,
+      transparent
+    );
     background: var(--card) !important;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
   }
   .react-flow__attribution {
-    font-size: 8px !important;
+    font-size: 9px !important;
   }
   /* Rendered Markdown has no per-element classes. */
   .markdown > :first-child {
@@ -320,7 +332,7 @@
     background: var(--background);
     border: 1px solid var(--border);
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-size: 0.875em;
   }
   .markdown blockquote {
@@ -356,6 +368,13 @@
     margin: 32px 0;
   }
   @media (max-width: 780px) {
+    /* On a phone the minimap would cover most of the canvas. */
+    .react-flow__minimap {
+      display: none;
+    }
+    h1 {
+      font-size: 22px;
+    }
     .markdown h1 {
       font-size: 26px;
     }

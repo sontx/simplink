@@ -61,7 +61,7 @@ function KnowledgeNode({ data, selected }: NodeProps<GraphNode>) {
     <div
       className={cn(
         data.type,
-        "relative h-22.5 w-57.5 rounded-[7px] border bg-card px-3.75 py-3.25 shadow-[0_2px_7px_#44354c08] transition-[box-shadow,border-color] duration-200 [&_.react-flow__handle]:size-1.75 [&_.react-flow__handle]:border-2 [&_.react-flow__handle]:border-card [&_.react-flow__handle]:bg-muted-foreground",
+        "relative h-22.5 w-57.5 rounded-[7px] border bg-card px-3.75 py-3.25 shadow-[0_2px_7px_#44354c08] transition-[box-shadow,border-color] duration-200",
         data.ghost
           ? "border-dashed border-border bg-destructive/10"
           : selected
@@ -81,10 +81,10 @@ function KnowledgeNode({ data, selected }: NodeProps<GraphNode>) {
       {data.count > 0 && (
         <span
           className={cn(
-            "absolute -top-1.75 -right-1.5 size-5.5 rounded-full border-2 border-card text-center text-[10px] leading-4.5",
+            "absolute -top-1.75 -right-1.5 size-5.5 rounded-full border-2 border-card text-center text-[9px] leading-4.5",
             data.error
               ? "bg-destructive text-white"
-              : "bg-warning/10 text-warning",
+              : "warning bg-(--type-bg) text-(--type-ink)",
           )}
         >
           {data.count}
@@ -131,13 +131,17 @@ function NodeSearch({
                   <CommandItem
                     key={n.id}
                     value={`${n.data.title} ${n.id}`}
-                    title={`${n.data.title}\n${n.id}`}
                     onSelect={() => {
                       onJump(n.id);
                       setOpen(false);
                     }}
                   >
-                    <span className="truncate">{n.data.title}</span>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate">{n.data.title}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {n.id}
+                      </span>
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -169,6 +173,7 @@ export function KBGraph({
   expanded,
   onExpandedChange,
   editable = true,
+  minimap = true,
 }: {
   kb: Snapshot;
   focus?: string;
@@ -179,6 +184,8 @@ export function KBGraph({
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   editable?: boolean;
+  /** Off for small embedded graphs, where the minimap would cover nodes. */
+  minimap?: boolean;
 }) {
   const { service } = useWorkspace();
   editable &&= !service.store.readOnly;
@@ -282,7 +289,7 @@ export function KBGraph({
           labelBgStyle: { fill: "var(--card)" },
           labelStyle: {
             pointerEvents: "all" as const,
-            fontSize: 10,
+            fontSize: 11,
             fill: bad ? "var(--destructive)" : "var(--muted-foreground)",
           },
         };
@@ -372,13 +379,15 @@ export function KBGraph({
                 </Button>
               )}
             </Panel>
-            <MiniMap
-              pannable
-              zoomable
-              nodeColor={(n) =>
-                n.data.type === "goal" ? "#8b78b5" : "#b4b9c3"
-              }
-            />
+            {minimap && (
+              <MiniMap<GraphNode>
+                pannable
+                zoomable
+                // The type class on each rect sets --type-color for its theme.
+                nodeClassName={(n) => (n.data.ghost ? "error" : n.data.type)}
+                nodeColor="var(--type-color)"
+              />
+            )}
           </ReactFlow>
           {nodes.length === 0 && (
             <div className="pointer-events-none absolute inset-x-[20%] top-[45%] text-center text-xs text-muted-foreground">
@@ -396,17 +405,24 @@ export function KBGraph({
               </p>
               <ErrorMessage error={patch.error} />
               {kinds.length ? (
-                kinds.map((kind) => (
-                  <Button
-                    variant="outline"
-                    key={kind}
-                    title={enumDescription(kind)}
-                    disabled={patch.isPending}
-                    onClick={() => patch.mutate(kind)}
-                  >
-                    {label(kind)}
-                  </Button>
-                ))
+                <div className="flex flex-col gap-2">
+                  {kinds.map((kind) => (
+                    <Button
+                      variant="outline"
+                      key={kind}
+                      className="h-auto flex-col items-start gap-0.5 py-2 text-left whitespace-normal"
+                      disabled={patch.isPending}
+                      onClick={() => patch.mutate(kind)}
+                    >
+                      {label(kind)}
+                      {enumDescription(kind) && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {enumDescription(kind)}
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
               ) : (
                 <p>{t("No valid relationship kinds for these node types.")}</p>
               )}
@@ -423,11 +439,7 @@ export function KBGraph({
       </ContextMenuTrigger>
       <ContextMenuContent>
         {NODE_TYPES.filter((type) => type !== "simp").map((type) => (
-          <ContextMenuItem
-            key={type}
-            title={enumDescription(type)}
-            onSelect={() => setCreate(type)}
-          >
+          <ContextMenuItem key={type} onSelect={() => setCreate(type)}>
             {t("New {type} here…", { type: label(type).toLowerCase() })}
           </ContextMenuItem>
         ))}

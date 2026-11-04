@@ -323,8 +323,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Documentation: "Tài liệu",
   "Docs layout": "Bố cục tài liệu",
   "Download docs (.zip)": "Tải tài liệu (.zip)",
-  "{count} lint errors · Preview is available, but simp-docs would refuse to export.":
-    "{count} lỗi kiểm tra · Có thể xem trước, nhưng simp-docs sẽ từ chối xuất.",
   Breadcrumb: "Đường dẫn điều hướng",
   "Rendering page…": "Đang hiển thị trang…",
   "No documentation pages": "Chưa có trang tài liệu",
@@ -504,6 +502,16 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "The last rebuild failed. Reload to refresh this workspace.":
     "Lần dựng lại gần nhất thất bại. Tải lại để làm mới không gian làm việc.",
   "Drag to resize": "Kéo để đổi kích thước",
+  "Skip to content": "Chuyển đến nội dung",
+  Workspace: "Không gian làm việc",
+  "What these mean": "Ý nghĩa của các mục này",
+  "What these types mean": "Ý nghĩa của các loại nút",
+  "What these relationships mean": "Ý nghĩa của các quan hệ",
+  "1 lint error": "1 lỗi kiểm tra",
+  "{count} lint errors": "{count} lỗi kiểm tra",
+  "Preview is available, but simp-docs would refuse to export.":
+    "Có thể xem trước, nhưng simp-docs sẽ từ chối xuất.",
+  "Fix in Issues": "Sửa trong Vấn đề",
   // Errors raised by the workspace
   "Node not found": "Không tìm thấy nút",
   "File not found": "Không tìm thấy tệp",

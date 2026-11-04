@@ -2,7 +2,7 @@ import type { Issue } from "@sontx/simplink-core";
 import { issueCodeMeaning } from "../lib/issue-codes.js";
 import { cn } from "../lib/utils.js";
 import { usePreferences } from "./preferences.js";
-import { Badge } from "./ui/primitives.js";
+import { Badge, Glossary } from "./ui/primitives.js";
 
 /**
  * Issues for one file: severity-coloured code, the message, then its line.
@@ -78,29 +78,20 @@ export function IssueCodeGuide({
   className?: string;
 }) {
   const { t, language } = usePreferences();
-  const explained = [...new Set(codes)].sort().flatMap((code) => {
-    const meaning = issueCodeMeaning(code, language);
-    return meaning ? [[code, meaning] as const] : [];
-  });
-  if (!explained.length) return null;
   return (
-    <details className={cn("group text-sm", className)}>
-      <summary className="w-fit cursor-pointer rounded-sm text-muted-foreground select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-        {t("What these codes mean")}
-      </summary>
-      <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2">
-        {explained.map(([code, meaning]) => (
-          <div key={code} className="contents">
-            <dt>
-              <Badge type={code.startsWith("E") ? "error" : "warning"}>
-                {code}
-              </Badge>
-            </dt>
-            <dd className="m-0 leading-5">{meaning}</dd>
-          </div>
-        ))}
-      </dl>
-    </details>
+    <Glossary
+      className={className}
+      summary={t("What these codes mean")}
+      entries={[...new Set(codes)].sort().map((code) => ({
+        key: code,
+        term: (
+          <Badge type={code.startsWith("E") ? "error" : "warning"}>
+            {code}
+          </Badge>
+        ),
+        description: issueCodeMeaning(code, language),
+      }))}
+    />
   );
 }
 

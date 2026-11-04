@@ -32,6 +32,7 @@ import {
   Badge,
   Button,
   Eyebrow,
+  Glossary,
   Input,
   Page,
 } from "../../components/ui/primitives.js";
@@ -131,9 +132,10 @@ function Nodes() {
         helper.accessor("status", {
           header: () => t("Status"),
           cell: ({ getValue }) => (
-            <span title={enumDescription(getValue())}>
+            <span>
               <span
-                className={`mr-1.5 inline-block size-1.25 rounded-full ${getValue() === "deprecated" ? "bg-[#c0a17a]" : "bg-[#82ad96]"}`}
+                aria-hidden
+                className={`mr-1.5 inline-block size-1.5 rounded-full align-middle ${getValue() === "deprecated" ? "bg-warning" : "bg-success"}`}
               />
               {label(getValue())}
             </span>
@@ -153,7 +155,7 @@ function Nodes() {
           cell: ({ getValue }) => getValue() || "—",
         }),
       ]),
-    [t, label, enumDescription],
+    [t, label],
   );
   const { data: kb } = useQuery(kbQuery(service));
   const s = Route.useSearch();
@@ -217,7 +219,7 @@ function Nodes() {
       <div className="mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:gap-2.5">
         <div>
           <Eyebrow>{t("LIBRARY")}</Eyebrow>
-          <h1 className="mt-1.25 mb-2 max-[780px]:text-[22px]">
+          <h1 className="mt-1.25 mb-2">
             {t("Nodes")}
             <span className="ml-2 inline-flex align-middle">
               <Badge>{rows.length}</Badge>
@@ -247,7 +249,6 @@ function Nodes() {
                   ).map((type) => (
                     <DropdownMenuItem
                       key={type}
-                      title={enumDescription(type)}
                       onSelect={() => setCreate(type)}
                     >
                       {t("Add {type}", { type: label(type).toLowerCase() })}
@@ -273,21 +274,14 @@ function Nodes() {
             update({ type: value === "all" ? "" : value })
           }
         >
-          <SelectTrigger
-            aria-label={t("Node type")}
-            title={enumDescription(s.type ?? "")}
-          >
+          <SelectTrigger aria-label={t("Node type")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">{t("All types")}</SelectItem>
               {NODE_TYPES.map((type) => (
-                <SelectItem
-                  key={type}
-                  value={type}
-                  title={enumDescription(type)}
-                >
+                <SelectItem key={type} value={type}>
                   {label(type)}
                 </SelectItem>
               ))}
@@ -300,24 +294,14 @@ function Nodes() {
             update({ status: value === "all" ? "" : value })
           }
         >
-          <SelectTrigger
-            aria-label={t("Node status")}
-            title={enumDescription(s.status ?? "")}
-          >
+          <SelectTrigger aria-label={t("Node status")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="all">{t("All statuses")}</SelectItem>
-              <SelectItem value="active" title={enumDescription("active")}>
-                {t("Active")}
-              </SelectItem>
-              <SelectItem
-                value="deprecated"
-                title={enumDescription("deprecated")}
-              >
-                {t("Deprecated")}
-              </SelectItem>
+              <SelectItem value="active">{t("Active")}</SelectItem>
+              <SelectItem value="deprecated">{t("Deprecated")}</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -344,6 +328,21 @@ function Nodes() {
           </SelectContent>
         </Select>
       </div>
+      <Glossary
+        className="-mt-2.5 mb-5"
+        entries={[
+          ...NODE_TYPES.map((type) => ({
+            key: type,
+            term: <Badge type={type}>{label(type)}</Badge>,
+            description: enumDescription(type),
+          })),
+          ...["active", "deprecated"].map((status) => ({
+            key: status,
+            term: label(status),
+            description: enumDescription(status),
+          })),
+        ]}
+      />
       <div className="overflow-hidden rounded-md border bg-card">
         <Table>
           <TableHeader>

@@ -14,7 +14,13 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover.js";
 import { Link } from "@tanstack/react-router";
 import { kbQuery, nodeQuery, planQuery, schemaQuery } from "../api.js";
-import { Badge, Button, Dialog, ErrorMessage } from "./ui/primitives.js";
+import {
+  Badge,
+  Button,
+  Dialog,
+  ErrorMessage,
+  Glossary,
+} from "./ui/primitives.js";
 import { Markdown } from "./markdown.js";
 
 export const inspectorClass =
@@ -121,10 +127,8 @@ export function Inspector({
     >
       <div className="min-h-0 flex-1 overflow-auto px-5.75 py-6.75 max-[1100px]:px-4.25 max-[1100px]:py-5.5">
         <Badge type={node.type}>{label(node.type)}</Badge>
-        <h2 className="mt-3.25 mb-2.5 text-[18px] tracking-[-0.4px]">
-          {node.title}
-        </h2>
-        <code className="mb-3.5 block text-[10px] wrap-anywhere text-muted-foreground">
+        <h2 className="mt-3.25 mb-2.5 wrap-anywhere">{node.title}</h2>
+        <code className="mb-3.5 block wrap-anywhere text-muted-foreground">
           {id}
         </code>
         <p className="text-xs leading-[1.7] text-muted-foreground">
@@ -134,7 +138,10 @@ export function Inspector({
           .filter((i) => i.path === node.path)
           .map((i, index) => (
             <div key={index} className={issueClass(i.severity)}>
-              {i.code} {i.message}
+              <span className={cn(i.severity, "font-medium text-(--type-ink)")}>
+                {i.code}
+              </span>{" "}
+              {i.message}
             </div>
           ))}
         <h3 className="mt-6.25 border-t border-border pt-5.5">
@@ -148,10 +155,7 @@ export function Inspector({
           return (
             <section className="mb-3" key={kind}>
               <div className="my-1.5 flex items-center justify-between gap-3">
-                <strong
-                  title={enumDescription(kind)}
-                  className="text-[10px] font-medium text-muted-foreground"
-                >
+                <strong className="text-[11px] font-medium text-muted-foreground">
                   {label(kind)}
                 </strong>
                 {!service.store.readOnly && (
@@ -221,7 +225,7 @@ export function Inspector({
                   <Link
                     to="/graph"
                     search={{ focus: target }}
-                    className="truncate text-[10px] text-muted-foreground"
+                    className="truncate text-[11px] text-muted-foreground"
                   >
                     {target}
                   </Link>
@@ -246,6 +250,14 @@ export function Inspector({
             </section>
           );
         })}
+        <Glossary
+          summary={t("What these relationships mean")}
+          entries={Object.keys(schema?.[node.type] ?? {}).map((kind) => ({
+            key: kind,
+            term: label(kind),
+            description: enumDescription(kind),
+          }))}
+        />
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2.25 border-t border-border bg-card px-5.75 py-3.5 max-[1100px]:px-4.25">
         {/* Read-only workspaces have nothing to edit, so the action is not primary. */}

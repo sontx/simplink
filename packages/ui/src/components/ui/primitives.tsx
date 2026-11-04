@@ -2,7 +2,7 @@ import { usePreferences } from "../preferences.js";
 import { useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { cn } from "../../lib/utils.js";
-import { CircleAlert, X } from "lucide-react";
+import { ChevronRight, CircleAlert, X } from "lucide-react";
 import { Badge as ShadcnBadge } from "./badge.js";
 import {
   Dialog as DialogRoot,
@@ -27,13 +27,12 @@ export function Badge({
   type?: string;
   children: ReactNode;
 }) {
-  const { enumDescription } = usePreferences();
   return (
     <ShadcnBadge
       variant="secondary"
-      title={title ?? (type ? enumDescription(type, "issue") : undefined)}
+      title={title}
       // ponytail: colours come from the --type-* tokens set by the type class
-      className={type && `${type} bg-(--type-bg) text-(--type-color)`}
+      className={type && `${type} bg-(--type-bg) text-(--type-ink)`}
     >
       {children}
     </ShadcnBadge>
@@ -241,10 +240,56 @@ export function Page({
   );
 }
 
+/** The one small-heading role: matches the global `h3` for non-heading elements. */
+export const sectionHeading = "text-xs font-[650] text-foreground";
+
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
     <div className="mb-3.5 text-[9px] font-[650] tracking-[1.7px] text-muted-foreground">
       {children}
     </div>
+  );
+}
+
+/**
+ * A closed-by-default "what these mean" list, so term descriptions are
+ * readable by keyboard, touch and screen-reader users, not only on hover.
+ */
+export function Glossary({
+  entries,
+  summary,
+  className,
+}: {
+  entries: readonly {
+    key: string;
+    term: ReactNode;
+    description: string | undefined;
+  }[];
+  summary?: string;
+  className?: string;
+}) {
+  const { t } = usePreferences();
+  const explained = entries.filter((entry) => entry.description);
+  if (!explained.length) return null;
+  return (
+    <details className={cn("group text-sm", className)}>
+      <summary className="flex w-fit cursor-pointer list-none items-start gap-1 rounded-sm text-xs leading-5 text-muted-foreground select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          aria-hidden
+          className="mt-0.75 size-3.5 shrink-0 transition-transform group-open:rotate-90"
+        />
+        {summary ?? t("What these mean")}
+      </summary>
+      <dl className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(min(15rem,100%),1fr))] gap-x-6 gap-y-2 text-xs">
+        {explained.map(({ key, term, description }) => (
+          <div key={key}>
+            <dt className="font-medium">{term}</dt>
+            <dd className="m-0 mt-0.5 leading-5 text-muted-foreground">
+              {description}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   );
 }

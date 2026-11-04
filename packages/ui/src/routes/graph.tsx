@@ -11,7 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group.js";
 import { Button } from "../components/ui/button.js";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils.js";
-import { Eyebrow, Page } from "../components/ui/primitives.js";
+import { Eyebrow, Glossary, Page } from "../components/ui/primitives.js";
 export const Route = createFileRoute("/graph")({
   validateSearch: (
     s: Record<string, unknown>,
@@ -45,7 +45,7 @@ const heading = "mt-6 mb-2.75";
 const ORPHAN_PREVIEW = 5;
 const types = ["goal", "procedure", "capability", "state", "constraint"];
 const check =
-  "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground max-[780px]:text-[10px]";
+  "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground";
 
 function Graph() {
   const { service } = useWorkspace();
@@ -86,10 +86,10 @@ function Graph() {
               <div className="max-[780px]:hidden">
                 <Eyebrow>{t("EXPLORER")}</Eyebrow>
               </div>
-              <h1 className="mb-2 text-[17px] tracking-[-0.4px] max-[780px]:mb-0.5 max-[780px]:text-sm">
+              <h1 className="mb-2 text-xl leading-[1.35] font-semibold tracking-normal max-[780px]:mb-0.5 max-[780px]:text-sm">
                 {t("Knowledge graph")}
               </h1>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 {kb.nodes.length} {t("nodes")} · {kb.edges.length}{" "}
                 {t("relationships")}
               </p>
@@ -117,7 +117,7 @@ function Graph() {
           >
             <h3 className={heading}>{t("Node types")}</h3>
             {types.map((type) => (
-              <label className={check} key={type} title={enumDescription(type)}>
+              <label className={check} key={type}>
                 <Checkbox
                   checked={selectedTypes.includes(type)}
                   onCheckedChange={() => toggle("types", type, types)}
@@ -128,9 +128,18 @@ function Graph() {
                 {label(type)}
               </label>
             ))}
+            <Glossary
+              className="mt-1"
+              summary={t("What these types mean")}
+              entries={types.map((type) => ({
+                key: type,
+                term: label(type),
+                description: enumDescription(type),
+              }))}
+            />
             <h3 className={heading}>{t("Relationships")}</h3>
             {kinds.map((kind) => (
-              <label className={check} key={kind} title={enumDescription(kind)}>
+              <label className={check} key={kind}>
                 <Checkbox
                   checked={(search.kinds?.split(",") ?? kinds).includes(kind)}
                   onCheckedChange={() => toggle("kinds", kind, kinds)}
@@ -138,6 +147,15 @@ function Graph() {
                 {label(kind)}
               </label>
             ))}
+            <Glossary
+              className="mt-1"
+              summary={t("What these relationships mean")}
+              entries={kinds.map((kind) => ({
+                key: kind,
+                term: label(kind),
+                description: enumDescription(kind),
+              }))}
+            />
             <h3 className={heading}>{t("Depth")}</h3>
             <ToggleGroup
               className="mt-2 mb-4"
@@ -262,7 +280,7 @@ function Graph() {
               className={`${inspectorClass} text-muted-foreground min-[1100px]:pt-9.5 max-[780px]:hidden`}
             >
               <Eyebrow>{t("NODE INSPECTOR")}</Eyebrow>
-              <h2 className="mt-5.5 mb-2.5 text-[18px] tracking-[-0.4px] text-muted-foreground">
+              <h2 className="mt-5.5 mb-2.5 text-muted-foreground">
                 {t("Explore a connection")}
               </h2>
               <p className="text-xs leading-[1.7]">
