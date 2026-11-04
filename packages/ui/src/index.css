@@ -353,6 +353,12 @@
   .react-flow__edge.edge-dim:hover .react-flow__edge-textwrapper {
     display: inline;
   }
+  /* On the whole map, areas unrelated to the hovered one fade but stay opaque,
+     so lines behind them never show through. */
+  .react-flow__node.area-dim > * > :not(.react-flow__handle) {
+    opacity: 0.4;
+    transition: opacity 120ms ease-out;
+  }
   /* Zoomed out, edge labels shrink to noise; the lines alone carry the shape. */
   [data-zoomed-out] .react-flow__edge-textwrapper,
   [data-zoomed-out] .react-flow__edge-text,

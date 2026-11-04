@@ -21,10 +21,15 @@ import {
   Position,
   MarkerType,
   Panel,
+  BaseEdge,
+  useInternalNode,
   type Connection,
+  type EdgeProps,
+  type InternalNode,
   type NodeProps,
   type Node,
   type ReactFlowInstance,
+  type XYPosition,
 } from "@xyflow/react";
 import { Map as MapIcon, Maximize2, Minimize2, Search } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,6 +39,8 @@ import {
   clusterGraph,
   laneLayout,
   neighborhood,
+  areaLayout,
+  pairLinks,
   type Cluster,
   type GraphFilters,
   type NodeLayout,
@@ -119,7 +126,8 @@ function ClusterCard({ data }: NodeProps<ClusterNode>) {
   const issues = data.errors + data.warnings;
   return (
     <div className="relative h-22.5 w-57.5 cursor-pointer rounded-[7px] border border-border bg-card px-3.75 py-3 shadow-[0_2px_7px_#44354c08] transition-[border-color] duration-200 hover:border-ring/60">
-      <Handle type="target" position={Position.Left} />
+      {/* Area links leave from the nearest side, so these anchors stay unseen. */}
+      <Handle type="target" position={Position.Left} className="opacity-0" />
       <strong className="block truncate text-sm font-[550] text-foreground">
         {data.area ? label(data.area) : t("Top level")}
       </strong>
@@ -153,7 +161,7 @@ function ClusterCard({ data }: NodeProps<ClusterNode>) {
           {issues}
         </span>
       )}
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Right} className="opacity-0" />
     </div>
   );
 }
@@ -162,13 +170,22 @@ function ClusterCard({ data }: NodeProps<ClusterNode>) {
 function LaneHeading({ data }: NodeProps<LaneNode>) {
   const { t, label } = usePreferences();
   return (
-    <div className="w-57.5 text-xs font-[650] text-muted-foreground">
+    <div className="text-xs font-[650] whitespace-nowrap text-muted-foreground">
       {data.type === "missing"
         ? t("Missing")
         : data.type === "other"
           ? t("Other")
-          : label(data.type)}
+          : data.type === "unlinked"
+            ? t("Not linked to other areas")
+            : data.type === "linked"
+              ? t("Linked areas")
+              : label(data.type)}
       <span className="ml-1.5 font-normal tabular-nums">{data.count}</span>
+      {data.type === "linked" && (
+        <span className="ml-2 font-normal">
+          {t("Hover an area to see its links.")}
+        </span>
+      )}
     </div>
   );
 }
@@ -177,6 +194,64 @@ const nodeTypes = {
   cluster: ClusterCard,
   lane: LaneHeading,
 };
+
+/** Where the line from a card's centre toward a point leaves the card, plus a gap. */
+function borderPoint(node: InternalNode, toward: XYPosition, gap = 6) {
+  const width = node.measured.width ?? 230;
+  const height = node.measured.height ?? 90;
+  const cx = node.internals.positionAbsolute.x + width / 2;
+  const cy = node.internals.positionAbsolute.y + height / 2;
+  const dx = toward.x - cx;
+  const dy = toward.y - cy;
+  if (!dx && !dy) return { x: cx, y: cy };
+  const scale = Math.min(
+    dx ? (width / 2 + gap) / Math.abs(dx) : Infinity,
+    dy ? (height / 2 + gap) / Math.abs(dy) : Infinity,
+  );
+  return { x: cx + dx * scale, y: cy + dy * scale };
+}
+
+function centre(node: InternalNode): XYPosition {
+  return {
+    x: node.internals.positionAbsolute.x + (node.measured.width ?? 230) / 2,
+    y: node.internals.positionAbsolute.y + (node.measured.height ?? 90) / 2,
+  };
+}
+
+/** A straight line between two area cards, leaving each from its nearest side. */
+function AreaLink({
+  source,
+  target,
+  markerStart,
+  markerEnd,
+  style,
+  label,
+  labelStyle,
+  labelBgStyle,
+}: EdgeProps) {
+  const from = useInternalNode(source);
+  const to = useInternalNode(target);
+  if (!from || !to) return null;
+  const start = borderPoint(from, centre(to));
+  const end = borderPoint(to, centre(from));
+  return (
+    <BaseEdge
+      path={`M ${start.x},${start.y} L ${end.x},${end.y}`}
+      markerStart={markerStart}
+      markerEnd={markerEnd}
+      style={style}
+      label={label}
+      labelX={(start.x + end.x) / 2}
+      labelY={(start.y + end.y) / 2}
+      labelStyle={labelStyle}
+      labelBgStyle={labelBgStyle}
+      labelBgPadding={[4, 2]}
+      labelBgBorderRadius={4}
+    />
+  );
+}
+
+const edgeTypes = { area: AreaLink };
 // Below this zoom, edge labels are noise rather than information.
 const LABEL_ZOOM = 0.55;
 const MINIMAP_KEY = "simplink.minimap";
@@ -339,7 +414,25 @@ export function KBGraph({
       await client.invalidateQueries();
     },
   });
-  const { nodes, edges, searchable } = useMemo(() => {
+  // The area under the pointer on the whole map, whose links come forward.
+  const [hovered, setHovered] = useState<string>();
+  // Whole-map grids take as many columns as the canvas fits at a readable zoom.
+  const canvas = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(4);
+  useEffect(() => {
+    const element = canvas.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry?.contentRect.width ?? 0;
+      // Cards are 230px with 40px gaps; keep them near 90% zoom.
+      setColumns(
+        Math.min(8, Math.max(2, Math.floor((width / 0.9 + 40) / 270))),
+      );
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const { nodes, edges, searchable, hoverOnly } = useMemo(() => {
     if (overview) {
       const subset = neighborhood(
         kb.nodes,
@@ -353,44 +446,103 @@ export function KBGraph({
         subset.edges,
         kb.issues,
       );
-      // Areas link every which way, so a ranked layout sprawls; a near-square
-      // grid keeps every card at a readable zoom.
-      const columns = narrow ? 2 : Math.ceil(Math.sqrt(clusters.length));
+      // Areas link every which way, so a ranked layout sprawls and side
+      // handles loop around cards. Linked areas share a ring of straight
+      // chords (or, when there are many, a grid whose links show on hover);
+      // unlinked areas pack underneath instead of stretching the ring.
+      const pairs = pairLinks(links);
+      const { positions, mode, unlinked } = areaLayout(
+        clusters.map((c) => c.id),
+        pairs,
+        narrow ? 2 : columns,
+      );
+      const heading = (
+        type: string,
+        count: number,
+        position: XYPosition,
+      ): GraphNode => ({
+        id: `lane:${type}`,
+        type: "lane",
+        position,
+        data: { type, count },
+        selectable: false,
+        draggable: false,
+        focusable: false,
+        connectable: false,
+      });
+      const headings: GraphNode[] = [];
+      if (mode === "grid") {
+        const ends = new Set(pairs.flatMap(({ a, b }) => [a, b]));
+        const linked = clusters.filter((c) => ends.has(c.id));
+        headings.push(
+          heading("linked", linked.length, {
+            x: Math.min(...linked.map((c) => positions.get(c.id)!.x)),
+            y: -30,
+          }),
+        );
+      }
+      if (unlinked)
+        headings.push(heading("unlinked", unlinked.count, unlinked));
+      const areaName = new Map(
+        clusters.map((c) => [c.id, c.area ? label(c.area) : t("Top level")]),
+      );
+      const arrow = {
+        type: MarkerType.ArrowClosed,
+        color: "var(--muted-foreground)",
+      };
       return {
         searchable: subset.nodes,
-        nodes: clusters.map((c, i): GraphNode => {
-          return {
+        hoverOnly: mode === "grid",
+        nodes: [
+          ...headings,
+          ...clusters.map((c): GraphNode => ({
             id: c.id,
             type: "cluster",
-            position: {
-              x: (i % columns) * (230 + 110),
-              y: Math.floor(i / columns) * (90 + 80),
-            },
+            position: positions.get(c.id)!,
             data: c,
             connectable: false,
+          })),
+        ],
+        edges: pairs.map(({ a, b, ab, ba }) => {
+          const weight = ab + ba;
+          // Forward-only pairs point a to b; reverse-only ones b to a.
+          const [source, target, forward, back] =
+            ab > 0 ? [a, b, ab, ba] : [b, a, ba, ab];
+          const title = [
+            `${areaName.get(source)} → ${areaName.get(target)}: ${forward}`,
+            back
+              ? `${areaName.get(target)} → ${areaName.get(source)}: ${back}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
+          return {
+            id: `${a}-${b}`,
+            type: "area",
+            source,
+            target,
+            label: (
+              <tspan>
+                <title>{title}</title>
+                {weight}
+              </tspan>
+            ),
+            markerEnd: arrow,
+            markerStart: back ? arrow : undefined,
+            // Heavier links between areas draw heavier.
+            style: {
+              stroke: "var(--muted-foreground)",
+              strokeOpacity: 0.5,
+              strokeWidth: 1 + Math.min(Math.log2(weight), 2) * 0.75,
+            },
+            labelBgStyle: { fill: "var(--card)" },
+            labelStyle: {
+              pointerEvents: "all" as const,
+              fontSize: 11,
+              fill: "var(--muted-foreground)",
+            },
           };
         }),
-        edges: links.map((l) => ({
-          id: `${l.from}-${l.to}`,
-          source: l.from,
-          target: l.to,
-          label: String(l.weight),
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: "var(--muted-foreground)",
-          },
-          // Heavier links between areas draw heavier.
-          style: {
-            stroke: "var(--muted-foreground)",
-            strokeOpacity: 0.55,
-            strokeWidth: 1 + Math.min(Math.log2(l.weight), 2) * 0.75,
-          },
-          labelBgStyle: { fill: "var(--card)" },
-          labelStyle: {
-            fontSize: 11,
-            fill: "var(--muted-foreground)",
-          },
-        })),
       };
     }
     const subset = neighborhood(kb.nodes, kb.edges, focus, depth, filters);
@@ -461,6 +613,7 @@ export function KBGraph({
     };
     return {
       searchable: subset.nodes,
+      hoverOnly: false,
       nodes: [...headings, ...flowNodes],
       edges: subset.edges.map((e, i) => {
         const bad =
@@ -496,15 +649,55 @@ export function KBGraph({
         };
       }),
     };
-  }, [kb, focus, depth, filters, label, enumDescription, overview, t, narrow]);
+  }, [
+    kb,
+    focus,
+    depth,
+    filters,
+    label,
+    enumDescription,
+    overview,
+    t,
+    narrow,
+    columns,
+  ]);
+  // Hovering an area brings its links and partners forward; a grid of many
+  // linked areas shows links only then, so the map never turns to a hairball.
+  const partners = useMemo(() => {
+    if (!overview || !hovered) return undefined;
+    const ids = new Set([hovered]);
+    for (const e of edges) {
+      if (e.source === hovered) ids.add(e.target);
+      if (e.target === hovered) ids.add(e.source);
+    }
+    return ids;
+  }, [overview, hovered, edges]);
+  const shownEdges = useMemo(
+    () =>
+      !overview || (!hoverOnly && !hovered)
+        ? edges
+        : edges.map((e) => {
+            const touches = e.source === hovered || e.target === hovered;
+            return touches
+              ? e
+              : hoverOnly
+                ? { ...e, hidden: true }
+                : { ...e, className: "edge-dim" };
+          }),
+    [overview, hoverOnly, hovered, edges],
+  );
   const positionedNodes = useMemo(
     () =>
       nodes.map((node) => ({
         ...node,
         position: layout[node.id]?.position ?? node.position,
         measured: layout[node.id]?.measured,
+        className:
+          partners && node.type === "cluster" && !partners.has(node.id)
+            ? "area-dim"
+            : undefined,
       })),
-    [nodes, layout],
+    [nodes, layout, partners],
   );
   const visibleIds = nodes.map((node) => node.id).join();
   // Around a focus, frame the node and its direct neighbours at a zoom where
@@ -537,7 +730,6 @@ export function KBGraph({
       ? // Cards stay legible; a phone pans the rest.
         { padding: 0.15, minZoom: 0.6, maxZoom: 1 }
       : { padding: 0.25 };
-  const canvas = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!flow) return;
     void flow.fitView(fitOptions).then(() => {
@@ -625,8 +817,13 @@ export function KBGraph({
             }}
             // Tab reaches nodes, not the dozens of edges between them.
             edgesFocusable={false}
-            edges={edges}
+            edges={shownEdges}
+            onNodeMouseEnter={(_e, node) =>
+              node.type === "cluster" && setHovered(node.id)
+            }
+            onNodeMouseLeave={() => setHovered(undefined)}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             fitViewOptions={fitOptions}
             onNodeClick={(_e, node) =>

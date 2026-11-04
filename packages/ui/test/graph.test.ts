@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   clusterGraph,
+  areaLayout,
   laneLayout,
+  pairLinks,
+  ringLayout,
   neighborhood,
   startNode,
 } from "../src/graph.js";
@@ -193,4 +196,86 @@ test("laneLayout puts types in plan-order columns and orders rows by neighbours"
   assert.ok(x("g") < x("p.1") && x("p.1") < x("c.a") && x("c.a") < x("gone"));
   // Each capability lines up with the procedure that uses it.
   assert.equal(Math.sign(y("c.z") - y("c.a")), Math.sign(y("p.1") - y("p.2")));
+});
+
+test("pairLinks folds reciprocal area links into one pair with both directions", () => {
+  assert.deepEqual(
+    pairLinks([
+      { from: "area:b", to: "area:a", weight: 2 },
+      { from: "area:a", to: "area:b", weight: 3 },
+      { from: "area:a", to: "area:c", weight: 1 },
+    ]),
+    [
+      { a: "area:a", b: "area:b", ab: 3, ba: 2 },
+      { a: "area:a", b: "area:c", ab: 1, ba: 0 },
+    ],
+  );
+});
+
+test("ringLayout seats heavily linked areas next to each other without overlap", () => {
+  const ids = ["a", "b", "c", "d", "e", "f"];
+  // a-d and b-e are heavy; alphabetical seats would put them opposite.
+  const pairs = [
+    { a: "a", b: "d", ab: 9, ba: 0 },
+    { a: "b", b: "e", ab: 9, ba: 0 },
+    { a: "c", b: "f", ab: 9, ba: 0 },
+  ];
+  const positions = ringLayout(ids, pairs);
+  const seat = (id: string) => {
+    const { x, y } = positions.get(id)!;
+    return Math.atan2(y + 45, x + 115);
+  };
+  const apart = (p: string, q: string) => {
+    const gap = Math.abs(seat(p) - seat(q));
+    return Math.min(gap, 2 * Math.PI - gap);
+  };
+  for (const { a, b } of pairs)
+    assert.ok(apart(a, b) < Math.PI / 2, `${a}-${b}`);
+  const boxes = [...positions.values()];
+  for (let i = 0; i < boxes.length; i++)
+    for (let j = i + 1; j < boxes.length; j++)
+      assert.ok(
+        Math.abs(boxes[i]!.x - boxes[j]!.x) >= 230 ||
+          Math.abs(boxes[i]!.y - boxes[j]!.y) >= 90,
+        "cards overlap",
+      );
+});
+
+test("areaLayout packs unlinked areas into a compact grid under the linked ring", () => {
+  const ids = Array.from({ length: 14 }, (_, i) => `area:${i}`);
+  const { positions, mode, unlinked } = areaLayout(ids, [
+    { a: "area:3", b: "area:7", ab: 2, ba: 0 },
+  ]);
+  assert.equal(mode, "ring");
+  assert.equal(unlinked?.count, 12);
+  // The linked pair sits side by side above everything else.
+  assert.equal(positions.get("area:3")!.y, positions.get("area:7")!.y);
+  for (const id of ids)
+    if (id !== "area:3" && id !== "area:7")
+      assert.ok(positions.get(id)!.y > unlinked!.y);
+  // Twelve cards pack in a few rows, not a ring a screen and a half wide.
+  const xs = [...positions.values()].map((p) => p.x);
+  const ys = [...positions.values()].map((p) => p.y);
+  assert.ok(Math.max(...xs) - Math.min(...xs) < 1500);
+  assert.ok(Math.max(...ys) - Math.min(...ys) < 600);
+});
+
+test("areaLayout switches many linked areas to an adjacency-ordered grid", () => {
+  const ids = Array.from(
+    { length: 16 },
+    (_, i) => `area:${String(i).padStart(2, "0")}`,
+  );
+  // A chain 0-1-2-…-15: the order should keep chain neighbours adjacent.
+  const pairs = ids.slice(1).map((b, i) => ({ a: ids[i]!, b, ab: 1, ba: 0 }));
+  const { positions, mode, unlinked } = areaLayout(ids, pairs);
+  assert.equal(mode, "grid");
+  assert.equal(unlinked, undefined);
+  for (const { a, b } of pairs) {
+    const p = positions.get(a)!;
+    const q = positions.get(b)!;
+    assert.ok(
+      Math.abs(p.x - q.x) + Math.abs(p.y - q.y) <= 290 * 1.5,
+      `${a}-${b}`,
+    );
+  }
 });
