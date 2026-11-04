@@ -12,6 +12,12 @@ export interface Snapshot {
   nodes: NodeSummary[];
   edges: KBEdge[];
   stale: boolean;
+  /** Path of the file this session last wrote. */
+  lastEdited?: string;
+  /** Memory stores: files changed since the last download. */
+  changed?: number;
+  /** The last deleted file, while it can still be restored. */
+  deleted?: { path: string; id?: string; title: string };
 }
 
 export interface NodeDetail {

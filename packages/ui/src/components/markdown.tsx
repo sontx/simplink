@@ -45,8 +45,11 @@ export function Markdown({
   path?: string;
   layout?: string;
   className?: string;
-  /** Inline code that is exactly one of these ids links to that node, as in rendered plans. */
-  nodeIds?: ReadonlySet<string>;
+  /**
+   * Inline code that is exactly one of these ids links to that node, as in
+   * rendered plans. Given types (id → type), the link carries its type dot.
+   */
+  nodeIds?: ReadonlySet<string> | ReadonlyMap<string, string>;
 }) {
   const router = useRouter();
   const hash = useRouterState({ select: (state) => state.location.hash });
@@ -91,9 +94,18 @@ export function Markdown({
           h6: ({ children }) => <h6 id={headingId(children)}>{children}</h6>,
           code: ({ children, className, node: _node, ...props }) => {
             const id = typeof children === "string" ? children : undefined;
+            const type =
+              id && nodeIds instanceof Map ? nodeIds.get(id) : undefined;
             return id && !className && nodeIds?.has(id) ? (
-              <Link to="/nodes/$id" params={{ id }} className="node-ref">
-                <code {...props}>{id}</code>
+              <Link
+                to="/nodes/$id"
+                params={{ id }}
+                className={cn("node-ref", type)}
+              >
+                <code {...props}>
+                  {type && <span aria-hidden className="node-ref-dot" />}
+                  {id}
+                </code>
               </Link>
             ) : (
               <code className={className} {...props}>

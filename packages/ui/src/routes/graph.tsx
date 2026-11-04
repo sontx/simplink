@@ -9,7 +9,13 @@ import { Inspector, inspectorClass } from "../components/inspector.js";
 import { Checkbox } from "../components/ui/checkbox.js";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group.js";
 import { Button } from "../components/ui/button.js";
-import { ChevronDown, CircleCheck, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  CircleCheck,
+  LocateFixed,
+  Map as MapIcon,
+  Plus,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { IssueCounts } from "../components/issue-list.js";
 import {
@@ -26,6 +32,12 @@ import {
 } from "../components/ui/dropdown-menu.js";
 import { cn } from "../lib/utils.js";
 import { Glossary, Page } from "../components/ui/primitives.js";
+import {
+  nodeArea,
+  orphanNodes,
+  startNode,
+  type StartReason,
+} from "../graph.js";
 export const Route = createFileRoute("/graph")({
   validateSearch: (
     s: Record<string, unknown>,
@@ -36,6 +48,7 @@ export const Route = createFileRoute("/graph")({
     kinds?: string;
     deprecated?: boolean;
     issuesOnly?: boolean;
+    map?: boolean;
   } => ({
     focus: typeof s.focus === "string" ? s.focus : undefined,
     depth:
@@ -50,6 +63,7 @@ export const Route = createFileRoute("/graph")({
       s.deprecated === true || s.deprecated === "true" ? true : undefined,
     issuesOnly:
       s.issuesOnly === true || s.issuesOnly === "true" ? true : undefined,
+    map: s.map === true || s.map === "true" ? true : undefined,
   }),
   component: Graph,
 });
@@ -58,6 +72,14 @@ export const Route = createFileRoute("/graph")({
 const heading = "mt-6 mb-2.75 text-xs leading-normal font-[650]";
 const ORPHAN_PREVIEW = 5;
 const types = ["goal", "procedure", "capability", "state", "constraint"];
+// Why the graph opened on this node; shown beside it on the canvas.
+const startReasons: Record<StartReason, string> = {
+  error: "Has a lint error",
+  warning: "Has a lint warning",
+  orphan: "Nothing points here",
+  edited: "You edited this last",
+  goal: "Most connected goal",
+};
 const check =
   "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground";
 // Filters are settings, not the author's current action, so their checks use
@@ -96,12 +118,64 @@ function Graph() {
     });
   };
   if (!kb) return <Page>{t("Loading graph…")}</Page>;
-  const orphans = kb.nodes.filter(
-    // Goals are entry points and simp.md is the KB's root, so nothing need point to them.
-    (n) =>
-      n.type !== "goal" &&
-      n.type !== "simp" &&
-      !kb.edges.some((e) => e.to === n.id),
+  const orphans = orphanNodes(kb.nodes, kb.edges);
+  // With nothing chosen, open where attention belongs instead of a fit-all map.
+  const start =
+    search.focus || search.map
+      ? undefined
+      : startNode(kb.nodes, kb.edges, kb.issues, kb.lastEdited);
+  const focus = search.focus ?? start?.id;
+  const focusNode = kb.nodes.find((n) => n.id === focus);
+  const depth = search.depth ?? (focus ? 2 : "all");
+  const canvasPanel = (
+    <div className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-card py-1 pr-1 pl-2.5 text-[11px] shadow-[0_1px_6px_#41344712]">
+      {focusNode ? (
+        <>
+          <span className="min-w-0 truncate">
+            <span className="font-medium text-foreground">
+              {focusNode.title}
+            </span>
+            {start && (
+              <span className="text-muted-foreground">
+                {" · "}
+                {t(startReasons[start.reason])}
+              </span>
+            )}
+          </span>
+          <Button
+            variant="ghost"
+            size="xs"
+            className="shrink-0"
+            onClick={() => update({ focus: undefined, map: true })}
+          >
+            <MapIcon data-icon="inline-start" />
+            {t("Whole map")}
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className="whitespace-nowrap text-muted-foreground">
+            {t("Whole map")}
+            <span className="max-[780px]:hidden">
+              {" · "}
+              {t("{count} nodes in {areas} areas", {
+                count: kb.nodes.length,
+                areas: new Set(kb.nodes.map((n) => nodeArea(n.path))).size,
+              })}
+            </span>
+          </span>
+          <Button
+            variant="ghost"
+            size="xs"
+            className="shrink-0"
+            onClick={() => update({ map: undefined, depth: undefined })}
+          >
+            <LocateFixed data-icon="inline-start" />
+            {t("Open where it matters")}
+          </Button>
+        </>
+      )}
+    </div>
   );
   return (
     <div className="relative flex h-full min-h-132.5 max-[780px]:min-h-full max-[780px]:flex-col">
@@ -316,7 +390,7 @@ function Graph() {
               className="mt-2 mb-4"
               type="single"
               variant="outline"
-              value={String(search.depth ?? (search.focus ? 2 : 1))}
+              value={String(depth)}
               onValueChange={(value) =>
                 value &&
                 update({ depth: value === "all" ? "all" : Number(value) })
@@ -363,8 +437,10 @@ function Graph() {
       )}
       <KBGraph
         kb={kb}
-        focus={search.focus}
-        depth={search.depth ?? (search.focus ? 2 : 1)}
+        focus={focus}
+        depth={depth}
+        overview={!focus}
+        panel={canvasPanel}
         filters={{
           types: selectedTypes,
           kinds: search.kinds?.split(","),
@@ -374,7 +450,7 @@ function Graph() {
         }}
         onFocus={(id) => {
           setPeek(true);
-          update({ focus: id });
+          update({ focus: id, map: undefined });
         }}
         onPaneClick={() => setPeek(false)}
         expanded={expanded}
@@ -383,26 +459,28 @@ function Graph() {
           setPeek(false);
         }}
       />
-      {search.focus && kb.nodes.some((n) => n.id === search.focus)
+      {focusNode
         ? (!expanded || peek) && (
             <Inspector
-              key={search.focus}
-              id={search.focus}
-              className={
-                expanded
-                  ? "absolute inset-y-0 right-0 z-10 shadow-[-10px_0_30px_#3b204410]"
-                  : undefined
-              }
+              key={focusNode.id}
+              id={focusNode.id}
+              className={cn(
+                expanded &&
+                  "absolute inset-y-0 right-0 z-10 shadow-[-10px_0_30px_#3b204410]",
+                // On a phone the inspector covers the canvas, so it waits for a tap.
+                !peek && "max-[780px]:hidden",
+              )}
+              onClose={() => setPeek(false)}
             />
           )
         : !expanded && (
             <aside
               className={`${inspectorClass} text-muted-foreground min-[1100px]:pt-9.5 max-[780px]:hidden`}
             >
-              <h2 className="mb-2.5">{t("Explore a connection")}</h2>
+              <h2 className="mb-2.5">{t("Whole map")}</h2>
               <p className="text-xs leading-[1.7]">
                 {t(
-                  "Select a node to inspect its relationships and edit its source.",
+                  "Each card is an area folder. Select one to open its most connected node.",
                 )}
               </p>
               {!service.store.readOnly && (

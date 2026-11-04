@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Download } from "lucide-react";
+import { Download, Save } from "lucide-react";
 import { usePreferences } from "./preferences.js";
 import { Button, ErrorMessage } from "./ui/primitives.js";
 import {
@@ -25,9 +25,15 @@ export interface ConfirmOptions {
   description?: ReactNode;
   /** Translated label for the confirming action; it names what happens. */
   confirmLabel: string;
+  /** Translated label for staying put; defaults to "Cancel". */
+  cancelLabel?: string;
+  /** Staying put is the recommended choice: Cancel takes the primary style. */
+  safeFirst?: boolean;
   destructive?: boolean;
   /** Memory mode: offers "Download .zip and leave", which confirms once the download succeeds. */
   download?: () => Promise<void>;
+  /** An unsaved draft: offers "Save and leave", which confirms once the save succeeds. */
+  save?: () => Promise<void>;
 }
 
 /**
@@ -39,12 +45,15 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel,
+  safeFirst = false,
   destructive = false,
   pending = false,
   error,
   onConfirm,
   onCancel,
   download,
+  save,
   children,
 }: ConfirmOptions & {
   open: boolean;
@@ -56,20 +65,22 @@ export function ConfirmDialog({
 }) {
   const { t } = usePreferences();
   const cancel = useRef<HTMLButtonElement>(null);
-  const [downloading, setDownloading] = useState(false);
+  const [working, setWorking] = useState<"download" | "save">();
   const [downloadError, setDownloadError] = useState<unknown>();
-  const busy = pending || downloading;
-  async function downloadAndLeave() {
-    if (!download) return;
-    setDownloading(true);
+  const busy = pending || !!working;
+  // Keeps the author's work first, then confirms; a failure keeps them here.
+  async function keepAndLeave(kind: "download" | "save") {
+    const keep = kind === "download" ? download : save;
+    if (!keep) return;
+    setWorking(kind);
     setDownloadError(undefined);
     try {
-      await download();
+      await keep();
       onConfirm();
     } catch (failure) {
       setDownloadError(failure);
     } finally {
-      setDownloading(false);
+      setWorking(undefined);
     }
   }
   return (
@@ -108,29 +119,41 @@ export function ConfirmDialog({
         <DialogFooter className="-mx-5 -mb-5 flex-wrap px-5 py-3.5">
           <Button
             ref={cancel}
-            variant="outline"
+            variant={safeFirst ? "default" : "outline"}
             disabled={busy}
             onClick={() => {
               setDownloadError(undefined);
               onCancel();
             }}
           >
-            {t("Cancel")}
+            {cancelLabel ?? t("Cancel")}
           </Button>
+          {save && (
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => void keepAndLeave("save")}
+            >
+              <Save />
+              {working === "save" ? t("Saving…") : t("Save and leave")}
+            </Button>
+          )}
           {download && (
             <Button
               variant="secondary"
               disabled={busy}
-              onClick={() => void downloadAndLeave()}
+              onClick={() => void keepAndLeave("download")}
             >
               <Download />
-              {downloading
+              {working === "download"
                 ? t("Preparing .zip…")
                 : t("Download .zip and leave")}
             </Button>
           )}
           <Button
-            variant={destructive ? "destructive" : "default"}
+            variant={
+              destructive ? "destructive" : safeFirst ? "outline" : "default"
+            }
             disabled={busy}
             onClick={onConfirm}
           >
@@ -183,8 +206,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           title={request.title}
           description={request.description}
           confirmLabel={request.confirmLabel}
+          cancelLabel={request.cancelLabel}
+          safeFirst={request.safeFirst}
           destructive={request.destructive}
           download={request.download}
+          save={request.save}
           onConfirm={() => settle(true)}
           onCancel={() => settle(false)}
         />

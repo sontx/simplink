@@ -15,6 +15,7 @@ import {
   ArrowRight,
   ChevronLeft,
   CircleCheck,
+  Lock,
   TriangleAlert,
 } from "lucide-react";
 import { kbQuery, nodeQuery } from "../../api.js";
@@ -50,7 +51,7 @@ import {
 import { KBGraph } from "../../components/kb-graph.js";
 import { Plan } from "../../components/inspector.js";
 import { SourcePreview } from "../../components/source-preview.js";
-import { isMac } from "../../lib/utils.js";
+import { cn, isMac } from "../../lib/utils.js";
 export const Route = createFileRoute("/nodes/$id")({
   validateSearch: (
     s: Record<string, unknown>,
@@ -160,10 +161,28 @@ function NodeContent() {
       !remove.isSuccess &&
       current.pathname !== next.pathname &&
       !(await confirm({
-        title: t("Discard unsaved changes?"),
+        title: service.store.readOnly
+          ? t("Discard unsaved changes?")
+          : t("Leave with unsaved changes?"),
         description: t("The editor has changes that aren't saved."),
         confirmLabel: t("Discard and leave"),
         destructive: true,
+        ...(service.store.readOnly
+          ? {}
+          : {
+              save: async () => {
+                // Saving broken frontmatter would drop the node from the graph unasked.
+                if (parseDoc(detail!.node.path, raw!).parseError)
+                  throw new Error(
+                    t(
+                      "The frontmatter doesn't parse, so it can't be saved from here. Stay and fix it, or discard.",
+                    ),
+                  );
+                await service.writeFile(detail!.node.path, raw!);
+                setRaw(undefined);
+                await client.invalidateQueries();
+              },
+            }),
       })),
     enableBeforeUnload: dirty && !remove.isPending && !remove.isSuccess,
   });
@@ -244,12 +263,33 @@ function NodeContent() {
       broken &&
       !(await confirm({
         title: t("Save frontmatter that doesn't parse?"),
-        description: t(
-          "{error}. Until it parses, this node leaves the graph and links to it stop resolving.",
-          // YAML messages end mid-sentence ("…at line 3, column 5:").
-          { error: broken.replace(/[\s:.]+$/, "") },
+        description: (
+          <>
+            {t(
+              "Until it parses, this node leaves the graph and links to it stop resolving.",
+            )}
+            {/* The parser's own words, secondary: useful to some, noise to most. */}
+            <span className="mt-2 block font-mono text-xs text-muted-foreground">
+              {(() => {
+                const at = /line (\d+), column (\d+)/.exec(broken);
+                return at
+                  ? t("YAML error at line {line}, column {column}: {detail}", {
+                      line: at[1],
+                      column: at[2],
+                      detail: broken
+                        .replace(/\s*\(?\d+:\d+\)?/, "")
+                        .replace(/ at line \d+, column \d+/, "")
+                        .replace(/[\s:.]+$/, ""),
+                    })
+                  : broken.replace(/[\s:.]+$/, "");
+              })()}
+            </span>
+          </>
         ),
         confirmLabel: t("Save anyway"),
+        // Keeping the file in the graph is the safe choice, so it leads.
+        cancelLabel: t("Keep editing"),
+        safeFirst: true,
       }))
     )
       return;
@@ -386,6 +426,12 @@ function NodeContent() {
               className="data-active:bg-accent data-active:text-primary-ink"
             >
               {label(value)}
+              {value === "source" && dirty && (
+                <span
+                  aria-label={t("Unsaved changes")}
+                  className="warning size-1.5 rounded-full bg-(--type-color)"
+                />
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -449,14 +495,25 @@ function NodeContent() {
                     <Badge>{label(kind)}</Badge>
                     {edges?.map((edge, index) => {
                       const target = dir === "out" ? edge.to : edge.from;
+                      const other = kb?.nodes.find((n) => n.id === target);
                       return (
                         <Link
                           key={index}
                           to="/nodes/$id"
                           params={{ id: target }}
-                          className="text-[11px]"
+                          className={cn(
+                            other?.type,
+                            "inline-flex items-center gap-1.5 text-xs text-foreground hover:text-primary-ink",
+                            !other && "text-destructive",
+                          )}
                         >
-                          {target}
+                          {other && (
+                            <span
+                              aria-hidden
+                              className="size-1.5 rounded-full bg-(--type-color)"
+                            />
+                          )}
+                          {other?.title ?? target}
                         </Link>
                       );
                     })}
@@ -499,7 +556,20 @@ function NodeContent() {
         <TabsContent value="source">
           <div className="flex items-center justify-between gap-3 text-muted-foreground">
             <code>{node.path}</code>
-            <span className={muted}>
+            {/* Announced once per change of state, not per keystroke. */}
+            <span
+              role="status"
+              className={cn(
+                "flex items-center gap-1.5 text-xs",
+                dirty && "warning font-medium text-(--type-ink)",
+              )}
+            >
+              {dirty && (
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full bg-(--type-color)"
+                />
+              )}
               {dirty
                 ? t("Unsaved changes")
                 : saved
@@ -585,6 +655,17 @@ function NodeContent() {
                 .filter(Boolean)
                 .join(" ")}
           </p>
+          {service.store.readOnly && (
+            <p
+              role="note"
+              className="mt-4 mb-0 flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-xs text-muted-foreground"
+            >
+              <Lock aria-hidden className="size-3.5 shrink-0" />
+              {t(
+                "Read-only: this simp node serves its KB for viewing. Edit the files in the node's own folder.",
+              )}
+            </p>
+          )}
           {/* Wide enough for both, the output sits beside the source that makes it. */}
           <div className="@container mt-4">
             <div className="grid gap-4 @5xl:grid-cols-2">
@@ -640,7 +721,8 @@ function NodeContent() {
                 type={node.type}
                 docPath={docPath}
                 inGraph={inGraph}
-                dirty={dirty}
+                draft={dirty ? raw : undefined}
+                path={node.path}
                 className="hidden h-[62dvh] min-h-80 @5xl:flex"
               />
             </div>
@@ -661,7 +743,12 @@ function NodeContent() {
                 <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
                 <Kbd>S</Kbd>
               </KbdGroup>
-              <Button variant="destructive" onClick={() => setDeleting(true)}>
+              {/* Kept apart from Save, so the two are never one slip away. */}
+              <Button
+                variant="destructive"
+                className="ml-auto"
+                onClick={() => setDeleting(true)}
+              >
                 {t("Delete file")}
               </Button>
             </div>

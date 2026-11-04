@@ -334,8 +334,40 @@
   /* A node id in a plan links to its node. The chip keeps ink text, so a plan
      full of ids stays calm; the link's soft underline and hover border carry it. */
   .markdown a.node-ref code {
+    /* The dot and its id stay together on one line. */
+    white-space: nowrap;
     color: var(--foreground);
     transition: border-color 120ms ease-out;
+  }
+  /* Edges away from the focused node recede, and come back while hovered. */
+  .react-flow__edge.edge-dim .react-flow__edge-path {
+    opacity: 0.22;
+    transition: opacity 120ms ease-out;
+  }
+  .react-flow__edge.edge-dim .react-flow__edge-textwrapper {
+    display: none;
+  }
+  .react-flow__edge.edge-dim:hover .react-flow__edge-path {
+    opacity: 1;
+  }
+  .react-flow__edge.edge-dim:hover .react-flow__edge-textwrapper {
+    display: inline;
+  }
+  /* Zoomed out, edge labels shrink to noise; the lines alone carry the shape. */
+  [data-zoomed-out] .react-flow__edge-textwrapper,
+  [data-zoomed-out] .react-flow__edge-text,
+  [data-zoomed-out] .react-flow__edge-textbg {
+    display: none;
+  }
+  /* The map ink carries into plans: each node id wears its type dot. */
+  .markdown a.node-ref .node-ref-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 5px;
+    border-radius: 999px;
+    background: var(--type-color);
+    vertical-align: 1px;
   }
   .markdown a.node-ref:hover code {
     border-color: color-mix(in srgb, var(--primary) 45%, transparent);
@@ -349,7 +381,7 @@
     font-size: inherit;
   }
   .markdown.markdown-compact h2 {
-    font-size: 16px;
+    font-size: 17px;
     margin-top: 28px;
   }
   .markdown.markdown-compact h3 {

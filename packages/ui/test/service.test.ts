@@ -282,3 +282,57 @@ test("plan inputs list only the states and choices a plan can reach", async () =
     choices: [],
   });
 });
+
+test("memory stores count changed files until they are downloaded", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  assert.equal(service.snapshot().changed, 0);
+  assert.equal(service.store.dirty, false);
+  const raw = service.nodeDetail("procedure.zalo.send-message").raw;
+  await service.writeFile(rel, raw + "\nOne\n");
+  await service.writeFile(rel, raw + "\nTwo\n");
+  assert.equal(service.snapshot().changed, 1);
+  assert.ok(service.store.dirty);
+  await service.exportZip();
+  assert.equal(service.snapshot().changed, 0);
+  assert.equal(service.store.dirty, false);
+  await service.writeFile(rel, raw);
+  assert.equal(service.snapshot().changed, 1);
+  // Writing the downloaded content back is no change at all.
+  await service.writeFile(rel, raw + "\nTwo\n");
+  assert.equal(service.snapshot().changed, 0);
+});
+
+test("a deleted file can be restored exactly, and its notice dismissed", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  const raw = service.nodeDetail("procedure.zalo.send-message").raw;
+  await service.deleteFile(rel);
+  assert.deepEqual(service.snapshot().deleted, {
+    path: rel,
+    id: "procedure.zalo.send-message",
+    title: service.snapshot().deleted?.title,
+  });
+  assert.ok(
+    !service
+      .snapshot()
+      .nodes.some((n) => n.id === "procedure.zalo.send-message"),
+  );
+  await service.restoreDeleted();
+  assert.equal(service.nodeDetail("procedure.zalo.send-message").raw, raw);
+  assert.equal(service.snapshot().deleted, undefined);
+  // Deleting and restoring nets out to no change since opening.
+  assert.equal(service.snapshot().changed, 0);
+  await service.deleteFile(rel);
+  service.dismissDeleted();
+  assert.equal(service.snapshot().deleted, undefined);
+  await assert.rejects(service.restoreDeleted(), /Nothing to restore/);
+});
+
+test("relationships cannot point a node at itself", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  await assert.rejects(
+    service.patchEdges("procedure.zalo.send-message", "related", [
+      "procedure.zalo.send-message",
+    ]),
+    /related to itself/,
+  );
+});

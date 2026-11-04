@@ -17,6 +17,10 @@ export interface KBStore {
   kind: "directory" | "memory" | "remote";
   readonly readOnly?: boolean;
   readonly dirty?: boolean;
+  /** Memory stores: files written or removed since the last download. */
+  readonly changed?: number;
+  /** Memory stores: the current files have been downloaded. */
+  markDownloaded?(): void;
   readonly assets?: Record<string, Blob>;
   /** Authoritative lint issues from the source, refreshed by list(); replaces local lint. */
   readonly issues?: Issue[];
@@ -130,14 +134,29 @@ export function memoryStore(
   assets: Record<string, Blob> = {},
   name = "KB",
 ): KBStore {
-  let dirty = false;
+  // Paths changed since the KB was opened or last downloaded.
+  const changed = new Set<string>();
   const files = { ...md };
+  // What the author last had on disk (opened or downloaded), so an edit that
+  // ends where it started stops counting as a change.
+  let baseline: Record<string, string> = { ...md };
+  const track = (relPath: string) => {
+    if (files[relPath] === baseline[relPath]) changed.delete(relPath);
+    else changed.add(relPath);
+  };
   return {
     name,
     kind: "memory",
     assets: { ...assets },
     get dirty() {
-      return dirty;
+      return changed.size > 0;
+    },
+    get changed() {
+      return changed.size;
+    },
+    markDownloaded() {
+      changed.clear();
+      baseline = { ...files };
     },
     async list() {
       return Object.entries(files).map(([relPath, content]) => ({
@@ -153,12 +172,12 @@ export function memoryStore(
       if (create && Object.hasOwn(files, relPath))
         throw new Error("File already exists");
       files[relPath] = content;
-      dirty = true;
+      track(relPath);
     },
     async remove(relPath) {
       if (!Object.hasOwn(files, relPath)) throw new Error("File not found");
       delete files[relPath];
-      dirty = true;
+      track(relPath);
     },
   };
 }
@@ -226,12 +245,25 @@ export async function remoteStore(
   const peer = httpPeer(peerUrl, peerOptions);
   const manifest = await peer.manifest().catch((error: Error) => {
     // Browsers report CORS refusals and unreachable hosts as the same TypeError.
-    throw error instanceof TypeError
-      ? new UnreachableNodeError(
-          base,
-          globalThis.location?.origin ?? "<origin>",
-        )
-      : error;
+    if (error instanceof TypeError)
+      throw new UnreachableNodeError(
+        base,
+        globalThis.location?.origin ?? "<origin>",
+      );
+    // The peer client's terse codes, as the problem and what to try next.
+    if (/^HTTP 404$/.test(error.message))
+      throw new Error(
+        "No simp node answered at this URL. Check the base path (for example /simp).",
+      );
+    if (error.message === "unauthorized")
+      throw new Error(
+        "The simp node refused this token. Check the bearer token, or leave it empty for an open node.",
+      );
+    if (error.message === "invalid response")
+      throw new Error(
+        "This URL answered, but not as a simp node. Check that it points at the node's base path.",
+      );
+    throw error;
   });
   const files: Record<string, string> = {};
   const readOnly = () => {

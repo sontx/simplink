@@ -9,10 +9,12 @@ test("edge edits preserve comments, flow style, CRLF and body bytes", () => {
         /\n/g,
         newline,
       );
+    // Removing the last target drops the key, its comment and its line.
     assert.equal(
       editEdges(raw, "uses", []),
-      raw.replace("[capability.old]", "[]"),
+      raw.replace(`uses: [capability.old] # edge comment${newline}`, ""),
     );
+    assert.equal(editEdges(raw, "requires", []), raw);
     for (const following of ["", "title: Keep\n"]) {
       const block =
         `---\ntype: procedure\nuses:\n  - capability.old\n${following}---\n\nBody  \n`.replace(
@@ -21,7 +23,7 @@ test("edge edits preserve comments, flow style, CRLF and body bytes", () => {
         );
       assert.equal(
         editEdges(block, "uses", []),
-        block.replace(`uses:${newline}  - capability.old`, "uses: []"),
+        block.replace(`uses:${newline}  - capability.old${newline}`, ""),
       );
     }
   }

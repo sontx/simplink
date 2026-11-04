@@ -587,6 +587,75 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "Missing frontmatter": "Thiếu siêu dữ liệu",
   "Invalid frontmatter": "Siêu dữ liệu không hợp lệ",
   "Invalid relationship kind or targets": "Loại quan hệ hoặc đích không hợp lệ",
+  // Graph start view
+  "Has a lint error": "Có lỗi kiểm tra",
+  "Has a lint warning": "Có cảnh báo kiểm tra",
+  "Nothing points here": "Không nút nào trỏ tới đây",
+  "You edited this last": "Bạn vừa sửa nút này",
+  "Most connected goal": "Mục tiêu có nhiều liên kết nhất",
+  "Whole map": "Toàn bộ bản đồ",
+  "Open where it matters": "Mở tại nơi cần chú ý",
+  // Relationship edits
+  "Added {title} to {kind}.": "Đã thêm {title} vào {kind}.",
+  "Removed {title} from {kind}.": "Đã gỡ {title} khỏi {kind}.",
+  "Restored.": "Đã khôi phục.",
+  Undo: "Hoàn tác",
+  "Missing node": "Nút không tồn tại",
+  // Editor
+  "Save and leave": "Lưu và rời đi",
+  "Leave with unsaved changes?": "Rời đi khi còn thay đổi chưa lưu?",
+  "The frontmatter doesn't parse, so it can't be saved from here. Stay and fix it, or discard.":
+    "Siêu dữ liệu không phân tích được nên không thể lưu từ đây. Hãy ở lại để sửa, hoặc bỏ thay đổi.",
+  "Save to update the plan": "Lưu để cập nhật kế hoạch",
+  "Draft doesn't parse · showing the saved file":
+    "Bản nháp không phân tích được · đang hiện tệp đã lưu",
+  "Live draft · links resolve on save":
+    "Bản nháp trực tiếp · liên kết được xử lý khi lưu",
+  "Clear filters": "Xóa bộ lọc",
+  "1 issue": "1 vấn đề",
+  "{count} issues": "{count} vấn đề",
+  "Deleted “{title}”.": "Đã xóa “{title}”.",
+  "Restoring…": "Đang khôi phục…",
+  "Restore node": "Khôi phục nút",
+  "Missing nodes": "Nút bị thiếu",
+  "Each of these is referenced but doesn't exist. Restore it, or fix the references below.":
+    "Các nút này được tham chiếu nhưng không tồn tại. Hãy khôi phục, hoặc sửa các tham chiếu bên dưới.",
+  "Referenced by 1 node:": "Được 1 nút tham chiếu:",
+  "Referenced by {count} nodes:": "Được {count} nút tham chiếu:",
+  "Nothing to restore": "Không có gì để khôi phục",
+  Folder: "Thư mục",
+  Memory: "Bộ nhớ",
+  "No simp node answered at this URL. Check the base path (for example /simp).":
+    "Không có simp node nào trả lời tại URL này. Hãy kiểm tra đường dẫn gốc (ví dụ /simp).",
+  "The simp node refused this token. Check the bearer token, or leave it empty for an open node.":
+    "Simp node từ chối token này. Hãy kiểm tra bearer token, hoặc để trống nếu node mở.",
+  "This URL answered, but not as a simp node. Check that it points at the node's base path.":
+    "URL này có phản hồi nhưng không phải simp node. Hãy kiểm tra URL trỏ tới đường dẫn gốc của node.",
+  "Until it parses, this node leaves the graph and links to it stop resolving.":
+    "Cho đến khi phân tích được, nút này rời khỏi đồ thị và các liên kết tới nó không còn hoạt động.",
+  "YAML error at line {line}, column {column}: {detail}":
+    "Lỗi YAML ở dòng {line}, cột {column}: {detail}",
+  "Keep editing": "Tiếp tục sửa",
+  "Read-only: this simp node serves its KB for viewing. Edit the files in the node's own folder.":
+    "Chỉ đọc: simp node này chỉ cho xem KB. Hãy sửa tệp trong thư mục của node.",
+  "A node can't be related to itself":
+    "Một nút không thể liên kết với chính nó",
+  "1 file changed since download.": "1 tệp đã thay đổi kể từ lần tải xuống.",
+  "{count} files changed since download.":
+    "{count} tệp đã thay đổi kể từ lần tải xuống.",
+  "They live only in this tab until you download.":
+    "Chúng chỉ nằm trong thẻ này cho đến khi bạn tải xuống.",
+  "All changes downloaded.": "Đã tải xuống mọi thay đổi.",
+  "Top level": "Cấp gốc",
+  "1 node": "1 nút",
+  "{count} nodes": "{count} nút",
+  "{count} nodes in {areas} areas": "{count} nút trong {areas} khu vực",
+  "Hide minimap": "Ẩn bản đồ thu nhỏ",
+  "Show minimap": "Hiện bản đồ thu nhỏ",
+  "Each card is an area folder. Select one to open its most connected node.":
+    "Mỗi thẻ là một thư mục khu vực. Chọn một thẻ để mở nút có nhiều liên kết nhất.",
+  "Memory workspace. Nothing to download yet.":
+    "Không gian trong bộ nhớ. Chưa có gì để tải xuống.",
 };
 
 export function translate(

@@ -372,7 +372,10 @@ function ActionForm({
       return readToolResult(result);
     },
   });
-  const nodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
+  const nodeIds = useMemo(
+    () => new Map(nodes.map((n) => [n.id, n.type])),
+    [nodes],
+  );
   const results = useRef<HTMLElement>(null);
   // A finished run brings its result into view when it starts below the fold
   // (stacked under the form). Beside the form it is already visible, so the page stays put.
@@ -672,7 +675,7 @@ function Results({
   tool: string;
   result: ToolResult;
   nodes: NodeSummary[];
-  nodeIds: ReadonlySet<string>;
+  nodeIds: ReadonlyMap<string, string>;
   onNavigate(tool: string, id: string): void;
 }) {
   const { t, label } = usePreferences();

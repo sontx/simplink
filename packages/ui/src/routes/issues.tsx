@@ -1,10 +1,16 @@
 import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "../components/preferences.js";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CircleCheck } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { CircleCheck, Undo2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DeletedNotice } from "../components/deleted-notice.js";
 import { kbQuery } from "../api.js";
-import { Badge, Button, Page } from "../components/ui/primitives.js";
+import {
+  Badge,
+  Button,
+  ErrorMessage,
+  Page,
+} from "../components/ui/primitives.js";
 import {
   IssueCodeGuide,
   IssueCounts,
@@ -42,6 +48,7 @@ function Issues() {
   const { t, label } = usePreferences();
 
   const { data: kb } = useQuery(kbQuery(service));
+  const client = useQueryClient();
   const { severity } = Route.useSearch();
   const navigate = Route.useNavigate();
   const issues =
@@ -51,6 +58,22 @@ function Issues() {
   const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
   // The fix loop starts at the first issue the Source tab can open. Indexes
   // must match its unfiltered list, so the severity filter only picks which issue.
+  // Broken references grouped by cause: one missing node, everything pointing at it.
+  const known = new Set(kb?.nodes.map((n) => n.id));
+  const missing = new Map<string, NonNullable<typeof kb>["nodes"]>();
+  if (severity !== "warning")
+    for (const e of kb?.edges ?? []) {
+      // `<simp>:<id>` references live in other KBs; peers check those.
+      if (known.has(e.to) || e.to.includes(":")) continue;
+      const from = kb!.nodes.find((n) => n.id === e.from);
+      const list = missing.get(e.to) ?? [];
+      if (from && !list.includes(from)) list.push(from);
+      missing.set(e.to, list);
+    }
+  const restore = useMutation({
+    mutationFn: () => service.restoreDeleted(),
+    onSettled: () => client.invalidateQueries(),
+  });
   const first = issueQueue(
     groupIssuesByFile(kb?.issues ?? [], kb?.nodes ?? []),
   ).find((item) => !severity || item.issue.severity === severity);
@@ -109,6 +132,65 @@ function Issues() {
           )}
         </div>
       </div>
+      <DeletedNotice className="mb-5" />
+      {missing.size > 0 && (
+        <section aria-labelledby="missing-nodes" className="mb-7">
+          <h2 id="missing-nodes" className="mb-1 text-sm font-semibold">
+            {t("Missing nodes")}
+          </h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            {t(
+              "Each of these is referenced but doesn't exist. Restore it, or fix the references below.",
+            )}
+          </p>
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {[...missing].map(([target, from]) => (
+              <li
+                key={target}
+                className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 rounded-lg border border-dashed border-destructive/40 bg-destructive/5 px-3.5 py-2.5"
+              >
+                <div className="min-w-0 text-sm">
+                  <code className="font-medium wrap-anywhere text-foreground">
+                    {target}
+                  </code>
+                  <p className="mt-1 mb-0 text-xs text-muted-foreground">
+                    {from.length === 1
+                      ? t("Referenced by 1 node:")
+                      : t("Referenced by {count} nodes:", {
+                          count: from.length,
+                        })}{" "}
+                    {from.map((n, i) => (
+                      <span key={n.id}>
+                        {i > 0 && ", "}
+                        <Link
+                          to="/nodes/$id"
+                          params={{ id: n.id }}
+                          search={{ tab: "source" }}
+                          className="text-foreground underline decoration-border underline-offset-3 hover:text-primary-ink hover:decoration-current"
+                        >
+                          {n.title}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                </div>
+                {kb?.deleted?.id === target && !service.store.readOnly && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={restore.isPending}
+                    onClick={() => restore.mutate()}
+                  >
+                    <Undo2 data-icon="inline-start" />
+                    {t("Restore node")}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <ErrorMessage error={restore.error} className="mt-2" />
+        </section>
+      )}
       {!files.length && (
         <div className="px-6.25 py-17.5 text-center text-muted-foreground">
           <CircleCheck

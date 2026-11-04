@@ -2,7 +2,7 @@ import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { cn, groupByType } from "../lib/utils.js";
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Plus, Undo2, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Command,
@@ -40,7 +40,7 @@ export function PlanBody({ id }: { id: string }) {
   const plan = useQuery(planQuery(service, id));
   const { data: kb } = useQuery(kbQuery(service));
   const nodeIds = useMemo(
-    () => new Set(kb?.nodes.map((node) => node.id)),
+    () => new Map(kb?.nodes.map((node) => [node.id, node.type])),
     [kb],
   );
   return (
@@ -108,9 +108,12 @@ export function Docs({
 export function Inspector({
   id,
   className,
+  onClose,
 }: {
   id: string;
   className?: string;
+  /** Phones only: the inspector covers the canvas there, so it needs a way out. */
+  onClose?: () => void;
 }) {
   const { service } = useWorkspace();
   const { t, label, enumDescription } = usePreferences();
@@ -121,15 +124,31 @@ export function Inspector({
   const [adding, setAdding] = useState<string>();
   const [plan, setPlan] = useState(false);
   const [docs, setDocs] = useState(false);
+  // The last relationship edit, announced, with the targets to restore on undo.
+  const [change, setChange] = useState<{
+    message: string;
+    undo?: { kind: string; targets: string[] };
+  }>();
   const client = useQueryClient();
   const patch = useMutation({
-    mutationFn: ({ kind, targets }: { kind: string; targets: string[] }) =>
-      service.patchEdges(id, kind, targets),
-    onSuccess: async () => {
+    mutationFn: ({
+      kind,
+      targets,
+    }: {
+      kind: string;
+      targets: string[];
+      message: string;
+      undo?: { kind: string; targets: string[] };
+    }) => service.patchEdges(id, kind, targets),
+    onMutate: () => setChange(undefined),
+    onSuccess: async (_result, { message, undo }) => {
       setAdding(undefined);
+      setChange({ message, undo });
       await client.invalidateQueries();
     },
   });
+  const titleOf = (target: string) =>
+    kb?.nodes.find((n) => n.id === target)?.title;
   if (!detail)
     return (
       <aside className={cn(inspectorClass, className)}>
@@ -147,6 +166,17 @@ export function Inspector({
       )}
     >
       <div className="min-h-0 flex-1 overflow-auto px-5.75 py-6.75 max-[1100px]:px-4.25 max-[1100px]:py-5.5">
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="float-right -mt-1.5 -mr-2 min-[781px]:hidden"
+            aria-label={t("Close")}
+            onClick={onClose}
+          >
+            <X />
+          </Button>
+        )}
         <Badge type={node.type}>{label(node.type)}</Badge>
         <h2 className="mt-3.25 mb-2.5 wrap-anywhere">{node.title}</h2>
         <code className="mb-3.5 block wrap-anywhere text-muted-foreground">
@@ -169,6 +199,30 @@ export function Inspector({
           {t("Relationships")}
         </h3>
         <ErrorMessage error={patch.error} />
+        <div role="status" aria-live="polite">
+          {change && (
+            <div className="my-2 flex items-center justify-between gap-2 rounded-sm bg-muted py-1 pr-1 pl-2.5 text-[11px]">
+              <span className="min-w-0">{change.message}</span>
+              {change.undo && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="shrink-0"
+                  disabled={patch.isPending}
+                  onClick={() =>
+                    patch.mutate({
+                      ...change.undo!,
+                      message: t("Restored."),
+                    })
+                  }
+                >
+                  <Undo2 data-icon="inline-start" />
+                  {t("Undo")}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
         {Object.entries(schema?.[node.type] ?? {}).map(([kind, type]) => {
           const targets = out
             .filter((e) => e.kind === kind && e.source === "frontmatter")
@@ -187,10 +241,10 @@ export function Inspector({
                     <PopoverTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon-xs"
+                        size="icon-sm"
                         aria-label={t("Add {type}", { type: label(kind) })}
                       >
-                        +
+                        <Plus />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-0" align="end">
@@ -206,6 +260,7 @@ export function Inspector({
                             kb?.nodes.filter(
                               (n) =>
                                 (type === "node" || n.type === type) &&
+                                n.id !== id &&
                                 !targets.includes(n.id),
                             ) ?? [],
                             (n) => n.type,
@@ -219,6 +274,11 @@ export function Inspector({
                                     patch.mutate({
                                       kind,
                                       targets: [...targets, n.id],
+                                      message: t("Added {title} to {kind}.", {
+                                        title: n.title,
+                                        kind: label(kind),
+                                      }),
+                                      undo: { kind, targets },
                                     })
                                   }
                                 >
@@ -238,36 +298,58 @@ export function Inspector({
                   </Popover>
                 )}
               </div>
-              {targets.map((target) => (
-                <div
-                  className="my-1.5 flex items-center justify-between gap-3"
-                  key={target}
-                >
-                  <Link
-                    to="/graph"
-                    search={{ focus: target }}
-                    className="truncate text-[11px] text-muted-foreground"
+              {targets.map((target) => {
+                const title = titleOf(target);
+                return (
+                  <div
+                    className="my-1 flex items-center justify-between gap-2"
+                    key={target}
                   >
-                    {target}
-                  </Link>
-                  {!service.store.readOnly && (
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label={t("Remove {target}", { target })}
-                      disabled={patch.isPending}
-                      onClick={() =>
-                        patch.mutate({
-                          kind,
-                          targets: targets.filter((t) => t !== target),
-                        })
-                      }
+                    {/* Titles first, so authors needn't recall what an ID names. */}
+                    <Link
+                      to="/graph"
+                      search={{ focus: target }}
+                      className="group/target flex min-w-0 flex-col"
                     >
-                      <X />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                      <span
+                        className={cn(
+                          "truncate text-xs text-foreground group-hover/target:text-primary-ink",
+                          !title && "text-destructive",
+                        )}
+                      >
+                        {title ?? t("Missing node")}
+                      </span>
+                      <span className="truncate font-mono text-[11px] text-muted-foreground">
+                        {target}
+                      </span>
+                    </Link>
+                    {!service.store.readOnly && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                        aria-label={t("Remove {target}", {
+                          target: title ?? target,
+                        })}
+                        disabled={patch.isPending}
+                        onClick={() =>
+                          patch.mutate({
+                            kind,
+                            targets: targets.filter((t) => t !== target),
+                            message: t("Removed {title} from {kind}.", {
+                              title: title ?? target,
+                              kind: label(kind),
+                            }),
+                            undo: { kind, targets },
+                          })
+                        }
+                      >
+                        <X />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
             </section>
           );
         })}

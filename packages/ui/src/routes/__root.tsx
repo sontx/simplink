@@ -21,7 +21,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "../components/ui/command.js";
-import { groupByType, isMac } from "../lib/utils.js";
+import { cn, groupByType, isMac } from "../lib/utils.js";
 import { Kbd } from "../components/ui/kbd.js";
 import {
   BookOpen,
@@ -39,6 +39,7 @@ import {
   Sparkles,
   Download,
   CircleAlert,
+  CircleCheck,
 } from "lucide-react";
 import { kbQuery, searchQuery } from "../api.js";
 import {
@@ -68,14 +69,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 const storeModes = {
   directory: {
     label: "FOLDER",
+    chip: "Folder",
     detail: "Folder: changes save straight to disk.",
   },
   memory: {
     label: "MEMORY",
+    chip: "Memory",
     detail: "In memory: download the KB to keep changes.",
   },
   remote: {
     label: "REMOTE",
+    chip: "Read-only",
     detail: "Remote simp node: read-only.",
   },
 } as const;
@@ -123,7 +127,10 @@ function Shell() {
   });
   const download = useMutation({
     mutationFn: () => downloadZip(service),
+    // The snapshot carries the changed count the banner shows.
+    onSuccess: () => client.invalidateQueries({ queryKey: ["kb"] }),
   });
+  const changed = kb?.changed ?? 0;
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -167,11 +174,23 @@ function Shell() {
                 variant="ghost"
                 size="sm"
                 aria-label={t("Knowledge base actions")}
+                aria-description={t(mode.detail)}
                 title={service.store.name}
                 className="min-w-0 text-muted-foreground"
               >
-                <span className="max-w-40 truncate max-[780px]:max-w-24">
+                <span className="max-w-40 truncate max-[780px]:max-w-20 max-[480px]:hidden">
                   {service.store.name}
+                </span>
+                {/* Where edits go, at every width (Never lose an author's work). */}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-px text-[11px] leading-4 font-medium",
+                    service.store.kind === "memory"
+                      ? "warning bg-(--type-bg) text-(--type-ink)"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {t(mode.chip)}
                 </span>
                 <ChevronsUpDown />
               </Button>
@@ -270,24 +289,62 @@ function Shell() {
         </div>
       </header>
       {service.store.kind === "memory" && (
+        // Says whether work is at risk: quiet until an edit, ochre while
+        // changes are only in this tab, and confirmed once downloaded.
         <div
           role="status"
-          className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b bg-warning/10 px-6 py-2 text-sm max-[780px]:px-3.25"
+          className={cn(
+            "flex items-center justify-between gap-3 border-b px-6 text-sm max-[780px]:px-3.25",
+            "py-1.5 max-[780px]:py-1",
+            changed ? "bg-warning/10" : "bg-card text-muted-foreground",
+          )}
         >
-          <span className="min-w-0 text-pretty">
-            {t(
-              "Changes saved in memory. Download to keep them. Dot-files and dot-folders are excluded.",
+          <span className="flex min-w-0 items-center gap-2 text-pretty max-[780px]:text-xs">
+            {changed ? (
+              <>
+                <span
+                  aria-hidden
+                  className="warning size-1.5 shrink-0 rounded-full bg-(--type-color)"
+                />
+                <span>
+                  <span className="font-medium">
+                    {changed === 1
+                      ? t("1 file changed since download.")
+                      : t("{count} files changed since download.", {
+                          count: changed,
+                        })}
+                  </span>{" "}
+                  <span className="max-[780px]:hidden">
+                    {t("They live only in this tab until you download.")}
+                  </span>
+                </span>
+              </>
+            ) : download.isSuccess ? (
+              <>
+                <CircleCheck
+                  aria-hidden
+                  className="size-4 shrink-0 text-success"
+                />
+                {t("All changes downloaded.")}
+              </>
+            ) : (
+              t("Memory workspace. Nothing to download yet.")
             )}
           </span>
           <Button
-            variant="outline"
+            variant={changed ? "outline" : "ghost"}
+            size="sm"
+            className="shrink-0"
             onClick={() => download.mutate()}
             disabled={download.isPending}
+            aria-label={t("Download KB (.zip)")}
           >
             <Download />
-            {download.isPending
-              ? t("Preparing .zip…")
-              : t("Download KB (.zip)")}
+            <span className="max-[480px]:hidden">
+              {download.isPending
+                ? t("Preparing .zip…")
+                : t("Download KB (.zip)")}
+            </span>
           </Button>
         </div>
       )}
@@ -354,15 +411,15 @@ function Shell() {
           ))}
           <div
             title={t(mode.detail)}
-            className="mt-auto text-center text-[11px] leading-normal tracking-[0.5px] text-muted-foreground max-[780px]:hidden"
+            className="mt-auto text-center text-[9px] leading-normal font-[650] tracking-[1.7px] text-muted-foreground max-[780px]:hidden"
           >
             {t(mode.label)}
             {service.store.readOnly && (
-              <span className="block text-[11px] tracking-normal">
+              <span className="block text-[11px] font-normal tracking-normal">
                 {t("Read-only")}
               </span>
             )}
-            <span className="block text-[11px] tracking-normal">
+            <span className="block text-[11px] font-normal tracking-normal">
               {kb?.status.nodes ?? 0} {t("nodes")}
             </span>
           </div>

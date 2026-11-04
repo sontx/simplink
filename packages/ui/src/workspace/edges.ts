@@ -32,6 +32,18 @@ export function editEdges(
   if (doc.errors.length) throw new Error("Invalid frontmatter");
   const previous = doc.get(kind, true);
   const original = pairRange(doc.contents, kind);
+  // No targets left: drop the key rather than leave an empty `kind: []` behind.
+  if (!targets.length) {
+    if (!original) return raw;
+    let end = original[1];
+    // The rest of the line goes too, including a trailing comment on the edge.
+    const after = /^[^\S\r\n]*(?:#[^\r\n]*)?(?:\r?\n|$)/.exec(
+      block[2].slice(end),
+    );
+    if (!block[2].slice(0, end).endsWith("\n") && after) end += after[0].length;
+    const yaml = block[2].slice(0, original[0]) + block[2].slice(end);
+    return block[1] + yaml + raw.slice(block[1].length + block[2].length);
+  }
   const replacement = doc.createNode(targets);
   if (isSeq(previous)) replacement.flow = previous.flow;
   doc.setIn([kind], replacement);

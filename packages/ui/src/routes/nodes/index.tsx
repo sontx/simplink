@@ -11,6 +11,7 @@ import {
   rowPaginationFeature,
   rowSortingFeature,
   sortFn_alphanumeric,
+  sortFn_text,
   tableFeatures,
   useTable,
   type SortingState,
@@ -18,6 +19,8 @@ import {
 } from "@tanstack/react-table";
 import {
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   ArrowUp,
   ArrowUpDown,
   ChevronDown,
@@ -60,6 +63,8 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu.js";
 import { NodeDialog } from "../../components/node-dialog.js";
+import { cn } from "../../lib/utils.js";
+import { DeletedNotice } from "../../components/deleted-notice.js";
 export const Route = createFileRoute("/nodes/")({
   validateSearch: (
     s: Record<string, unknown>,
@@ -81,7 +86,28 @@ export const Route = createFileRoute("/nodes/")({
   component: Nodes,
 });
 
-type NodeRow = NodeSummary & { in: number; out: number; issues: number };
+type NodeRow = NodeSummary & {
+  in: number;
+  out: number;
+  issues: number;
+  errors: number;
+};
+
+/** A relationship count in the graph's own language: an arrow and a number. */
+function LinkCount({ count, dir }: { count: number; dir: "in" | "out" }) {
+  const Arrow = dir === "in" ? ArrowLeft : ArrowRight;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 tabular-nums",
+        !count && "text-muted-foreground",
+      )}
+    >
+      <Arrow aria-hidden className="size-3 text-muted-foreground" />
+      {count}
+    </span>
+  );
+}
 
 const PAGE_SIZES = [10, 20, 50, 100];
 
@@ -90,7 +116,7 @@ const features = tableFeatures({
   rowPaginationFeature,
   sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
-  sortFns: { alphanumeric: sortFn_alphanumeric },
+  sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 });
 const helper = createColumnHelper<typeof features, NodeRow>();
 
@@ -121,17 +147,13 @@ function Nodes() {
             <Badge type={getValue()}>{label(getValue())}</Badge>
           ),
         }),
+        // Machine truth in muted mono; the title is the one link per row (One Pen Rule).
         helper.accessor("id", {
           header: () => t("ID"),
           cell: ({ getValue }) => (
-            <Link
-              to="/nodes/$id"
-              params={{ id: getValue() }}
-              className="font-mono text-xs"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <span className="font-mono text-xs text-muted-foreground">
               {getValue()}
-            </Link>
+            </span>
           ),
         }),
         helper.accessor("status", {
@@ -153,11 +175,32 @@ function Nodes() {
             <span className="text-muted-foreground">{getValue() || "—"}</span>
           ),
         }),
-        helper.accessor("in", { header: () => t("In") }),
-        helper.accessor("out", { header: () => t("Out") }),
+        helper.accessor("in", {
+          header: () => t("Incoming"),
+          cell: ({ getValue }) => <LinkCount count={getValue()} dir="in" />,
+        }),
+        helper.accessor("out", {
+          header: () => t("Outgoing"),
+          cell: ({ getValue }) => <LinkCount count={getValue()} dir="out" />,
+        }),
+        // The graph node's count bubble: solid red with an error, ochre wash otherwise.
         helper.accessor("issues", {
           header: () => t("Issues"),
-          cell: ({ getValue }) => getValue() || "—",
+          cell: ({ row, getValue }) =>
+            getValue() ? (
+              <span
+                className={cn(
+                  "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-medium tabular-nums",
+                  row.original.errors
+                    ? "bg-destructive text-white"
+                    : "warning bg-(--type-bg) text-(--type-ink)",
+                )}
+              >
+                {getValue()}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            ),
         }),
       ]),
     [t, label],
@@ -179,6 +222,9 @@ function Nodes() {
     const ins = count(kb.edges.map((e) => e.to));
     const outs = count(kb.edges.map((e) => e.from));
     const issues = count(kb.issues.map((i) => i.path));
+    const errors = count(
+      kb.issues.filter((i) => i.severity === "error").map((i) => i.path),
+    );
     const q = (s.q ?? "").toLowerCase();
     return kb.nodes
       .filter(
@@ -193,6 +239,7 @@ function Nodes() {
         in: ins.get(n.id) ?? 0,
         out: outs.get(n.id) ?? 0,
         issues: issues.get(n.path) ?? 0,
+        errors: errors.get(n.path) ?? 0,
       }));
   }, [kb, s.type, s.status, s.tag, s.q]);
 
@@ -215,12 +262,14 @@ function Nodes() {
   });
 
   if (!kb) return <Page>{t("Loading nodes…")}</Page>;
+  const filtered = !!(s.q || s.type || s.status || s.tag);
   const { pageIndex, pageSize } = table.state.pagination;
   const first = rows.length ? pageIndex * pageSize + 1 : 0;
   const last = Math.min((pageIndex + 1) * pageSize, rows.length);
 
   return (
     <Page>
+      <DeletedNotice className="mb-5" />
       <div className="mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:gap-2.5">
         <div>
           <h1 className="mb-2">
@@ -361,7 +410,16 @@ function Nodes() {
                         ? ArrowDown
                         : ArrowUpDown;
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      aria-sort={
+                        sorted === "asc"
+                          ? "ascending"
+                          : sorted === "desc"
+                            ? "descending"
+                            : "none"
+                      }
+                    >
                       <Button
                         variant="ghost"
                         size="sm"
@@ -404,6 +462,18 @@ function Nodes() {
                   className="h-24 text-center text-muted-foreground"
                 >
                   {t("No nodes match these filters.")}
+                  {filtered && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-3"
+                      onClick={() =>
+                        update({ q: "", type: "", status: "", tag: "" })
+                      }
+                    >
+                      {t("Clear filters")}
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}

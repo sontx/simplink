@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { parseDoc } from "@sontx/simplink-core/browser";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { pageQuery } from "../api.js";
@@ -12,28 +13,41 @@ import { cn } from "../lib/utils.js";
 type View = "docs" | "plan";
 
 /**
- * What the saved file produces, beside its source: the reader page, or for a
- * goal or procedure, the agent plan. It follows saves, not keystrokes, and says so.
+ * What the file produces, beside its source: the reader page, or for a goal or
+ * procedure, the agent plan. While the author types, Docs renders the draft
+ * itself; the plan needs the rebuilt graph, so it follows saves and says so.
  */
 export function SourcePreview({
   id,
   type,
   docPath,
   inGraph,
-  dirty,
+  draft,
+  path,
   className,
 }: {
   id: string;
   type: string;
   docPath: string;
   inGraph: boolean;
-  dirty: boolean;
+  /** The unsaved source, when it differs from the file. */
+  draft?: string;
+  path: string;
   className?: string;
 }) {
   const { service } = useWorkspace();
   const { t } = usePreferences();
   const plannable = type === "goal" || type === "procedure";
   const [view, setView] = useState<View>(plannable ? "plan" : "docs");
+  // Settle typing before re-rendering Markdown.
+  const [settled, setSettled] = useState(draft);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(draft), 300);
+    return () => clearTimeout(timer);
+  }, [draft]);
+  const dirty = draft !== undefined;
+  const live =
+    dirty && settled !== undefined ? parseDoc(path, settled) : undefined;
   const page = useQuery({
     ...pageQuery(service, "site", docPath),
     enabled: inGraph && view === "docs",
@@ -65,7 +79,13 @@ export function SourcePreview({
           ))}
         </div>
         <span className="text-xs text-muted-foreground">
-          {dirty ? t("Save to update the preview") : t("From the saved file")}
+          {!dirty
+            ? t("From the saved file")
+            : view === "plan"
+              ? t("Save to update the plan")
+              : live?.parseError
+                ? t("Draft doesn't parse · showing the saved file")
+                : t("Live draft · links resolve on save")}
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto px-5 py-4.5">
@@ -75,6 +95,17 @@ export function SourcePreview({
           </p>
         ) : view === "plan" ? (
           <PlanBody id={id} />
+        ) : live && !live.parseError ? (
+          <Markdown
+            content={[
+              typeof live.data.title === "string" && `# ${live.data.title}`,
+              typeof live.data.summary === "string" && live.data.summary,
+              live.body,
+            ]
+              .filter(Boolean)
+              .join("\n\n")}
+            className="markdown-compact"
+          />
         ) : (
           <>
             <ErrorMessage error={page.error} />
