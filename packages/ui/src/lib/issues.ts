@@ -47,20 +47,72 @@ export function groupIssuesByFile<N extends { path: string }>(
   );
 }
 
-/** The next file with issues that has an editable node, wrapping around. */
-export function nextFileWithIssues<N extends { path: string }>(
+export interface QueuedIssue<N> {
+  file: FileIssues<N>;
+  issue: Issue;
+  /** The issue's index within its file's sorted issues. */
+  index: number;
+}
+
+/**
+ * Every issue in an editable node, in fix order: files as grouped, then
+ * each file's issues. Files without a node cannot be opened, so they are left out.
+ */
+export function issueQueue<N extends { path: string }>(
   groups: readonly FileIssues<N>[],
-  currentPath: string,
-): { next?: FileIssues<N>; position: number; total: number } {
-  const fixable = groups.filter((group) => group.node);
-  const index = fixable.findIndex((group) => group.path === currentPath);
-  const candidates =
-    index < 0
-      ? fixable
-      : [...fixable.slice(index + 1), ...fixable.slice(0, index)];
-  return {
-    next: candidates[0],
-    position: index + 1,
-    total: fixable.length,
-  };
+): QueuedIssue<N>[] {
+  return groups
+    .filter((file) => file.node)
+    .flatMap((file) =>
+      file.issues.map((issue, index) => ({ file, issue, index })),
+    );
+}
+
+/**
+ * The issue after `index` in `path`, wrapping around, with its 1-based
+ * position in the queue. From a file not in the queue, the first issue.
+ */
+export function nextIssue<N extends { path: string }>(
+  queue: readonly QueuedIssue<N>[],
+  path: string,
+  index: number,
+): { next?: QueuedIssue<N>; position: number; total: number } {
+  const total = queue.length;
+  const current = queue.findIndex(
+    (item) => item.file.path === path && item.index === index,
+  );
+  const target =
+    current >= 0
+      ? (current + 1) % total
+      : Math.max(
+          0,
+          queue.findIndex((item) => item.file.path === path),
+        );
+  if (!total || (current >= 0 && total === 1)) return { position: 0, total };
+  return { next: queue[target], position: target + 1, total };
+}
+
+const issueKey = (issue: Issue) => `${issue.code}\u0000${issue.message}`;
+
+/** E013: the frontmatter no longer parses, so the file's other rules did not run. */
+export const unparsed = (issues: readonly Issue[]) =>
+  issues.some((issue) => issue.code === "E013");
+
+/**
+ * Issues present before a save that the re-lint no longer reports. A file
+ * that stopped parsing confirms nothing: its other issues were not checked.
+ */
+export function clearedIssues(
+  before: readonly Issue[],
+  after: readonly Issue[],
+): Issue[] {
+  if (unparsed(after)) return [];
+  const remaining = new Map<string, number>();
+  for (const issue of after)
+    remaining.set(issueKey(issue), (remaining.get(issueKey(issue)) ?? 0) + 1);
+  return before.filter((issue) => {
+    const count = remaining.get(issueKey(issue)) ?? 0;
+    if (count) remaining.set(issueKey(issue), count - 1);
+    return !count;
+  });
 }

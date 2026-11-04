@@ -1,4 +1,4 @@
-import { useWorkspace } from "../workspace/context.js";
+import { downloadZip, useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "../components/preferences.js";
 import { useEffect, useState } from "react";
 import {
@@ -21,7 +21,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "../components/ui/command.js";
-import { downloadBlob, groupByType } from "../lib/utils.js";
+import { groupByType } from "../lib/utils.js";
 import { Kbd } from "../components/ui/kbd.js";
 import {
   BookOpen,
@@ -37,6 +37,8 @@ import {
   BookOpenCheck,
   X,
   Sparkles,
+  Download,
+  CircleAlert,
 } from "lucide-react";
 import { kbQuery, searchQuery } from "../api.js";
 import {
@@ -113,13 +115,7 @@ function Shell() {
     onSettled: () => client.invalidateQueries(),
   });
   const download = useMutation({
-    mutationFn: async () =>
-      downloadBlob(
-        new Blob([new Uint8Array(await service.exportZip())], {
-          type: "application/zip",
-        }),
-        `${service.store.name}.zip`,
-      ),
+    mutationFn: () => downloadZip(service),
   });
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -175,11 +171,11 @@ function Shell() {
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={openAnother}>
+              <DropdownMenuItem onSelect={() => void openAnother()}>
                 <BookOpenCheck />
                 {t("Open another knowledge base")}
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={close}>
+              <DropdownMenuItem onSelect={() => void close()}>
                 <X />
                 {t("Close knowledge base")}
               </DropdownMenuItem>
@@ -259,27 +255,49 @@ function Shell() {
       {service.store.kind === "memory" && (
         <div
           role="status"
-          className="flex items-center justify-between gap-3 border-b bg-warning/10 px-6 py-2 text-sm"
+          className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b bg-warning/10 px-6 py-2 text-sm max-[780px]:px-3.25"
         >
-          <span>
-            Changes saved in memory — download to keep them. Dot-files and
-            dot-folders are excluded.
+          <span className="min-w-0 text-pretty">
+            {t(
+              "Changes saved in memory. Download to keep them. Dot-files and dot-folders are excluded.",
+            )}
           </span>
           <Button
             variant="outline"
             onClick={() => download.mutate()}
             disabled={download.isPending}
           >
-            Download KB (.zip)
+            <Download />
+            {download.isPending
+              ? t("Preparing .zip…")
+              : t("Download KB (.zip)")}
           </Button>
         </div>
       )}
       {kb?.stale && (
-        <p role="alert">
-          The last rebuild failed. Reload to refresh this workspace.
-        </p>
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b bg-destructive/10 px-6 py-2 text-sm max-[780px]:px-3.25"
+        >
+          <span className="flex min-w-0 items-center gap-2 text-pretty">
+            <CircleAlert className="size-4 shrink-0 text-destructive" />
+            {t("The last rebuild failed. Reload to refresh this workspace.")}
+          </span>
+          <Button
+            variant="outline"
+            disabled={reload.isPending}
+            onClick={() => reload.mutate()}
+          >
+            <RefreshCw />
+            {t("Reload")}
+          </Button>
+        </div>
       )}
-      <ErrorMessage error={download.error} />
+      <ErrorMessage
+        error={download.error}
+        className="mx-6 mt-3 max-[780px]:mx-3.25"
+        onDismiss={() => download.reset()}
+      />
       <div className="flex min-h-0 flex-1">
         <nav className="flex w-20 shrink-0 flex-col gap-2.5 border-r bg-card px-2 py-6 max-[780px]:w-14.5 max-[780px]:px-1 max-[780px]:py-3.75">
           {[
@@ -327,7 +345,11 @@ function Shell() {
           </div>
         </nav>
         <div className="relative min-w-0 flex-1 overflow-auto">
-          <ErrorMessage error={error ?? reload.error} />
+          <ErrorMessage
+            error={error ?? reload.error}
+            className="mx-10.5 mt-6 max-[1100px]:mx-7 max-[780px]:mx-4.5"
+            onDismiss={error ? undefined : () => reload.reset()}
+          />
           <Outlet />
         </div>
       </div>

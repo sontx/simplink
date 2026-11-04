@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Issue } from "@sontx/simplink-core";
-import { groupIssuesByFile, nextFileWithIssues } from "../src/lib/issues.js";
+import {
+  clearedIssues,
+  groupIssuesByFile,
+  issueQueue,
+  nextIssue,
+} from "../src/lib/issues.js";
 
 const issue = (path: string, code: string): Issue => ({
   path,
@@ -45,28 +50,51 @@ test("issues group by file with the most errors first and errors before warnings
   assert.equal(groups[2].node, undefined);
 });
 
-test("next file with issues skips files without nodes and wraps around", () => {
-  const groups = groupIssuesByFile(
-    [
-      issue("goals/a.md", "E001"),
-      issue("broken.md", "E002"),
-      issue("goals/b.md", "W001"),
-    ],
-    nodes,
-  );
-  assert.deepEqual(
-    (({ next, position, total }) => [next?.path, position, total])(
-      nextFileWithIssues(groups, "goals/a.md"),
+test("next issue steps through each file's issues, skips files without nodes, and wraps", () => {
+  const queue = issueQueue(
+    groupIssuesByFile(
+      [
+        issue("goals/a.md", "E001"),
+        issue("goals/a.md", "W003"),
+        issue("broken.md", "E002"),
+        issue("goals/b.md", "W001"),
+      ],
+      nodes,
     ),
-    ["goals/b.md", 1, 2],
   );
-  assert.equal(
-    nextFileWithIssues(groups, "goals/b.md").next?.path,
-    "goals/a.md",
+  const step = (path: string, index: number) =>
+    (({ next, position, total }) => [
+      next?.file.path,
+      next?.index,
+      position,
+      total,
+    ])(nextIssue(queue, path, index));
+  assert.deepEqual(step("goals/a.md", 0), ["goals/a.md", 1, 2, 3]);
+  assert.deepEqual(step("goals/a.md", 1), ["goals/b.md", 0, 3, 3]);
+  assert.deepEqual(step("goals/b.md", 0), ["goals/a.md", 0, 1, 3]);
+  assert.deepEqual(step("goals/c.md", 0), ["goals/a.md", 0, 1, 3]);
+  const alone = issueQueue(
+    groupIssuesByFile([issue("goals/a.md", "E001")], nodes),
   );
-  const fromClean = nextFileWithIssues(groups, "goals/c.md");
-  assert.equal(fromClean.next?.path, "goals/a.md");
-  assert.equal(fromClean.position, 0);
-  const alone = groupIssuesByFile([issue("goals/a.md", "E001")], nodes);
-  assert.equal(nextFileWithIssues(alone, "goals/a.md").next, undefined);
+  assert.equal(nextIssue(alone, "goals/a.md", 0).next, undefined);
+  assert.equal(nextIssue([], "goals/a.md", 0).next, undefined);
+});
+
+test("cleared issues are the ones a save removed, counting duplicates", () => {
+  const before = [
+    issue("goals/a.md", "E001"),
+    issue("goals/a.md", "W002"),
+    issue("goals/a.md", "W002"),
+  ];
+  assert.deepEqual(
+    clearedIssues(before, [issue("goals/a.md", "W002")]).map((i) => i.code),
+    ["E001", "W002"],
+  );
+  assert.deepEqual(clearedIssues(before, before), []);
+  // Broken YAML hides the other issues rather than fixing them.
+  assert.deepEqual(clearedIssues(before, [issue("goals/a.md", "E013")]), []);
+  assert.deepEqual(
+    clearedIssues([issue("goals/a.md", "E013")], []).map((i) => i.code),
+    ["E013"],
+  );
 });

@@ -17,6 +17,8 @@ import {
 } from "./store.js";
 import { lastDirectory, rememberDirectory } from "./persist.js";
 import { Button, ErrorMessage } from "../components/ui/primitives.js";
+import { useConfirm } from "../components/confirm.js";
+import { downloadBlob } from "../lib/utils.js";
 import { Input } from "../components/ui/input.js";
 import { usePreferences } from "../components/preferences.js";
 import { SimpNetwork } from "../components/simp-network.js";
@@ -26,6 +28,7 @@ import {
   HardDrive,
   History,
   Info,
+  LoaderCircle,
   ShieldAlert,
 } from "lucide-react";
 
@@ -33,8 +36,8 @@ interface Workspace {
   id: number;
   service: WorkspaceService;
   client: QueryClient;
-  close(): void;
-  openAnother(): void;
+  close(): Promise<void>;
+  openAnother(): Promise<void>;
   reload(): Promise<unknown>;
   setDraftDirty(dirty: boolean): void;
 }
@@ -88,6 +91,16 @@ function remoteSession(): RemoteSession | null {
   }
 }
 
+/** Saves a memory workspace as `<name>.zip`, the only way to keep its edits. */
+export async function downloadZip(service: WorkspaceService): Promise<void> {
+  downloadBlob(
+    new Blob([new Uint8Array(await service.exportZip())], {
+      type: "application/zip",
+    }),
+    `${service.store.name}.zip`,
+  );
+}
+
 export function useWorkspace(): Workspace {
   const workspace = useContext(Context);
   if (!workspace) throw new Error("Open a KB folder first");
@@ -112,6 +125,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
   const [token, setToken] = useState(() => remoteSession()?.token ?? "");
   const { t } = usePreferences();
+  const confirm = useConfirm();
+  // Memory edits exist only in this tab, so leaving offers to download them first.
+  const keepOffer = (service: WorkspaceService) =>
+    service.store.kind === "memory" && service.store.dirty
+      ? { download: () => downloadZip(service) }
+      : {};
   useEffect(() => {
     let cancelled = false;
     opening.current = true;
@@ -147,6 +166,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+  // Status notes are transient; errors stay until dismissed or replaced.
+  useEffect(() => {
+    if (!message || !workspace) return;
+    const timer = setTimeout(() => setMessage(""), 5000);
+    return () => clearTimeout(timer);
+  }, [message, workspace]);
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {
       if (workspace?.service.store.dirty) {
@@ -164,12 +189,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     wasDirty = false,
   ) {
     const service = await WorkspaceService.open(store);
+    const previous = active.current?.service;
     if (
       !wasDirty &&
-      active.current?.service.store.dirty &&
-      !window.confirm(
-        "Changes were saved in memory while opening the folder. Download them before leaving to keep them. Continue?",
-      )
+      previous?.store.dirty &&
+      !(await confirm({
+        title: t("Leave without downloading?"),
+        description: t(
+          "Changes were saved in memory while the folder was opening. Download them as a .zip to keep them.",
+        ),
+        confirmLabel: t("Leave without downloading"),
+        destructive: true,
+        ...keepOffer(previous),
+      }))
     ) {
       service.close();
       return false;
@@ -182,13 +214,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       },
     });
     let draftDirty = false;
-    const canLeave = () =>
+    const canLeave = async () =>
       (!draftDirty && !service.store.dirty) ||
-      window.confirm(
+      (await confirm(
         draftDirty
-          ? "Discard unsaved changes in the editor? Download any saved memory edits before leaving."
-          : "Changes are saved in memory. Download the KB before leaving to keep them. Continue?",
-      );
+          ? {
+              title: t("Discard unsaved changes?"),
+              description: service.store.dirty
+                ? t(
+                    "The editor has changes that aren't saved. Saved memory edits are kept only if you download them.",
+                  )
+                : t("The editor has changes that aren't saved."),
+              confirmLabel: t("Discard and leave"),
+              destructive: true,
+              ...keepOffer(service),
+            }
+          : {
+              title: t("Leave without downloading?"),
+              description: t(
+                "Your changes live only in this browser tab. Download the KB as a .zip to keep them.",
+              ),
+              confirmLabel: t("Leave without downloading"),
+              destructive: true,
+              ...keepOffer(service),
+            },
+      ));
     const next: Workspace = {
       id: ++nextId,
       service,
@@ -196,25 +246,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setDraftDirty(dirty) {
         draftDirty = dirty;
       },
-      close() {
-        if (!opening.current && canLeave()) {
-          service.close();
-          client.clear();
-          active.current = null;
-          setWorkspace(null);
-          saveRemoteSession();
-          saveWorkspaceClosed(true);
-        }
+      async close() {
+        if (opening.current || !(await canLeave())) return;
+        service.close();
+        client.clear();
+        active.current = null;
+        setWorkspace(null);
+        saveRemoteSession();
+        saveWorkspaceClosed(true);
       },
-      openAnother() {
-        if (!opening.current && canLeave()) void open();
+      async openAnother() {
+        if (!opening.current && (await canLeave())) await open();
       },
       async reload() {
         if (
           service.store.dirty &&
-          !window.confirm(
-            "Reload rereads this memory workspace and keeps your edits. Continue?",
-          )
+          !(await confirm({
+            title: t("Reload this workspace?"),
+            description: t(
+              "Reload rereads this memory workspace and keeps your edits.",
+            ),
+            confirmLabel: t("Reload"),
+          }))
         )
           return;
         return service.reload();
@@ -238,7 +291,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const picked = await pickFolder();
       if (picked) await activate(picked.store, picked.handle, wasDirty);
-      else setMessage("Folder selection cancelled.");
+      else setMessage(t("Folder selection cancelled."));
     } catch (error) {
       setError(error);
     } finally {
@@ -282,11 +335,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       if (!window.isSecureContext)
         throw new Error(
-          "Open this page over HTTPS or localhost to access folders.",
+          t("Open this page over HTTPS or localhost to access folders."),
         );
       if ((await last.requestPermission({ mode: "readwrite" })) !== "granted")
         throw new Error(
-          "Folder permission denied. Open the folder again to grant access.",
+          t("Folder permission denied. Open the folder again to grant access."),
         );
       await activate(directoryStore(last), last);
     } catch (error) {
@@ -304,23 +357,55 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           <div className="contents" inert={busy} aria-busy={busy}>
             {children}
           </div>
-          {busy && (
-            <p
-              role="status"
-              className="fixed inset-x-0 bottom-0 bg-card p-3 text-center"
-            >
-              Opening folder…
-            </p>
+          {(busy || message || !!error) && (
+            <div className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex flex-col items-center gap-2 px-4">
+              {busy && (
+                <p
+                  role="status"
+                  className="flex items-center gap-2 rounded-lg border bg-popover px-3.5 py-2 text-sm text-popover-foreground shadow-md"
+                >
+                  <LoaderCircle className="size-4 animate-spin text-primary motion-reduce:animate-none" />
+                  {t("Opening folder…")}
+                </p>
+              )}
+              {!busy && message && (
+                <p
+                  role="status"
+                  className="pointer-events-auto flex items-center gap-3 rounded-lg border bg-popover py-1.5 pr-1.5 pl-3.5 text-sm text-muted-foreground shadow-md"
+                >
+                  {message}
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setMessage("")}
+                  >
+                    {t("Dismiss")}
+                  </Button>
+                </p>
+              )}
+              {!busy && error ? (
+                <div className="pointer-events-auto w-full max-w-lg rounded-lg bg-popover shadow-md">
+                  <ErrorMessage
+                    error={error}
+                    onDismiss={() => setError(undefined)}
+                  />
+                </div>
+              ) : null}
+            </div>
           )}
-          {message && <p role="status">{message}</p>}
-          <ErrorMessage error={error} />
         </QueryClientProvider>
       </Context.Provider>
     );
   if (busy)
     return (
-      <main className="flex min-h-dvh items-center justify-center">
-        <p role="status">{t("Opening folder…")}</p>
+      <main className="flex min-h-dvh items-center justify-center bg-muted/40">
+        <p
+          role="status"
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+        >
+          <LoaderCircle className="size-4 animate-spin text-primary motion-reduce:animate-none" />
+          {t("Opening folder…")}
+        </p>
       </main>
     );
   return (

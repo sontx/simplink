@@ -6,6 +6,7 @@ import { routeTree } from "./routeTree.gen";
 import "@xyflow/react/dist/style.css";
 import "./index.css";
 import { PreferencesProvider } from "./components/preferences.js";
+import { ConfirmProvider } from "./components/confirm.js";
 import { WorkspaceProvider, useWorkspace } from "./workspace/context.js";
 
 function WorkspaceRouter() {
@@ -30,9 +31,11 @@ declare module "@tanstack/react-router" {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <PreferencesProvider>
-      <WorkspaceProvider>
-        <WorkspaceRouter />
-      </WorkspaceProvider>
+      <ConfirmProvider>
+        <WorkspaceProvider>
+          <WorkspaceRouter />
+        </WorkspaceProvider>
+      </ConfirmProvider>
     </PreferencesProvider>
   </React.StrictMode>,
 );

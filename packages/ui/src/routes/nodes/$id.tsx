@@ -15,15 +15,23 @@ import { ArrowRight, CircleCheck } from "lucide-react";
 import { kbQuery, nodeQuery } from "../../api.js";
 import { IssueCounts, IssueList } from "../../components/issue-list.js";
 import { Kbd, KbdGroup } from "../../components/ui/kbd.js";
-import { groupIssuesByFile, nextFileWithIssues } from "../../lib/issues.js";
+import type { Issue } from "@sontx/simplink-core";
+import {
+  clearedIssues,
+  groupIssuesByFile,
+  unparsed,
+  issueQueue,
+  nextIssue,
+} from "../../lib/issues.js";
 import {
   Badge,
   Button,
-  Dialog,
   ErrorMessage,
   Page,
 } from "../../components/ui/primitives.js";
 import { Markdown } from "../../components/markdown.js";
+import { ConfirmDialog, useConfirm } from "../../components/confirm.js";
+import { FrontmatterValue } from "../../components/frontmatter-value.js";
 import { SourceFiles } from "../../components/source-files.js";
 import { NodeDocs } from "../../components/node-docs.js";
 import {
@@ -37,12 +45,17 @@ import { Plan } from "../../components/inspector.js";
 export const Route = createFileRoute("/nodes/$id")({
   validateSearch: (
     s: Record<string, unknown>,
-  ): { tab?: string; line?: number } => ({
+  ): { tab?: string; line?: number; issue?: number } => ({
     tab: ["overview", "source", "docs"].includes(String(s.tab))
       ? String(s.tab)
       : "overview",
     ...(Number.isInteger(Number(s.line)) && Number(s.line) > 0
       ? { line: Number(s.line) }
+      : {}),
+    ...(s.issue !== undefined &&
+    Number.isInteger(Number(s.issue)) &&
+    Number(s.issue) >= 0
+      ? { issue: Number(s.issue) }
       : {}),
   }),
   component: NodePage,
@@ -66,9 +79,10 @@ function NodePage() {
 function NodeContent() {
   const { service, setDraftDirty } = useWorkspace();
   const { t, label, enumDescription, theme } = usePreferences();
+  const confirm = useConfirm();
 
   const { id } = Route.useParams();
-  const { tab, line } = Route.useSearch();
+  const { tab, line, issue: issueParam } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: detail, error } = useQuery(nodeQuery(service, id));
   const { data: kb } = useQuery(kbQuery(service));
@@ -82,8 +96,10 @@ function NodeContent() {
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [plan, setPlan] = useState(false);
-  // Whether the file had issues when it was last saved, to confirm a fix.
-  const [hadIssues, setHadIssues] = useState(false);
+  // The file's issues when it was last saved, to report which ones cleared.
+  const [savedFrom, setSavedFrom] = useState<readonly Issue[]>([]);
+  // The issue being worked on, as an index into this file's issues; -1 for none.
+  const [cursor, setCursor] = useState<number>();
   const saveShortcut = useRef(() => {});
   const editor = useRef<EditorInstance>(undefined);
   // Moves the caret to a source line and centres it.
@@ -120,6 +136,8 @@ function NodeContent() {
       await client.invalidateQueries();
       setRaw(undefined);
       setSaved(true);
+      // Indexes shift after a re-lint, so Next starts again at this file's first issue.
+      setCursor(-1);
     },
   });
   const remove = useMutation({
@@ -130,12 +148,17 @@ function NodeContent() {
     },
   });
   useBlocker({
-    shouldBlockFn: ({ current, next }) =>
+    shouldBlockFn: async ({ current, next }) =>
       dirty &&
       !remove.isPending &&
       !remove.isSuccess &&
       current.pathname !== next.pathname &&
-      !window.confirm(t("Discard unsaved changes?")),
+      !(await confirm({
+        title: t("Discard unsaved changes?"),
+        description: t("The editor has changes that aren't saved."),
+        confirmLabel: t("Discard and leave"),
+        destructive: true,
+      })),
     enableBeforeUnload: dirty && !remove.isPending && !remove.isSuccess,
   });
   if (!detail)
@@ -167,30 +190,90 @@ function NodeContent() {
     ].join("/");
   const file = files.find((group) => group.path === node.path);
   const issues = file?.issues ?? [];
-  const { next, position, total } = nextFileWithIssues(files, node.path);
+  const queue = issueQueue(files);
+  // Arriving from a link picks the issue it names, or the first one on its line.
+  const current =
+    cursor ??
+    issueParam ??
+    (line !== undefined ? issues.findIndex((i) => i.line === line) : -1);
+  const activeIndex = current < issues.length ? current : -1;
+  const { next, position, total } = nextIssue(queue, node.path, activeIndex);
+  const cleared = saved ? clearedIssues(savedFrom, issues) : [];
   const canSave = dirty && !save.isPending && !service.store.readOnly;
   // A remote node's issue lines refer to its original files, not this rebuilt source.
   const localLines = service.store.kind !== "remote";
   const saveFile = () => {
     if (!canSave) return;
-    setHadIssues(issues.length > 0);
+    setSavedFrom(issues);
     save.mutate();
   };
   saveShortcut.current = saveFile;
-  const nextLink = next?.node && (
-    <Button variant="ghost" size="xs" asChild>
-      <Link
-        to="/nodes/$id"
-        params={{ id: next.node.id }}
-        search={{ tab: "source" }}
-      >
-        {position > 0 && total > 1
-          ? t("Next file ({position} of {total})", { position, total })
-          : t("Next file with issues")}
-        <ArrowRight data-icon="inline-end" />
-      </Link>
-    </Button>
+  const selectIssue = (index: number) => {
+    setCursor(index);
+    const target = issues[index]?.line;
+    if (localLines && target !== undefined) goToLine(target);
+  };
+  const nextLabel = (
+    <>
+      {t("Next issue ({position} of {total})", { position, total })}
+      <ArrowRight data-icon="inline-end" />
+    </>
   );
+  const nextLink =
+    next?.file.node &&
+    (next.file.path === node.path ? (
+      <Button
+        variant="outline"
+        size="xs"
+        onClick={() => selectIssue(next.index)}
+      >
+        {nextLabel}
+      </Button>
+    ) : (
+      <Button variant="outline" size="xs" asChild>
+        <Link
+          to="/nodes/$id"
+          params={{ id: next.file.node.id }}
+          search={{
+            tab: "source",
+            issue: next.index,
+            line: localLines ? next.issue.line : undefined,
+          }}
+        >
+          {nextLabel}
+        </Link>
+      </Button>
+    ));
+  // What the last save did to this file's issues.
+  const saveResult =
+    saved && savedFrom.length > 0
+      ? cleared.length > 0
+        ? {
+            done: true,
+            text:
+              cleared.length === 1
+                ? t("Cleared 1 issue:")
+                : t("Cleared {count} issues:", { count: cleared.length }),
+          }
+        : {
+            done: false,
+            text:
+              unparsed(issues) && !unparsed(savedFrom)
+                ? t(
+                    "Saved, but the frontmatter no longer parses, so its other issues can't be checked.",
+                  )
+                : t("Saved. No issues cleared yet."),
+          }
+      : undefined;
+  const clearedCodes = cleared.map((issue, index) => (
+    <s
+      key={index}
+      title={issue.message}
+      className="font-mono text-[11px] text-muted-foreground"
+    >
+      {issue.code}
+    </s>
+  ));
   return (
     <Page>
       <Link to="/nodes" className={`text-[11px] ${muted}`}>
@@ -240,7 +323,7 @@ function NodeContent() {
               {Object.entries(node.data).map(([key, value]) => (
                 <div
                   key={key}
-                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-[11px]"
+                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-[11px] max-[480px]:grid-cols-1 max-[480px]:gap-1"
                 >
                   <dt className="text-muted-foreground">{label(key)}</dt>
                   <dd
@@ -258,10 +341,8 @@ function NodeContent() {
                             typeof source === "string",
                         )}
                       />
-                    ) : typeof value === "object" ? (
-                      JSON.stringify(value)
                     ) : (
-                      String(value)
+                      <FrontmatterValue value={value} />
                     )}
                   </dd>
                 </div>
@@ -335,7 +416,7 @@ function NodeContent() {
           </div>
           {issues.length > 0 ? (
             <div className="mt-4 rounded-lg border border-border bg-card px-3.5 py-3">
-              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                 <span className="text-xs font-medium">
                   <IssueCounts
                     errors={file?.errors ?? 0}
@@ -347,21 +428,40 @@ function NodeContent() {
                 </span>
                 {nextLink}
               </div>
+              {saveResult && (
+                <div className="mb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border pb-2.5 text-xs">
+                  {saveResult.done && (
+                    <CircleCheck
+                      className="size-4 shrink-0 text-primary"
+                      aria-hidden
+                    />
+                  )}
+                  <span className={saveResult.done ? undefined : muted}>
+                    {saveResult.text}
+                  </span>
+                  {clearedCodes}
+                </div>
+              )}
               <IssueList
                 issues={issues}
-                onLine={localLines ? goToLine : undefined}
+                activeIndex={activeIndex}
+                onLine={
+                  localLines ? (_line, index) => selectIssue(index) : undefined
+                }
               />
             </div>
           ) : (
-            saved &&
-            hadIssues && (
-              <div
-                role="status"
-                className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <CircleCheck className="size-4 text-primary" aria-hidden />
-                  {t("No issues left in this file.")}
+            saveResult && (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm">
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="flex items-center gap-2 font-medium">
+                    <CircleCheck className="size-4 text-primary" aria-hidden />
+                    {t("No issues left in this file.")}
+                  </span>
+                  <span className="flex flex-wrap items-center gap-x-2 pl-6 text-xs text-muted-foreground">
+                    {saveResult.text}
+                    {clearedCodes}
+                  </span>
                 </span>
                 {nextLink ??
                   (kb?.issues.length ? (
@@ -380,6 +480,16 @@ function NodeContent() {
               </div>
             )
           )}
+          <p role="status" className="sr-only">
+            {saveResult &&
+              [
+                saveResult.text,
+                cleared.map((issue) => issue.code).join(", "),
+                !issues.length && t("No issues left in this file."),
+              ]
+                .filter(Boolean)
+                .join(" ")}
+          </p>
           <div className="mt-4 h-[52dvh] min-h-80 overflow-hidden rounded-md border border-input">
             <Suspense fallback={t("Loading node…")}>
               <SourceEditor
@@ -441,26 +551,35 @@ function NodeContent() {
           <NodeDocs docPath={docPath} nodePath={node.path} />
         </TabsContent>
       </Tabs>
-      {deleting && (
-        <Dialog open onOpenChange={setDeleting} title={t("Delete this file?")}>
-          <p>{t("{path} will be permanently deleted.", { path: node.path })}</p>
-          <p>
-            {t(
-              "{count} nodes reference this node. Their relationships will become dangling.",
-              { count: detail.in.length },
+      <ConfirmDialog
+        open={deleting}
+        title={t("Delete this file?")}
+        description={
+          <>
+            {t("{path} will be permanently deleted.", { path: node.path })}
+            {detail.in.length > 0 && (
+              <>
+                {" "}
+                {t(
+                  detail.in.length === 1
+                    ? "1 node references this node. That relationship will become dangling."
+                    : "{count} nodes reference this node. Their relationships will become dangling.",
+                  { count: detail.in.length },
+                )}
+              </>
             )}
-          </p>
-          <ErrorMessage error={remove.error} />
-          <Button
-            variant="destructive"
-
-            disabled={remove.isPending}
-            onClick={() => remove.mutate()}
-          >
-            {t("Delete file")}
-          </Button>
-        </Dialog>
-      )}
+          </>
+        }
+        confirmLabel={t("Delete file")}
+        destructive
+        pending={remove.isPending}
+        error={remove.error}
+        onConfirm={() => remove.mutate()}
+        onCancel={() => {
+          remove.reset();
+          setDeleting(false);
+        }}
+      />
       {plan && <Plan id={id} onClose={() => setPlan(false)} />}
     </Page>
   );

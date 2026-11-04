@@ -6,22 +6,40 @@ import { Badge } from "./ui/primitives.js";
 
 /**
  * Issues for one file: severity-coloured code, the message, then its line.
- * With `onLine`, the line becomes a button that jumps to it.
+ * With `onLine`, the line becomes a button that jumps to it; `activeIndex`
+ * marks the issue the author is working on (-1 for none yet).
  */
 export function IssueList({
   issues,
   className,
   onLine,
+  activeIndex,
 }: {
   issues: readonly Issue[];
   className?: string;
-  onLine?: (line: number) => void;
+  onLine?: (line: number, index: number) => void;
+  activeIndex?: number;
 }) {
   const { t, language } = usePreferences();
   return (
-    <ul className={cn("m-0 flex list-none flex-col gap-2 p-0", className)}>
+    <ul
+      className={cn(
+        "m-0 flex list-none flex-col p-0",
+        // Tracked rows carry their own padding for the active fill.
+        activeIndex === undefined ? "gap-2" : "gap-0.5",
+        className,
+      )}
+    >
       {issues.map((issue, index) => (
-        <li key={index} className="flex items-start gap-2.5 text-sm">
+        <li
+          key={index}
+          aria-current={index === activeIndex || undefined}
+          className={cn(
+            "flex items-start gap-2.5 rounded-md text-sm",
+            activeIndex !== undefined &&
+              "-mx-2 px-2 py-1 aria-current:bg-muted",
+          )}
+        >
           <Badge
             type={issue.severity}
             title={issueCodeMeaning(issue.code, language)}
@@ -34,7 +52,7 @@ export function IssueList({
               (onLine ? (
                 <button
                   type="button"
-                  onClick={() => onLine(issue.line!)}
+                  onClick={() => onLine(issue.line!, index)}
                   className="ml-2 rounded-sm text-xs text-primary tabular-nums underline-offset-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {t("Line {line}", { line: issue.line })}

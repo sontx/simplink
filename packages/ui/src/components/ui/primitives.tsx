@@ -2,6 +2,7 @@ import { usePreferences } from "../preferences.js";
 import { useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { cn } from "../../lib/utils.js";
+import { CircleAlert, X } from "lucide-react";
 import { Badge as ShadcnBadge } from "./badge.js";
 import {
   Dialog as DialogRoot,
@@ -102,6 +103,7 @@ function SheetDialog({
   children: ReactNode;
   resizeKey?: string;
 }) {
+  const { t } = usePreferences();
   const { width, onPointerDown } = useResizableWidth(resizeKey);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -118,7 +120,8 @@ function SheetDialog({
           <div
             role="separator"
             aria-orientation="vertical"
-            title="Drag to resize"
+            aria-label={t("Drag to resize")}
+            title={t("Drag to resize")}
             className="group absolute inset-y-0 left-0 z-10 hidden w-3 cursor-col-resize touch-none items-center justify-center sm:flex"
             onPointerDown={onPointerDown}
           >
@@ -175,12 +178,48 @@ export function Dialog({
   );
 }
 
-export function ErrorMessage({ error }: { error: unknown }) {
-  return error ? (
-    <div role="alert" className="bg-destructive/10 p-3">
-      {error instanceof Error ? error.message : String(error)}
+/** Inline problem report. Known messages are translated; unknown ones show as written. */
+export function ErrorMessage({
+  error,
+  className,
+  onDismiss,
+}: {
+  error: unknown;
+  className?: string;
+  onDismiss?: () => void;
+}) {
+  const { t } = usePreferences();
+  if (!error) return null;
+  const message =
+    (error instanceof Error ? error.message : String(error)) || "Error";
+  return (
+    <div
+      role="alert"
+      className={cn(
+        "flex items-start gap-2.5 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2.5 text-sm text-foreground",
+        className,
+      )}
+    >
+      <CircleAlert
+        aria-hidden
+        className="mt-0.5 size-4 shrink-0 text-destructive"
+      />
+      <p className="min-w-0 flex-1 leading-relaxed wrap-anywhere whitespace-pre-line">
+        {t(message)}
+      </p>
+      {onDismiss && (
+        <button
+          type="button"
+          aria-label={t("Dismiss")}
+          title={t("Dismiss")}
+          onClick={onDismiss}
+          className="-my-1 -mr-1.5 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <X className="size-4" />
+        </button>
+      )}
     </div>
-  ) : null;
+  );
 }
 
 export function Page({

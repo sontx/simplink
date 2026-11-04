@@ -422,7 +422,7 @@ export function KBGraph({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        {NODE_TYPES.map((type) => (
+        {NODE_TYPES.filter((type) => type !== "simp").map((type) => (
           <ContextMenuItem
             key={type}
             title={enumDescription(type)}

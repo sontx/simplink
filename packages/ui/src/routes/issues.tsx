@@ -9,7 +9,7 @@ import {
   IssueCounts,
   IssueList,
 } from "../components/issue-list.js";
-import { groupIssuesByFile } from "../lib/issues.js";
+import { groupIssuesByFile, issueQueue } from "../lib/issues.js";
 import {
   Select,
   SelectTrigger,
@@ -47,6 +47,11 @@ function Issues() {
   const files = groupIssuesByFile(issues, kb?.nodes ?? []);
   const errors = files.reduce((sum, file) => sum + file.errors, 0);
   const warnings = files.reduce((sum, file) => sum + file.warnings, 0);
+  // The fix loop starts at the first issue the Source tab can open. Indexes
+  // must match its unfiltered list, so the severity filter only picks which issue.
+  const first = issueQueue(
+    groupIssuesByFile(kb?.issues ?? [], kb?.nodes ?? []),
+  ).find((item) => !severity || item.issue.severity === severity);
   return (
     <Page>
       <div className="mb-7 flex items-end justify-between gap-6.25 max-[780px]:items-start max-[780px]:gap-2.5">
@@ -68,38 +73,55 @@ function Issues() {
             </p>
           )}
         </div>
-        <Select
-          value={severity || "all"}
-          onValueChange={(value) =>
-            void navigate({
-              search: { severity: value === "all" ? "" : value },
-            })
-          }
-        >
-          <SelectTrigger
-            aria-label={t("Severity")}
-            title={enumDescription(severity, "issue")}
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2.25">
+          <Select
+            value={severity || "all"}
+            onValueChange={(value) =>
+              void navigate({
+                search: { severity: value === "all" ? "" : value },
+              })
+            }
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="all">{t("All severities")}</SelectItem>
-              <SelectItem
-                value="error"
-                title={enumDescription("error", "issue")}
+            <SelectTrigger
+              aria-label={t("Severity")}
+              title={enumDescription(severity, "issue")}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">{t("All severities")}</SelectItem>
+                <SelectItem
+                  value="error"
+                  title={enumDescription("error", "issue")}
+                >
+                  {t("Errors")}
+                </SelectItem>
+                <SelectItem
+                  value="warning"
+                  title={enumDescription("warning", "issue")}
+                >
+                  {t("Warnings")}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {first?.file.node && !service.store.readOnly && (
+            <Button asChild>
+              <Link
+                to="/nodes/$id"
+                params={{ id: first.file.node.id }}
+                search={{
+                  tab: "source",
+                  issue: first.index,
+                  line: first.issue.line,
+                }}
               >
-                {t("Errors")}
-              </SelectItem>
-              <SelectItem
-                value="warning"
-                title={enumDescription("warning", "issue")}
-              >
-                {t("Warnings")}
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+                {t("Start fixing")}
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
       {!files.length && (
         <div className="px-6.25 py-17.5 text-center text-muted-foreground">

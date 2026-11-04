@@ -300,8 +300,13 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "A peer was unreachable, so remote references were not checked.":
     "Không kết nối được một peer nên chưa kiểm tra các tham chiếu từ xa.",
   "Saved in memory": "Đã lưu trong bộ nhớ",
-  "Next file ({position} of {total})": "Tệp tiếp theo ({position}/{total})",
-  "Next file with issues": "Tệp tiếp theo có vấn đề",
+  "Next issue ({position} of {total})": "Vấn đề tiếp theo ({position}/{total})",
+  "Cleared 1 issue:": "Đã xử lý 1 vấn đề:",
+  "Cleared {count} issues:": "Đã xử lý {count} vấn đề:",
+  "Saved. No issues cleared yet.": "Đã lưu. Chưa xử lý được vấn đề nào.",
+  "Saved, but the frontmatter no longer parses, so its other issues can't be checked.":
+    "Đã lưu, nhưng frontmatter không còn đọc được nên chưa thể kiểm tra các vấn đề khác.",
+  "Start fixing": "Bắt đầu sửa",
   "No issues left in this file.": "Tệp này không còn vấn đề nào.",
   "View remaining issues": "Xem các vấn đề còn lại",
   "Every file is clean.": "Mọi tệp đều không có vấn đề.",
@@ -443,6 +448,65 @@ export const vietnamese: Readonly<Record<string, string>> = {
     "Khởi động lại agent, rồi yêu cầu tạo cơ sở tri thức bằng lời thường. Agent sẽ tự nạp kỹ năng phù hợp.",
   "Open the resulting kb folder here to review the graph and fix issues.":
     "Mở thư mục kb vừa tạo tại đây để xem đồ thị và sửa lỗi.",
+  // Nested frontmatter fields
+  Path: "Đường dẫn",
+  Order: "Thứ tự",
+  Question: "Câu hỏi",
+  Options: "Tùy chọn",
+  Key: "Khóa",
+  When: "Khi nào",
+  Name: "Tên",
+  "Docs url": "URL tài liệu",
+  Serves: "Phục vụ",
+  Peers: "Các peer",
+  Url: "URL",
+  Mode: "Chế độ",
+  // Confirmations
+  Cancel: "Hủy",
+  Dismiss: "Ẩn",
+  "Download .zip and leave": "Tải .zip rồi rời đi",
+  "Preparing .zip…": "Đang chuẩn bị .zip…",
+  "Leave without downloading?": "Rời đi mà không tải xuống?",
+  "Leave without downloading": "Rời đi, không tải xuống",
+  "Changes were saved in memory while the folder was opening. Download them as a .zip to keep them.":
+    "Các thay đổi đã được lưu trong bộ nhớ khi thư mục đang mở. Tải xuống dạng .zip để giữ lại.",
+  "Your changes live only in this browser tab. Download the KB as a .zip to keep them.":
+    "Thay đổi của bạn chỉ nằm trong thẻ trình duyệt này. Tải KB xuống dạng .zip để giữ lại.",
+  "The editor has changes that aren't saved.":
+    "Trình soạn thảo có thay đổi chưa được lưu.",
+  "The editor has changes that aren't saved. Saved memory edits are kept only if you download them.":
+    "Trình soạn thảo có thay đổi chưa được lưu. Các chỉnh sửa đã lưu trong bộ nhớ chỉ được giữ nếu bạn tải xuống.",
+  "Discard and leave": "Bỏ thay đổi và rời đi",
+  "Reload this workspace?": "Tải lại không gian làm việc?",
+  "Reload rereads this memory workspace and keeps your edits.":
+    "Tải lại sẽ đọc lại không gian làm việc trong bộ nhớ và giữ nguyên các chỉnh sửa.",
+  "1 node references this node. That relationship will become dangling.":
+    "1 nút tham chiếu đến nút này. Quan hệ đó sẽ mất đích liên kết.",
+  // Workspace status
+  "Opening folder…": "Đang mở thư mục…",
+  "Folder selection cancelled.": "Đã hủy chọn thư mục.",
+  "Open this page over HTTPS or localhost to access folders.":
+    "Mở trang này qua HTTPS hoặc localhost để truy cập thư mục.",
+  "Folder permission denied. Open the folder again to grant access.":
+    "Quyền truy cập thư mục bị từ chối. Mở lại thư mục để cấp quyền.",
+  "Changes saved in memory. Download to keep them. Dot-files and dot-folders are excluded.":
+    "Thay đổi được lưu trong bộ nhớ. Tải xuống để giữ lại. Tệp và thư mục bắt đầu bằng dấu chấm bị bỏ qua.",
+  "Download KB (.zip)": "Tải KB (.zip)",
+  "The last rebuild failed. Reload to refresh this workspace.":
+    "Lần dựng lại gần nhất thất bại. Tải lại để làm mới không gian làm việc.",
+  "Drag to resize": "Kéo để đổi kích thước",
+  // Errors raised by the workspace
+  "Node not found": "Không tìm thấy nút",
+  "File not found": "Không tìm thấy tệp",
+  "File already exists": "Tệp đã tồn tại",
+  "Workspace closed": "Không gian làm việc đã đóng",
+  "Workspace storage unavailable":
+    "Không dùng được bộ nhớ lưu không gian làm việc",
+  "Only goals and procedures have plans":
+    "Chỉ mục tiêu và quy trình mới có kế hoạch",
+  "Missing frontmatter": "Thiếu siêu dữ liệu",
+  "Invalid frontmatter": "Siêu dữ liệu không hợp lệ",
+  "Invalid relationship kind or targets": "Loại quan hệ hoặc đích không hợp lệ",
 };
 
 export function translate(
