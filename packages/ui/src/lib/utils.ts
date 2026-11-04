@@ -27,9 +27,15 @@ export function groupByType<T>(
 
 const LABELS: Record<string, string> = { id: "ID" };
 
+/** Initialisms that read wrong in sentence case, e.g. `lint-in-ci` → `Lint in CI`. */
+const INITIALISMS =
+  /\b(?:api|ci|cli|css|html|http|id|json|kb|mcp|md|sdk|ui|url|yaml)\b/g;
+
 /** Display name for enum-like values, e.g. `constrained_by` → `Constrained by`. */
 export function label(value: string, language: Language = "en"): string {
-  const text = value.replace(/[_-]+/g, " ");
+  const text = value
+    .replace(/[_-]+/g, " ")
+    .replace(INITIALISMS, (word) => word.toUpperCase());
   return translate(
     language,
     LABELS[value] ?? text.charAt(0).toUpperCase() + text.slice(1),

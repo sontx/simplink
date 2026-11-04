@@ -138,6 +138,23 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Browser-drawn surfaces take the desk's tokens instead of system defaults. */
+  html {
+    accent-color: var(--primary);
+    caret-color: var(--primary);
+    scrollbar-color: color-mix(
+        in oklab,
+        var(--muted-foreground) 35%,
+        transparent
+      )
+      transparent;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--ring) 22%, transparent);
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
   html {
     @apply font-sans;
   }

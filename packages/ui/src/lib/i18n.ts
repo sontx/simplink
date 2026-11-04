@@ -24,7 +24,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "This knowledge base has validation errors. Results may be incomplete.":
     "Cơ sở tri thức có lỗi kiểm tra. Kết quả có thể chưa đầy đủ.",
   Playground: "Thử nghiệm",
-  "KNOWLEDGE TOOLS": "CÔNG CỤ TRI THỨC",
   "Run an action to see results here.":
     "Chạy một thao tác để xem kết quả tại đây.",
   "Find answers": "Tìm câu trả lời",
@@ -141,7 +140,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "No nodes found.": "Không tìm thấy nút.",
   "Type to search your knowledge base.": "Nhập để tìm trong cơ sở tri thức.",
   "Loading graph…": "Đang tải đồ thị…",
-  EXPLORER: "KHÁM PHÁ",
   "Knowledge graph": "Đồ thị tri thức",
   relationships: "quan hệ",
   "Node types": "Loại nút",
@@ -156,7 +154,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "Show all {count}": "Hiện tất cả {count}",
   "Show fewer": "Thu gọn",
   Filters: "Bộ lọc",
-  "NODE INSPECTOR": "CHI TIẾT NÚT",
   "Explore a connection": "Khám phá một kết nối",
   "Select a node to inspect its relationships and edit its source.":
     "Chọn một nút để xem quan hệ và chỉnh sửa mã nguồn.",
@@ -184,7 +181,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Summary: "Tóm tắt",
   "Create node": "Tạo nút",
   "Loading nodes…": "Đang tải các nút…",
-  LIBRARY: "THƯ VIỆN",
   "Add goal": "Thêm mục tiêu",
   "Add other node types": "Thêm loại nút khác",
   "Filter nodes": "Lọc nút",
@@ -211,7 +207,7 @@ export const vietnamese: Readonly<Record<string, string>> = {
   In: "Liên kết đến",
   Out: "Liên kết đi",
   "Discard unsaved changes?": "Bỏ các thay đổi chưa lưu?",
-  "← All nodes": "← Tất cả nút",
+  "All nodes": "Tất cả nút",
   "View in graph": "Xem trên đồ thị",
   Frontmatter: "Siêu dữ liệu",
   Outgoing: "Liên kết đi",
@@ -238,7 +234,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "{path} will be permanently deleted.": "{path} sẽ bị xóa vĩnh viễn.",
   "{count} nodes reference this node. Their relationships will become dangling.":
     "{count} nút tham chiếu đến nút này. Các quan hệ đó sẽ mất đích liên kết.",
-  VALIDATION: "KIỂM TRA",
   Severity: "Mức độ",
   "All severities": "Tất cả mức độ",
   Errors: "Lỗi",
@@ -320,6 +315,7 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "View remaining issues": "Xem các vấn đề còn lại",
   "Every file is clean.": "Mọi tệp đều không có vấn đề.",
   Overview: "Tổng quan",
+  Pages: "Trang",
   Documentation: "Tài liệu",
   "Docs layout": "Bố cục tài liệu",
   "Download docs (.zip)": "Tải tài liệu (.zip)",
@@ -433,7 +429,6 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "A potential problem that should be reviewed.":
     "Vấn đề tiềm ẩn cần được xem xét.",
   Skills: "Kỹ năng",
-  "AGENT SKILLS": "KỸ NĂNG CHO AGENT",
   "Skills teach a coding agent how to write and use a Simplink knowledge base.":
     "Kỹ năng hướng dẫn coding agent cách viết và sử dụng cơ sở tri thức Simplink.",
   "Uses the Simplink packages from the command line or from code: lint, search, and resolve a KB, export docs, serve it over MCP, run a simp node, or embed KB tools in an app.":

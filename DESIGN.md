@@ -204,7 +204,7 @@ The palette is a tinted-paper desk with one pink pen and four map inks.
 - **Lavender Paper** (`lavender-paper`): the page and canvas background, code-block and table-header fill. Dark: #17131d.
 - **Card White** (`card-white`): header, nav rail, inspector, cards, graph nodes, popovers. Dark: #211b28 for cards and #282030 for popovers.
 - **Plum Ink** (`plum-ink`): primary text. Dark: #f1eaf4.
-- **Dusty Mauve** (`dusty-mauve`): secondary text, placeholders, eyebrows, inactive nav labels. Dark: #b8aabd.
+- **Dusty Mauve** (`dusty-mauve`): secondary text, placeholders, the rail's storage-mode footer, inactive nav labels. Dark: #b8aabd.
 - **Petal Mist** (`petal-mist`): muted fills such as ghost hover, tab-list background and blockquote fill. Dark: #2c2433.
 - **Lilac Hairline** (`lilac-hairline`): every border and divider. Dark: white at 10%.
 - **Rose Input Edge** (`rose-input-edge`): input borders, slightly warmer than structural hairlines. Dark: white at 15%.
@@ -253,9 +253,9 @@ Each type also sets `--type-ink`, a deeper shade of the same hue for type-colour
 - **Title** (600, 20px, 1.35): section, dialog and panel titles (`h2`), including the inspector node title and the Graph explorer heading.
 - **Body** (400, 14px): UI text, tables and forms. Inputs use 16px on mobile to prevent zoom and 14px from `md` up.
 - **Label** (500, 12px): badges, small buttons, graph node titles (550).
-- **Section heading** (650, 12px, foreground, sentence case): the one small-heading role. Global `h3`, and the `sectionHeading` class for non-heading elements (Docs sidebar folders, "On this page"). Never uppercase or tracked; that is the Eyebrow's job.
+- **Section heading** (650, 12px, foreground, sentence case): the one small-heading role. Global `h3`, and the `sectionHeading` class for non-heading elements (Docs sidebar folders, "On this page"). Never uppercase or tracked.
 - **Meta** (400, 11px): counts, relationship names and targets, nav rail labels, filter labels, pager labels.
-- **Eyebrow** (650, 9px, 1.7px tracking, uppercase copy): panel kickers such as "NODE INSPECTOR". 9px is also the floor for count bubbles, mobile rail labels and the rail's storage-mode footer.
+- **Eyebrow** (650, 9px, tracked, uppercase copy): only the rail's storage-mode footer ("MEMORY", "FOLDER"). Never a kicker above a heading: page and panel titles carry their own weight. 9px is also the floor for count bubbles and mobile rail labels.
 - **Mono** (11px): inline code and IDs in the UI; 13px in Docs code blocks.
 - **Markdown body** (400, 14px, 1.75): rendered Markdown in previews (inspector, node page, Playground); 15px on the Docs page.
 - **Docs Display** (600, 32px, -0.02em; 26px under 780px): rendered Markdown `h1` in the Docs preview, followed by a 17px muted lede. Docs `h2` is 22px with a hairline underline; `h3` is 17px. This is the only reading-scale type in the product.
@@ -274,6 +274,7 @@ The workspace is a fixed three-zone frame filling the viewport (`h-dvh`):
 - **Nav rail** (80px; 58px under 780px): stacked icon-over-label items (19px icons, 11px labels; 9px under 780px), with issue count bubbles on icons.
 - **Content**: scrolls independently. Pages use a centred container up to 1600px with 42px × 35px padding, stepping to 28px under 1100px and 18px × 23px under 780px.
 - **Inspector / drawers**: the graph inspector is a 300px right column (260px under 1100px; it overlays as a 240px panel under 780px). Sheets slide from the right, can be resized from a left grip, and remember their width per key (minimum 320px).
+- **Side lists under 780px**: the Graph explorer and the Docs page list stack above their content instead of sitting beside it. The Docs list folds behind a "Pages · <current page>" toggle that closes when a page is chosen.
 
 Breakpoints are 1100px, 900px, 780px and 480px. Spacing follows Tailwind's 4px grid with fine-tuned steps (for example 25px header gaps). Density is moderate: 32px controls, 20px badges, 90px × 230px graph nodes.
 
@@ -353,7 +354,7 @@ The canvas around it is themed from tokens, not React Flow's stock grey or black
 
 ### Inspector & Sheets
 
-Card-white side panels with a hairline left border and an eyebrow kicker. Their actions are pinned in a footer. Sheets are resizable from a slim left grip that darkens on hover.
+Card-white side panels with a hairline left border, opening straight on their title (no kicker). Their actions are pinned in a footer. Sheets are resizable from a slim left grip that darkens on hover.
 
 ### Rendered Markdown (Docs preview)
 

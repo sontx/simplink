@@ -95,3 +95,11 @@ test("groupByType orders node types canonically and keeps unknown types last", (
     ],
   );
 });
+
+test("labels keep initialisms upper case", () => {
+  assert.equal(label("check-in-ci"), "Check in CI");
+  assert.equal(label("create-kb"), "Create KB");
+  assert.equal(label("ui"), "UI");
+  assert.equal(label("constrained_by"), "Constrained by");
+  assert.equal(label("guidance"), "Guidance");
+});

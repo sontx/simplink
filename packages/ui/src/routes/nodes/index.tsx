@@ -31,7 +31,6 @@ import { kbQuery, type NodeSummary } from "../../api.js";
 import {
   Badge,
   Button,
-  Eyebrow,
   Glossary,
   Input,
   Page,
@@ -218,8 +217,7 @@ function Nodes() {
     <Page>
       <div className="mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:gap-2.5">
         <div>
-          <Eyebrow>{t("LIBRARY")}</Eyebrow>
-          <h1 className="mt-1.25 mb-2">
+          <h1 className="mb-2">
             {t("Nodes")}
             <span className="ml-2 inline-flex align-middle">
               <Badge>{rows.length}</Badge>

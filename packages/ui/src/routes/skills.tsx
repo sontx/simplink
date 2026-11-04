@@ -3,7 +3,7 @@ import { zipSync, strToU8 } from "fflate";
 import { Download } from "lucide-react";
 import { usePreferences } from "../components/preferences.js";
 import { downloadBlob } from "../lib/utils.js";
-import { Button, Eyebrow, Page } from "../components/ui/primitives.js";
+import { Button, Page } from "../components/ui/primitives.js";
 
 export const Route = createFileRoute("/skills")({ component: Skills });
 
@@ -63,10 +63,9 @@ function Skills() {
   const { t } = usePreferences();
   return (
     <Page className="max-w-200">
-      <div className="mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:flex-col max-[780px]:items-start max-[780px]:gap-2.5">
+      <div className="mb-6.25 flex items-start justify-between gap-6.25 max-[780px]:flex-col max-[780px]:gap-2.5">
         <div>
-          <Eyebrow>{t("AGENT SKILLS")}</Eyebrow>
-          <h1 className="mt-1.25 mb-2">{t("Skills")}</h1>
+          <h1 className="mb-2">{t("Skills")}</h1>
           <p className="text-muted-foreground">
             {t(
               "Skills teach a coding agent how to write and use a Simplink knowledge base.",

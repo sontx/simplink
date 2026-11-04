@@ -1,6 +1,13 @@
 import { useWorkspace } from "../../workspace/context.js";
 import { usePreferences } from "../../components/preferences.js";
-import { ChevronLeft, ChevronRight, CircleAlert, Download } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Download,
+} from "lucide-react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { docsQuery, kbQuery, pageQuery } from "../../api.js";
@@ -63,10 +70,11 @@ const flatten = (folder: Folder): string[] => [
   ...sortedFolders(folder).flatMap(flatten),
 ];
 
-/** Index pages take their folder's name; the root index is the overview. */
+/** Index pages take their folder's name; the root index has none (it is the overview). */
 const pageName = (path: string) => {
   const parts = path.replace(/(?:^|\/)index\.md$/, "").split("/");
-  return label(parts.at(-1)?.replace(/\.md$/, "") || "Overview");
+  const name = parts.at(-1)?.replace(/\.md$/, "");
+  return name ? label(name) : undefined;
 };
 
 /** h2/h3 headings outside code fences, for the "On this page" list. */
@@ -96,6 +104,10 @@ function Docs() {
   const path = _splat || order[0] || "";
   const page = useQuery(pageQuery(service, layout, path));
   const { data: kb } = useQuery(kbQuery(service));
+  // Under 780px the page list folds away so the article keeps the full width.
+  // It stays open only for the page it was opened on, so following a link closes it.
+  const [openedOn, setOpenedOn] = useState<string>();
+  const pagesOpen = openedOn === `${layout}:${path}`;
   const downloadZip = useMutation({
     mutationFn: async () =>
       downloadBlob(
@@ -110,7 +122,8 @@ function Docs() {
   const at = order.indexOf(path);
   const prev = at > 0 ? order[at - 1] : undefined;
   const next = at >= 0 ? order[at + 1] : undefined;
-  const pageLink = (p: string, text = pageName(p)) => (
+  const nameOf = (p: string) => pageName(p) ?? t("Overview");
+  const pageLink = (p: string, text = nameOf(p)) => (
     <Link
       to="/docs/$"
       params={{ _splat: p }}
@@ -155,9 +168,14 @@ function Docs() {
       path.replaceAll("/", "-"),
     );
   return (
-    <div className="flex h-full min-h-125 bg-card">
-      <aside className="flex w-65 shrink-0 flex-col overflow-auto border-r text-sm max-[780px]:w-47.5">
-        <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b bg-card px-4 pt-4.5 pb-3.5">
+    <div className="flex h-full min-h-125 bg-card max-[780px]:min-h-full max-[780px]:flex-col">
+      <aside
+        className={cn(
+          "flex w-65 shrink-0 flex-col overflow-auto border-r text-sm max-[780px]:w-full max-[780px]:border-r-0 max-[780px]:border-b",
+          pagesOpen && "max-[780px]:max-h-[60%]",
+        )}
+      >
+        <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-2 border-b bg-card px-4 pt-4.5 pb-3.5 max-[780px]:py-2.5">
           <span className="text-sm font-semibold">{t("Documentation")}</span>
           <Tabs
             value={layout}
@@ -177,8 +195,43 @@ function Docs() {
             </TabsList>
           </Tabs>
         </div>
-        <nav className="flex-1 px-2.5 pt-3 pb-7">{renderFolder(tree, 0)}</nav>
-        <footer className="sticky bottom-0 shrink-0 border-t bg-card px-4 py-3">
+        <button
+          type="button"
+          aria-expanded={pagesOpen}
+          aria-controls="docs-pages"
+          onClick={() =>
+            setOpenedOn(pagesOpen ? undefined : `${layout}:${path}`)
+          }
+          className="flex min-h-11 items-center gap-2 px-4 text-left min-[781px]:hidden"
+        >
+          <span className="text-muted-foreground">{t("Pages")}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {nameOf(path)}
+          </span>
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform",
+              pagesOpen && "rotate-180",
+            )}
+          />
+        </button>
+        <nav
+          id="docs-pages"
+          aria-label={t("Documentation")}
+          className={cn(
+            "flex-1 px-2.5 pt-3 pb-7 max-[780px]:border-t",
+            !pagesOpen && "max-[780px]:hidden",
+          )}
+        >
+          {renderFolder(tree, 0)}
+        </nav>
+        <footer
+          className={cn(
+            "sticky bottom-0 shrink-0 border-t bg-card px-4 py-3",
+            !pagesOpen && "max-[780px]:hidden",
+          )}
+        >
           <Button
             variant="link"
             size="sm"
@@ -191,7 +244,7 @@ function Docs() {
           <ErrorMessage error={downloadZip.error} />
         </footer>
       </aside>
-      <div className="min-w-0 flex-1 overflow-auto">
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
         <div className="flex justify-center gap-12 px-12 pt-10 pb-16 max-[780px]:px-5 max-[780px]:pt-6 max-[780px]:pb-12">
           <article className="min-w-0 max-w-190 flex-1">
             {!!kb?.status.errors && (
@@ -289,7 +342,7 @@ function Docs() {
                     <small className={pagerLabel}>
                       <ChevronLeft size={12} /> {t("Previous")}
                     </small>
-                    {pageName(prev)}
+                    {nameOf(prev)}
                   </Link>
                 ) : (
                   <span />
@@ -305,7 +358,7 @@ function Docs() {
                       {t("Next")}
                       <ChevronRight size={12} />
                     </small>
-                    {pageName(next)}
+                    {nameOf(next)}
                   </Link>
                 )}
               </div>

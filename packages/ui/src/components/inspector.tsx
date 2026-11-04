@@ -2,6 +2,7 @@ import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { cn, groupByType } from "../lib/utils.js";
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Command,
@@ -242,7 +243,7 @@ export function Inspector({
                         })
                       }
                     >
-                      ×
+                      <X />
                     </Button>
                   )}
                 </div>

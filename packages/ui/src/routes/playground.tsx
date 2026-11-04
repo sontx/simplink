@@ -30,7 +30,6 @@ import {
   Page,
   ErrorMessage,
   Badge,
-  Eyebrow,
 } from "../components/ui/primitives.js";
 import {
   Select,
@@ -221,8 +220,7 @@ function Playground() {
     <Page>
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>{t("KNOWLEDGE TOOLS")}</Eyebrow>
-          <h1 className="mt-1.25 mb-2">{t("Playground")}</h1>
+          <h1 className="mb-2">{t("Playground")}</h1>
           <p className="text-muted-foreground">
             {t("Explore your knowledge base and try a plan.")}
           </p>

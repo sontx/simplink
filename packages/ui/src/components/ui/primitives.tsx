@@ -243,14 +243,6 @@ export function Page({
 /** The one small-heading role: matches the global `h3` for non-heading elements. */
 export const sectionHeading = "text-xs font-[650] text-foreground";
 
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <div className="mb-3.5 text-[9px] font-[650] tracking-[1.7px] text-muted-foreground">
-      {children}
-    </div>
-  );
-}
-
 /**
  * A closed-by-default "what these mean" list, so term descriptions are
  * readable by keyboard, touch and screen-reader users, not only on hover.

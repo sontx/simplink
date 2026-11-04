@@ -11,7 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group.js";
 import { Button } from "../components/ui/button.js";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils.js";
-import { Eyebrow, Glossary, Page } from "../components/ui/primitives.js";
+import { Glossary, Page } from "../components/ui/primitives.js";
 export const Route = createFileRoute("/graph")({
   validateSearch: (
     s: Record<string, unknown>,
@@ -83,9 +83,6 @@ function Graph() {
         <aside className="w-55 shrink-0 overflow-auto border-r border-border bg-card px-5.5 py-6.75 max-[1100px]:w-46.25 max-[1100px]:px-3.75 max-[1100px]:py-6.25 max-[780px]:max-h-[55%] max-[780px]:w-full max-[780px]:border-r-0 max-[780px]:border-b max-[780px]:px-4 max-[780px]:py-3">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0">
-              <div className="max-[780px]:hidden">
-                <Eyebrow>{t("EXPLORER")}</Eyebrow>
-              </div>
               <h1 className="mb-2 text-xl leading-[1.35] font-semibold tracking-normal max-[780px]:mb-0.5 max-[780px]:text-sm">
                 {t("Knowledge graph")}
               </h1>
@@ -279,10 +276,7 @@ function Graph() {
             <aside
               className={`${inspectorClass} text-muted-foreground min-[1100px]:pt-9.5 max-[780px]:hidden`}
             >
-              <Eyebrow>{t("NODE INSPECTOR")}</Eyebrow>
-              <h2 className="mt-5.5 mb-2.5 text-muted-foreground">
-                {t("Explore a connection")}
-              </h2>
+              <h2 className="mb-2.5">{t("Explore a connection")}</h2>
               <p className="text-xs leading-[1.7]">
                 {t(
                   "Select a node to inspect its relationships and edit its source.",

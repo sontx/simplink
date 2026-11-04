@@ -46,13 +46,16 @@ export function SimpNetwork({
     if (!element) return;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let options: NetworkOptions = {
-      width: element.clientWidth,
-      height: element.clientHeight,
+      // A container not laid out yet measures 0, which would seed NaN positions.
+      width: element.clientWidth || window.innerWidth,
+      height: element.clientHeight || window.innerHeight,
       gap: GAP,
       maxSpeed: 0.4,
     };
     const measure = () => {
       const bounds = element.getBoundingClientRect();
+      // Hidden or detached: keep the last real layout.
+      if (!bounds.width || !bounds.height) return;
       const content = avoid?.current?.getBoundingClientRect();
       options = {
         ...options,

@@ -3,7 +3,7 @@ import { usePreferences } from "../components/preferences.js";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { kbQuery } from "../api.js";
-import { Badge, Button, Eyebrow, Page } from "../components/ui/primitives.js";
+import { Badge, Button, Page } from "../components/ui/primitives.js";
 import {
   IssueCodeGuide,
   IssueCounts,
@@ -56,8 +56,7 @@ function Issues() {
     <Page>
       <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6.25 gap-y-4 max-[780px]:gap-x-2.5">
         <div className="min-w-0">
-          <Eyebrow>{t("VALIDATION")}</Eyebrow>
-          <h1 className="mt-1.25 mb-1.5">{t("Issues")}</h1>
+          <h1 className="mb-1.5">{t("Issues")}</h1>
           {files.length > 0 && (
             <p className="mb-0 text-sm text-muted-foreground">
               <IssueCounts

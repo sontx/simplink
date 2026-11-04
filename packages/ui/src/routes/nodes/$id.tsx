@@ -11,7 +11,7 @@ import {
 } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, CircleCheck } from "lucide-react";
+import { ArrowRight, ChevronLeft, CircleCheck } from "lucide-react";
 import { kbQuery, nodeQuery } from "../../api.js";
 import { IssueCounts, IssueList } from "../../components/issue-list.js";
 import { Kbd, KbdGroup } from "../../components/ui/kbd.js";
@@ -277,8 +277,12 @@ function NodeContent() {
   ));
   return (
     <Page>
-      <Link to="/nodes" className={`text-[11px] ${muted}`}>
-        {t("← All nodes")}
+      <Link
+        to="/nodes"
+        className={`inline-flex items-center gap-0.5 text-xs ${muted} hover:text-foreground`}
+      >
+        <ChevronLeft aria-hidden className="size-3.5" />
+        {t("All nodes")}
       </Link>
       <div className="mt-5.5 mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:items-start max-[780px]:gap-2.5">
         <div>
@@ -324,10 +328,10 @@ function NodeContent() {
               {Object.entries(node.data).map(([key, value]) => (
                 <div
                   key={key}
-                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-[11px] max-[480px]:grid-cols-1 max-[480px]:gap-1"
+                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-xs max-[480px]:grid-cols-1 max-[480px]:gap-1"
                 >
                   <dt className="text-muted-foreground">{label(key)}</dt>
-                  <dd className="m-0 wrap-anywhere text-muted-foreground">
+                  <dd className="m-0 wrap-anywhere">
                     {key === "sources" && Array.isArray(value) ? (
                       <SourceFiles
                         sources={value.filter(
@@ -340,7 +344,7 @@ function NodeContent() {
                     )}
                     {["type", "status", "severity"].includes(key) &&
                       enumDescription(String(value)) && (
-                        <span className="block">
+                        <span className="block text-muted-foreground">
                           {enumDescription(String(value))}
                         </span>
                       )}

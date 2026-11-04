@@ -322,7 +322,7 @@ function Shell() {
               key={label}
               to={to}
               params={to === "/docs/$" ? { _splat: "" } : undefined}
-              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
+              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-center text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
             >
               <span className="relative">
                 <Icon aria-hidden size={19} className="max-[780px]:w-4.25" />

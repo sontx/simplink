@@ -242,7 +242,7 @@
       },
       "eyebrow": {
         "displayName": "Eyebrow",
-        "purpose": "Uppercase panel kickers such as NODE INSPECTOR."
+        "purpose": "The rail's uppercase storage-mode footer only; never a kicker above a heading."
       },
       "mono": {
         "displayName": "Mono",
