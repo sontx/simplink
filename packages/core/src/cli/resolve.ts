@@ -26,6 +26,7 @@ export async function runResolve(
         permission: { type: "string", multiple: true, default: [] },
         format: { type: "string", default: "md" },
         budget: { type: "string", default: "2000" },
+        lang: { type: "string" },
         help: { type: "boolean", short: "h", default: false },
       },
     });
@@ -33,7 +34,7 @@ export async function runResolve(
     const goalId = positionals[0];
     if (values.help) {
       stdout(
-        `Usage: simp-resolve <goalId> [--kb dir] [--state id=true|false]... [--choice [procId:]choiceId=key]... [--plan p] [--permission x]... [--format md|json] [--budget N]`,
+        `Usage: simp-resolve <goalId> [--kb dir] [--state id=true|false]... [--choice [procId:]choiceId=key]... [--plan p] [--permission x]... [--format md|json] [--budget N] [--lang code]`,
       );
       return 0;
     }
@@ -41,6 +42,8 @@ export async function runResolve(
     formatOption(values.format, ["md", "json"]);
     const budget = integerOption(values.budget, "budget", 1);
     if (positionals.length > 1) throw new Error("Expected one goal id");
+    if (values.lang !== undefined && !values.lang.trim())
+      throw new Error("--lang expects a language code, e.g. vi");
     const states: Record<string, boolean> = {};
     for (const s of values.state!) {
       const [id, v] = s.split("=");
@@ -91,7 +94,10 @@ export async function runResolve(
     const resolved = kb.resolveGoal(goalId, { states, tenant, choices });
     if (values.format === "json") stdout(JSON.stringify(resolved, null, 2));
     else {
-      const r = await kb.render(resolved, { tokenBudget: budget });
+      const r = await kb.render(resolved, {
+        tokenBudget: budget,
+        locale: values.lang,
+      });
       stdout(r.text);
       stderr(
         `\n[~${r.tokens} tokens${r.omitted.length ? `, omitted: ${r.omitted.join(", ")}` : ""}]`,

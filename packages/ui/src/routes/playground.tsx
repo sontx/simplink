@@ -294,7 +294,7 @@ function ActionForm({
 }) {
   const { service } = useWorkspace();
   const { data: kb } = useQuery(kbQuery(service));
-  const { t, label } = usePreferences();
+  const { t, label, language } = usePreferences();
   const nodes = kb?.nodes ?? [];
   const [id, setId] = useState(initialId);
   const [query, setQuery] = useState("");
@@ -354,6 +354,7 @@ function ActionForm({
                   id,
                 states: pick(states, reach.states),
                 choices: pick(choices, reach.choices),
+                language,
                 ...(plan.trim() ? { plan: plan.trim() } : {}),
                 ...(permissions.trim()
                   ? {

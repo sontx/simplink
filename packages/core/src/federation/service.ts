@@ -1,4 +1,5 @@
 import type { KB } from "../kb.js";
+import { en } from "../i18n/en.js";
 import { simpDoc } from "../simp-doc.js";
 import { localize, parseRef } from "../ids.js";
 import {
@@ -489,7 +490,7 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
       );
       const warnNode = (id: string) => {
         if (overlay.graph.nodes.get(id)?.availability)
-          resolved.warnings.push(`availability of ${id} not checked`);
+          resolved.warnings.push(en.diagnostics.availabilityNotChecked(id));
       };
       const warnAvailability = (plan: import("../resolve.js").PlanStep[]) => {
         for (const step of plan)

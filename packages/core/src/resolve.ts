@@ -1,6 +1,10 @@
 import { choiceMarker, getChoices } from "./graph.js";
+import { en } from "./i18n/en.js";
 import { orderedItems, section } from "./markdown.js";
 import type { ChoiceDef, EdgeKind, KBGraph, KBNode } from "./types.js";
+
+/** Canonical English diagnostics; renderers translate them per output language. */
+const diagnostic = en.diagnostics;
 
 /**
  * Caller plan, permissions, and product-specific context supplied to availability policies.
@@ -244,10 +248,10 @@ export function defaultAvailability(
   if (!tenant) return null;
   const reasons: string[] = [];
   if (plans.length && (!tenant.plan || !plans.includes(tenant.plan)))
-    reasons.push(`${n.id} requires plan: ${plans.join(" | ")}`);
+    reasons.push(diagnostic.requiresPlan(n.id, plans.join(" | ")));
   const missing = perms.filter((p) => !(tenant.permissions ?? []).includes(p));
   if (missing.length)
-    reasons.push(`${n.id} requires permission: ${missing.join(", ")}`);
+    reasons.push(diagnostic.requiresPermission(n.id, missing.join(", ")));
   return reasons;
 }
 
@@ -298,7 +302,7 @@ class PlanBuilder {
 
   private node(id: string, from: string): KBNode | undefined {
     const n = this.g.nodes.get(id);
-    if (!n) this.warnings.push(`${from} references missing node "${id}"`);
+    if (!n) this.warnings.push(diagnostic.missingNode(from, id));
     return n;
   }
 
@@ -330,11 +334,11 @@ class PlanBuilder {
       return;
     }
     if (this.inProgress.has(p.id)) {
-      this.warnings.push(`cycle detected at ${p.id}; skipped`);
+      this.warnings.push(diagnostic.cycle(p.id));
       return;
     }
     if (depth > (this.opts.maxDepth ?? 8)) {
-      this.warnings.push(`max depth reached at ${p.id}; skipped`);
+      this.warnings.push(diagnostic.maxDepth(p.id));
       return;
     }
     this.inProgress.add(p.id);
@@ -392,8 +396,7 @@ class PlanBuilder {
 
     const s = this.node(stateId, p.id);
     const sat = this.pickSatisfier(s);
-    if (s && !sat)
-      this.warnings.push(`${stateId} has no resolvable satisfied_by procedure`);
+    if (s && !sat) this.warnings.push(diagnostic.noSatisfier(stateId));
 
     if (v === false) {
       if (sat) this.addProcedure(sat, "precondition", when, depth + 1);
@@ -446,10 +449,7 @@ class PlanBuilder {
       if (hit) {
         defs = [hit];
         selected = picked;
-      } else
-        this.warnings.push(
-          `choice "${c.id}" has no option "${picked}"; showing all`,
-        );
+      } else this.warnings.push(diagnostic.noChoiceOption(c.id, picked));
     }
 
     const branches = defs.map((o) => {
@@ -567,7 +567,7 @@ class PlanBuilder {
       );
       if (best === false) {
         available = false;
-        reasons.push(`no available option for choice "${cg.id}"`);
+        reasons.push(diagnostic.noAvailableOption(cg.id));
       } else if (best === null && available === true) available = null;
     }
 
@@ -636,7 +636,7 @@ export function resolveGoal(
   const alts = targetIds(goal, "procedures").flatMap((id, order) => {
     const p = g.nodes.get(id);
     if (!p) {
-      warnings.push(`${goalId} references missing procedure "${id}"`);
+      warnings.push(diagnostic.missingProcedure(goalId, id));
       return [];
     }
     const b = new PlanBuilder(g, opts);

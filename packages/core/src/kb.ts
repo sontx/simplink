@@ -22,6 +22,13 @@ import {
   type RenderResult,
 } from "./render.js";
 import type { Issue, KBGraph, KBNode } from "./types.js";
+import { simpDoc } from "./simp-doc.js";
+import {
+  mergeMessages,
+  resolveMessages,
+  type LocaleOptions,
+  type MessageOverrides,
+} from "./i18n/index.js";
 
 /**
  * Source label and node, edge, and diagnostic counts for a loaded snapshot.
@@ -56,6 +63,8 @@ export interface KBExtensions {
   >;
   /** Replaces the default Markdown plan renderer. */
   renderer?: PlanRenderer;
+  /** Extra or reworded output languages keyed by language tag; missing keys fall back to the built-in language, then English. */
+  locales?: Record<string, MessageOverrides>;
 }
 
 /**
@@ -78,9 +87,9 @@ export interface KB {
   resolveProcedure(id: string, opts?: ResolveOptions): ResolvedGoal;
   /** Merges configured resolution defaults with per-call values. */
   resolveOptions(opts?: ResolveOptions): ResolveOptions;
-  /** Renders a plan using the configured renderer; synchronous renderers are wrapped in a promise. */
+  /** Renders a plan using the configured renderer; synchronous renderers are wrapped in a promise. The language defaults to `simp.md` `language`, then English. */
   render(resolved: ResolvedGoal, opts?: RenderOptions): Promise<RenderResult>;
-  /** Exports Markdown pages in memory using configured resolution defaults and per-call overrides. */
+  /** Exports Markdown pages in memory using configured resolution defaults and per-call overrides. The language defaults to `simp.md` `language`, then English. */
   docs(opts?: DocsOptions): DocPage[];
 }
 const BRAND = Symbol.for("simplink.kb");
@@ -139,6 +148,17 @@ export async function createKB(
       };
     return merged;
   };
+  // Per-call locale, else the KB's declared language, else English; configured locales extend the catalog.
+  const localeOptions = (opts: LocaleOptions = {}) => {
+    const locale = opts.locale || simpDoc(graph)?.language || "en";
+    return {
+      locale,
+      messages: mergeMessages(
+        resolveMessages(locale, extensions.locales),
+        opts.messages,
+      ),
+    };
+  };
   const kb: KB = {
     graph,
     issues,
@@ -154,9 +174,17 @@ export async function createKB(
     search: (query, opts) => search.search(query, opts),
     resolveGoal: (id, opts) => resolveGoal(graph, id, options(opts)),
     resolveProcedure: (id, opts) => resolveProcedure(graph, id, options(opts)),
-    docs: (opts) => exportDocs(graph, { ...opts, ...options(opts) }),
+    docs: (opts) =>
+      exportDocs(graph, {
+        ...opts,
+        ...options(opts),
+        ...localeOptions(opts),
+      }),
     render: async (resolved, opts = {}) =>
-      (extensions.renderer ?? renderResolvedGoal)(resolved, opts),
+      (extensions.renderer ?? renderResolvedGoal)(resolved, {
+        ...opts,
+        ...localeOptions(opts),
+      }),
   };
   Object.defineProperty(kb, BRAND, { value: true });
   return kb;

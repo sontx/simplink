@@ -8,6 +8,7 @@ aliases:
   - TODO product name in English
 tags: []
 # docs_url: https://docs.example/product
+# language: vi # language of generated docs/plan wording; defaults to en
 # serves: [pull] # add delegate only when exposing remote plan resolution
 peers: []
 # peers:

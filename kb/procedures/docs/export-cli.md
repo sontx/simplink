@@ -24,8 +24,9 @@ sources:
 1. Optionally set `docs.path` and `docs.order` in node frontmatter to place pages, for example in a getting-started section.
 2. Choose an empty output directory outside the KB.
 3. Run `simp-docs --kb <dir> --out <output>` (or `simp docs` with the same options) for the guide site, or add `--layout graph` for one page per node at its source path. In an interactive terminal, `simp docs` without `--out` asks for the output directory.
-4. Confirm that the command prints `Wrote N page(s) to <output>.`
-5. Review the generated Markdown and copy any assets your site engine needs before you publish it.
+4. Add `--lang <code>`, such as `--lang vi`, to write generated headings and steps in another language. Without it, the `language` field in `simp.md` is used, or else English.
+5. Confirm that the command prints `Wrote N page(s) to <output>.`
+6. Review the generated Markdown and copy any assets your site engine needs before you publish it.
 
 ## Failure handling
 

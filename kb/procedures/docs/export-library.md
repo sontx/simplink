@@ -23,8 +23,9 @@ sources:
 1. Load the KB with `const kb = await createKB("/path/to/kb", { resolve: { tenant } })` if guides should use tenant defaults.
 2. Call `kb.docs()` for the site layout, or `kb.docs({ layout: "graph" })` for the graph layout.
 3. To override resolve options for one export, pass them too, for example `kb.docs({ tenant: { plan: "basic" } })`.
-4. Without a facade, call `exportDocs(graph, options)`; it uses only the options you pass.
-5. Write or serve each returned `{ path, content }` page; these functions write nothing themselves.
+4. Pass `locale`, for example `kb.docs({ locale: "vi" })`, to choose the language of generated wording. `kb.docs` defaults to the `language` field in `simp.md`. To add a language or change wording, pass partial messages through `createKB(dir, { locales: { ja: { docs: { steps: "手順" } } } })`.
+5. Without a facade, call `exportDocs(graph, options)`; it uses only the options you pass, and English unless you set `locale`.
+6. Write or serve each returned `{ path, content }` page; these functions write nothing themselves.
 
 ## Failure handling
 

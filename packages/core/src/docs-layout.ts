@@ -1,5 +1,6 @@
 import * as path from "./posix-path.js";
 import type { DocPage } from "./docs.js";
+import { en, type Messages } from "./i18n/index.js";
 import type { KBGraph, KBNode } from "./types.js";
 
 interface DocSettings {
@@ -31,14 +32,15 @@ function settings(node: KBNode): DocSettings {
   return docs;
 }
 
-const sectionTitles: Record<string, string> = {
-  "getting-started": "Getting started",
-  guides: "Guides",
-  reference: "Reference",
-  troubleshooting: "Troubleshooting",
-};
-const title = (folder: string) =>
-  sectionTitles[folder] ??
+/** Top-level reading order; titles come from the output language. */
+const sectionOrder = [
+  "getting-started",
+  "guides",
+  "reference",
+  "troubleshooting",
+];
+const title = (folder: string, m: Messages) =>
+  m.site.sections[folder] ??
   folder.replaceAll("-", " ").replace(/^./, (c) => c.toUpperCase());
 const escapeLabel = (text: string) => text.replace(/[\\[\]]/g, "\\$&");
 
@@ -82,7 +84,11 @@ export function siteGraph(graph: KBGraph): KBGraph {
 }
 
 /** Each directory has a landing page; children are ordered by explicit order, then task-first graph order. */
-export function siteIndexes(graph: KBGraph, homepage?: DocPage): DocPage[] {
+export function siteIndexes(
+  graph: KBGraph,
+  homepage?: DocPage,
+  m: Messages = en,
+): DocPage[] {
   const folders = new Set([""]);
   for (const node of graph.nodes.values()) {
     let folder = path.dirname(node.path);
@@ -95,14 +101,16 @@ export function siteIndexes(graph: KBGraph, homepage?: DocPage): DocPage[] {
     const route = folder ? `${folder}/index.md` : "index.md";
     const home = !folder ? graph.nodes.get("simp") : undefined;
     const heading = folder
-      ? title(path.basename(folder))
-      : (home?.title ?? "Documentation");
+      ? title(path.basename(folder), m)
+      : (home?.title ?? m.site.documentation);
     const summary = folder
-      ? `Browse ${heading.toLowerCase()}.`
-      : (home?.summary ?? "Browse guides, requirements, and troubleshooting.");
+      ? m.site.browse(heading)
+      : (home?.summary ?? m.site.homeSummary);
     const entries: {
       path: string;
       title: string;
+      /** Folder name for generated section entries; sorts independently of language. */
+      section?: string;
       order: number;
       task: boolean;
     }[] = [];
@@ -119,7 +127,8 @@ export function siteIndexes(graph: KBGraph, homepage?: DocPage): DocPage[] {
       );
       entries.push({
         path: `${child}/index.md`,
-        title: title(path.basename(child)),
+        title: title(path.basename(child), m),
+        section: path.basename(child),
         order,
         task: false,
       });
@@ -137,17 +146,15 @@ export function siteIndexes(graph: KBGraph, homepage?: DocPage): DocPage[] {
           task: node.type === "goal",
         });
     }
-    const sectionOrder = Object.values(sectionTitles);
+    const rank = (section?: string) => {
+      const index = section ? sectionOrder.indexOf(section) : -1;
+      return index < 0 ? 99 : index;
+    };
     entries.sort(
       (a, b) =>
         a.order - b.order ||
         Number(b.task) - Number(a.task) ||
-        (sectionOrder.indexOf(a.title) < 0
-          ? 99
-          : sectionOrder.indexOf(a.title)) -
-          (sectionOrder.indexOf(b.title) < 0
-            ? 99
-            : sectionOrder.indexOf(b.title)),
+        rank(a.section) - rank(b.section),
     );
     const links = entries
       .map(

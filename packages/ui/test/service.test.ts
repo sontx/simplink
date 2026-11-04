@@ -50,6 +50,26 @@ test("playground runs validated MCP tools against the current workspace", async 
   );
 });
 
+test("chosen UI language drives generated docs, plans, and playground plans", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  const route = "guides/messaging/send-a-message.md";
+  assert.deepEqual(service.docs("site", "vi"), service.docs("site", "en"));
+  const english = service.page("site", route, "en").content;
+  const vietnamese = service.page("site", route, "vi").content;
+  assert.match(english, /## Steps/);
+  assert.match(vietnamese, /## Các bước/);
+  assert.doesNotMatch(vietnamese, /## Steps/);
+  const plan = await service.resolve("goal.send-zalo-message", "vi");
+  assert.match(plan.rendered.text, /# Mục tiêu: /);
+  const tool = await service.callTool("resolve_goal", {
+    goal_id: "goal.send-zalo-message",
+    language: "vi",
+  });
+  assert.ok(!tool.isError, tool.content);
+  assert.match(tool.content, /## Đề xuất: /);
+  service.close();
+});
+
 test("workspace reads, edits, validates, resolves and repairs fixture documents", async () => {
   const files = await fixture();
   const service = await WorkspaceService.open(

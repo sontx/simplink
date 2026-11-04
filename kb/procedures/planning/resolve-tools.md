@@ -22,7 +22,8 @@ sources:
 3. Add known facts to shorten the plan: `states` as `{"<stateId>": true}` and `choices` as `{"<choiceId>": "<key>"}` or `{"<procedureId>:<choiceId>": "<key>"}`.
 4. Add `plan` and `permissions` when the tenant is known, so that alternatives are ranked by availability.
 5. Set `token_budget` (200 to 8000, default 2000) to fit the plan into the agent's context.
-6. Follow the returned Markdown plan, and ask the user to confirm each **CHECK** step and decide each **CHOOSE** step.
+6. Optionally set `language` (for example `"vi"`) to get the plan wording in that language. It defaults to the `language` field in `simp.md`, then English. Node content is returned as written.
+7. Follow the returned Markdown plan, and ask the user to confirm each **CHECK** step and decide each **CHOOSE** step.
 
 ## Failure handling
 

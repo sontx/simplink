@@ -36,7 +36,7 @@ export function SourcePreview({
   className?: string;
 }) {
   const { service } = useWorkspace();
-  const { t } = usePreferences();
+  const { t, language } = usePreferences();
   const plannable = type === "goal" || type === "procedure";
   const [view, setView] = useState<View>(plannable ? "plan" : "docs");
   // Settle typing before re-rendering Markdown.
@@ -49,7 +49,7 @@ export function SourcePreview({
   const live =
     dirty && settled !== undefined ? parseDoc(path, settled) : undefined;
   const page = useQuery({
-    ...pageQuery(service, "site", docPath),
+    ...pageQuery(service, "site", docPath, language),
     enabled: inGraph && view === "docs",
   });
   const views: { value: View; label: string }[] = [

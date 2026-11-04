@@ -14,6 +14,7 @@ sources:
   - packages/core/src/docs.ts
   - packages/core/src/docs-layout.ts
   - packages/core/src/docs-plan.ts
+  - packages/core/src/i18n/index.ts
   - README.md
 ---
 
@@ -38,3 +39,7 @@ Optional `docs.path` frontmatter moves a page, for example to `getting-started/c
 `graph` keeps the original source paths and graph headings, ignores `docs` metadata, and generates no landing pages.
 
 In both layouts, `[[id]]` wikilinks become relative links that follow the published paths, and code examples stay literal.
+
+## Output language
+
+Generated wording, such as headings, section titles, step phrasing, availability labels, and resolver warnings, is written in one language. English (`en`) and Vietnamese (`vi`) are built in. The language comes from the `--lang` option or the `locale` option, then from the `language` field in `simp.md`, and otherwise defaults to English. Region tags such as `vi-VN` use their base language, and unknown codes fall back to English. Node content is published as written, and page paths stay the same in every language.

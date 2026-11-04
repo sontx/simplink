@@ -36,8 +36,8 @@ export const issueClass = (severity: string) =>
 /** The rendered agent plan for a goal or procedure, its node ids linking to their nodes. */
 export function PlanBody({ id }: { id: string }) {
   const { service } = useWorkspace();
-  const { t } = usePreferences();
-  const plan = useQuery(planQuery(service, id));
+  const { t, language } = usePreferences();
+  const plan = useQuery(planQuery(service, id, language));
   const { data: kb } = useQuery(kbQuery(service));
   const nodeIds = useMemo(
     () => new Map(kb?.nodes.map((node) => [node.id, node.type])),

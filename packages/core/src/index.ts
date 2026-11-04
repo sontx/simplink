@@ -26,6 +26,17 @@ export * from "./resolve.js";
 
 export * from "./render.js";
 
+export {
+  builtInLocales,
+  mergeMessages,
+  messagesFor,
+  resolveMessages,
+  translateDiagnostic,
+  type LocaleOptions,
+  type MessageOverrides,
+  type Messages,
+} from "./i18n/index.js";
+
 export { section, orderedItems, estimateTokens } from "./markdown.js";
 
 export * from "./search.js";

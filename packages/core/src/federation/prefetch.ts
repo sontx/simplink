@@ -1,4 +1,5 @@
 import type { KB } from "../kb.js";
+import { en } from "../i18n/en.js";
 import { buildGraph, getChoices } from "../graph.js";
 import { EDGE_KINDS, type KBGraph, type KBNode } from "../types.js";
 import {
@@ -116,7 +117,7 @@ export async function prefetch(
       if (n) {
         nodes.set(id, toKBNode(n));
         fetched++;
-      } else warnings.push(`unreachable node "${id}"`);
+      } else warnings.push(en.diagnostics.unreachable(id));
     }
     frontier = ids.flatMap((id) => {
       const n = nodes.get(id);
@@ -290,7 +291,7 @@ export async function resolveFederated(
   );
   const warn = (id: string) => {
     if (id.includes(":") && overlay.graph.nodes.get(id)?.availability)
-      overlay.warnings.push(`availability of ${id} not checked`);
+      overlay.warnings.push(en.diagnostics.availabilityNotChecked(id));
   };
   const warnAvailability = (plan: PlanStep[]) => {
     for (const step of plan) {

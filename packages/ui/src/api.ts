@@ -48,22 +48,34 @@ export const searchQuery = (service: WorkspaceService, q: string) =>
     enabled: !!q,
   });
 
-export const docsQuery = (service: WorkspaceService, layout: string) =>
+export const docsQuery = (
+  service: WorkspaceService,
+  layout: string,
+  language: string,
+) =>
   queryOptions({
-    queryKey: ["docs", layout],
-    queryFn: () => service.docs(layout),
+    queryKey: ["docs", layout, language],
+    queryFn: () => service.docs(layout, language),
   });
 
 export const pageQuery = (
   service: WorkspaceService,
   layout: string,
   path: string,
+  language: string,
 ) =>
   queryOptions({
-    queryKey: ["page", layout, path],
-    queryFn: () => service.page(layout, path),
+    queryKey: ["page", layout, path, language],
+    queryFn: () => service.page(layout, path, language),
     enabled: !!path,
   });
 
-export const planQuery = (service: WorkspaceService, id: string) =>
-  queryOptions({ queryKey: ["plan", id], queryFn: () => service.resolve(id) });
+export const planQuery = (
+  service: WorkspaceService,
+  id: string,
+  language: string,
+) =>
+  queryOptions({
+    queryKey: ["plan", id, language],
+    queryFn: () => service.resolve(id, language),
+  });

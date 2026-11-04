@@ -88,6 +88,8 @@ simp-search export --kb ./kb --type procedure --limit 5
 simp-resolve goal.export --kb ./kb --state state.ready=true --budget 1500
 simp-docs --kb ./kb --out ./site
 simp-docs --kb ./kb --out ./graph-docs --layout graph
+simp-docs --kb ./kb --out ./site-vi --lang vi
+simp-resolve goal.export --kb ./kb --lang vi
 ```
 
 ```ts
@@ -108,6 +110,13 @@ appear under `guides/`, constraints under `reference/`, and state checks under
 `troubleshooting/`, with a home page and directory indexes. `layout: "graph"`
 retains source paths and graph headings. `DocsOptions` also accepts resolve options;
 the facade merges its configured resolve defaults. Exports have no token-budget trimming.
+
+`DocsOptions` and `RenderOptions` accept `locale` (BCP 47, e.g. `vi` or `vi-VN`) and
+partial `messages` for generated wording. The facade defaults `locale` to `simp.md`
+`language`, and `KBExtensions.locales` registers extra or reworded languages. English
+and Vietnamese are built in (`builtInLocales`); unknown tags and missing keys fall back
+to English. Resolution results keep canonical English warnings; renderers translate
+them with `translateDiagnostic`.
 
 Optional node frontmatter `docs: { path: getting-started/connect.md, order: 0 }`
 controls publication paths and navigation order. Paths use lowercase kebab-case

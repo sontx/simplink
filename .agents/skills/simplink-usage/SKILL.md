@@ -36,6 +36,7 @@ npx simp-resolve goal.area.task --kb kb --state state.ready=true --plan pro --bu
 npx simp-resolve goal.area.task --kb kb --choice method=api --format json
 npx simp-docs --kb kb --out ./site                # reader-facing Markdown site
 npx simp-docs --kb kb --out ./graph --layout graph
+npx simp-docs --kb kb --out ./site-vi --lang vi   # generated wording in Vietnamese (en, vi built in)
 npx simp-index kb                                 # write simp-index.yaml for static hosting
 ```
 

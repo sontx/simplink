@@ -15,8 +15,8 @@ export function NodeDocs({
   nodePath: string;
 }) {
   const { service } = useWorkspace();
-  const { t } = usePreferences();
-  const page = useQuery(pageQuery(service, "site", docPath));
+  const { t, language } = usePreferences();
+  const page = useQuery(pageQuery(service, "site", docPath, language));
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">

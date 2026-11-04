@@ -174,28 +174,34 @@ export class WorkspaceService {
     });
   }
 
-  private pages(layout: string) {
+  /** Generated wording follows `locale`; without one, the KB's declared language, then English. */
+  private pages(layout: string, locale?: string) {
     if (layout !== "site" && layout !== "graph")
       throw new Error("Invalid docs layout");
-    let pages = this.pageCache.get(layout);
-    if (!pages) this.pageCache.set(layout, (pages = this.kb.docs({ layout })));
+    const key = `${layout}:${locale ?? ""}`;
+    let pages = this.pageCache.get(key);
+    if (!pages)
+      this.pageCache.set(key, (pages = this.kb.docs({ layout, locale })));
     return pages;
   }
 
-  docs(layout: string) {
-    return this.pages(layout).map((page) => page.path);
+  docs(layout: string, locale?: string) {
+    return this.pages(layout, locale).map((page) => page.path);
   }
 
-  exportDocsZip(layout: string): Uint8Array {
+  exportDocsZip(layout: string, locale?: string): Uint8Array {
     return zipSync(
       Object.fromEntries(
-        this.pages(layout).map((page) => [page.path, strToU8(page.content)]),
+        this.pages(layout, locale).map((page) => [
+          page.path,
+          strToU8(page.content),
+        ]),
       ),
     );
   }
 
-  page(layout: string, path: string) {
-    const page = this.pages(layout).find((page) => page.path === path);
+  page(layout: string, path: string, locale?: string) {
+    const page = this.pages(layout, locale).find((page) => page.path === path);
     if (!page) throw new Error("Not found");
     return page;
   }
@@ -276,7 +282,7 @@ export class WorkspaceService {
     return { states: [...states], choices: [...keys] };
   }
 
-  resolve(id: string) {
+  resolve(id: string, locale?: string) {
     const node = this.kb.node(id);
     if (!node) throw new Error("Node not found");
     if (node.type !== "goal" && node.type !== "procedure")
@@ -286,7 +292,7 @@ export class WorkspaceService {
         ? this.kb.resolveGoal(id)
         : this.kb.resolveProcedure(id);
     return this.kb
-      .render(resolved)
+      .render(resolved, { locale })
       .then((rendered) => ({ resolved, rendered }));
   }
 

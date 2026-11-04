@@ -13,6 +13,12 @@ import {
 } from "./resolve.js";
 import { renderPlanSteps } from "./render.js";
 import { EDGE_KINDS, type KBGraph, type ChoiceDef } from "./types.js";
+import {
+  messagesFor,
+  translateDiagnostic,
+  type LocaleOptions,
+  type Messages,
+} from "./i18n/index.js";
 
 /**
  * An exported Markdown page returned in memory for the caller to persist.
@@ -25,9 +31,9 @@ export interface DocPage {
 }
 
 /**
- * Documentation layout and plan resolution options.
+ * Documentation layout, output language, and plan resolution options.
  */
-export interface DocsOptions extends ResolveOptions {
+export interface DocsOptions extends ResolveOptions, LocaleOptions {
   /** Site is reader-facing; graph preserves the original one-page-per-node layout. */
   layout?: "site" | "graph";
   /** Renders a link to another simp's node; return `undefined` to use the default `docs_url` link or labeled text. */
@@ -117,33 +123,7 @@ function proseLinks(
   return result;
 }
 
-const edgeLabels = {
-  procedures: "Procedures",
-  requires: "Requires",
-  preconditions: "Preconditions",
-  optional_preconditions: "Optional preconditions",
-  produces: "Produces",
-  uses: "Uses",
-  constrained_by: "Constrained by",
-  satisfied_by: "Satisfied by",
-  related: "Related",
-  choice_option: "Choice options",
-};
-
-const siteEdgeLabels = {
-  procedures: "Ways to do this",
-  requires: "Preparation guides",
-  preconditions: "Before you begin",
-  optional_preconditions: "Optional preparation",
-  produces: "Result",
-  uses: "Features used",
-  constrained_by: "Requirements",
-  satisfied_by: "How to resolve this",
-  related: "See also",
-  choice_option: "Available methods",
-};
-
-function choiceWarnings(plan: PlanStep[]): string[] {
+function choiceWarnings(plan: PlanStep[], m: Messages): string[] {
   return plan.flatMap((s) =>
     s.kind === "run"
       ? s.steps.flatMap((step) =>
@@ -151,20 +131,21 @@ function choiceWarnings(plan: PlanStep[]): string[] {
             ? []
             : step.options.flatMap((option) => [
                 ...option.warnings.map(
-                  (warning) => `${step.choice}/${option.key}: ${warning}`,
+                  (warning) =>
+                    `${step.choice}/${option.key}: ${translateDiagnostic(warning, m)}`,
                 ),
-                ...choiceWarnings(option.plan),
+                ...choiceWarnings(option.plan, m),
               ]),
         )
       : [],
   );
 }
 
-/** Export a lint-clean graph as standalone Markdown pages, without modifying it. */
 /**
  * Generates documentation pages in memory without writing files.
+ * Generated headings and plan wording follow `opts.locale`; authored node content is unchanged.
  * @param graph - Graph snapshot to document.
- * @param opts - Layout and plan resolution options; layout defaults to site.
+ * @param opts - Layout, language, and plan resolution options; layout defaults to site and language to English.
  * @returns Markdown pages with relative output paths.
  */
 export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
@@ -175,6 +156,9 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
   )
     throw new Error("Invalid docs layout: expected site or graph");
   const site = opts.layout !== "graph";
+  const m = messagesFor(opts);
+  const t = m.docs;
+  const severity = (value: string) => m.severity[value] ?? value;
   const sourceGraph = graph;
   if (site) graph = siteGraph(graph);
   const pages = [...graph.nodes.values()].map((node) => {
@@ -207,31 +191,36 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       `# ${node.title}`,
       prose(node.summary),
     ];
-    if (node.status === "deprecated") sections.push("> Deprecated.");
+    if (node.status === "deprecated") sections.push(`> ${t.deprecated}`);
     const field = (name: string, value: unknown) => {
       if (Array.isArray(value) && value.length)
         sections.push(`**${name}:** ${prose(value.join("; "))}`);
       else if (typeof value === "string" && value)
         sections.push(`**${name}:** ${prose(value)}`);
     };
-    field("When to use", node.data.when_to_use);
-    field("Check", node.data.check);
-    field(site ? "Requirement level" : "Severity", node.data.severity);
-    field(site ? "Available on plans" : "Plans", node.availability?.plans);
+    field(t.whenToUse, node.data.when_to_use);
+    field(t.check, node.data.check);
     field(
-      site ? "Required permissions" : "Permissions",
+      site ? t.requirementLevel : t.severity,
+      typeof node.data.severity === "string"
+        ? severity(node.data.severity)
+        : node.data.severity,
+    );
+    field(site ? t.availableOnPlans : t.plans, node.availability?.plans);
+    field(
+      site ? t.requiredPermissions : t.permissions,
       node.availability?.permissions,
     );
     if (!site) {
-      field("Aliases", node.aliases);
-      field("Tags", node.tags);
+      field(t.aliases, node.aliases);
+      field(t.tags, node.tags);
     }
     if (node.body)
       sections.push(proseLinks(node.body, link, site ? getChoices(node) : []));
     const choices = getChoices(node);
     if (choices.length)
       sections.push(
-        `## ${site ? "Choose a method" : "Choices"}\n\n${choices
+        `## ${site ? t.chooseMethod : t.choices}\n\n${choices
           .map(
             (c) =>
               `${site ? `### ${prose(c.question)}` : `### ${c.id}\n\n${prose(c.question)}`}\n\n${c.options.map((o) => `- **${o.key}**: ${prose(o.when ?? "")} — ${link(o.procedure)}`).join("\n")}`,
@@ -248,7 +237,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       );
       if (edges.length)
         sections.push(
-          `## ${(site ? siteEdgeLabels : edgeLabels)[kind]}\n\n${edges.map((e) => item(e.to)).join("\n")}`,
+          `## ${(site ? t.siteEdges : t.edges)[kind] ?? kind}\n\n${edges.map((e) => item(e.to)).join("\n")}`,
         );
     }
     const incoming = [
@@ -256,48 +245,45 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
     ];
     if (incoming.length)
       sections.push(
-        `## ${site ? "Used in these guides" : "Referenced by"}\n\n${incoming.map(item).join("\n")}`,
+        `## ${site ? t.usedInGuides : t.referencedBy}\n\n${incoming.map(item).join("\n")}`,
       );
     if (node.type === "goal") {
       const resolved = resolveGoal(sourceGraph, node.id, opts);
       const [best, ...others] = resolved.alternatives;
       const availability = (a: AvailabilityInfo) =>
         site
-          ? docAvailability(a)
+          ? docAvailability(a, m)
           : a.available === true
-            ? "available"
+            ? m.availability.available
             : a.available === null
-              ? "unknown (no tenant context)"
-              : `unavailable — ${a.unavailableReasons.join("; ")}`;
-      const warnings = [
-        ...resolved.warnings,
-        ...(best?.warnings ?? []),
-        ...choiceWarnings(best?.plan ?? []),
-      ];
-      if (!best)
-        sections.push(
-          `${site ? "## Steps" : "## Recommended plan"}\n\nNo resolvable procedure for this goal.`,
-        );
+              ? m.availability.unknown
+              : m.availability.unavailable(
+                  a.unavailableReasons.map((r) => translateDiagnostic(r, m)),
+                );
+      const warnings = [...resolved.warnings, ...(best?.warnings ?? [])]
+        .map((w) => translateDiagnostic(w, m))
+        .concat(choiceWarnings(best?.plan ?? [], m));
+      const stepsHeading = `## ${site ? t.steps : t.recommendedPlan}`;
+      if (!best) sections.push(`${stepsHeading}\n\n${t.noProcedure}`);
       else {
         sections.push(
-          `${site ? "## Steps" : "## Recommended plan"}\n\n${link(best.procedure.id)}\n\nAvailability: ${prose(availability(best))}`,
+          `${stepsHeading}\n\n${link(best.procedure.id)}\n\n${t.availability}: ${prose(availability(best))}`,
         );
-        if (best.deprecated)
-          sections.push("> Deprecated dependency in this recommendation.");
+        if (best.deprecated) sections.push(`> ${t.deprecatedDependency}`);
         if (best.satisfiedStates.length)
           sections.push(
-            `Already satisfied: ${best.satisfiedStates.map((id) => link(id)).join(", ")}`,
+            `${t.alreadySatisfied}: ${best.satisfiedStates.map((id) => link(id)).join(", ")}`,
           );
         sections.push(
           prose(
             site
-              ? renderDocPlan(best.plan, (id) => link(id))
-              : renderPlanSteps(best.plan, "", (id) => link(id)),
+              ? renderDocPlan(best.plan, (id) => link(id), "", m)
+              : renderPlanSteps(best.plan, "", (id) => link(id), m),
           ),
         );
         if (best.constraints.length)
           sections.push(
-            `## ${site ? "Requirements" : "Constraints"}\n\n${best.constraints.map((c) => `- [${c.severity}] ${link(c.id)} — ${prose(c.summary)}`).join("\n")}`,
+            `## ${site ? t.requirements : t.constraints}\n\n${best.constraints.map((c) => `- [${severity(c.severity)}] ${link(c.id)} — ${prose(c.summary)}`).join("\n")}`,
           );
         const failures = (plan: PlanStep[]): string[] =>
           plan.flatMap((s) =>
@@ -319,16 +305,16 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
         const handling = failures(best.plan);
         if (handling.length)
           sections.push(
-            `## ${site ? "If something goes wrong" : "Failure handling"}\n\n${handling.join("\n\n")}`,
+            `## ${site ? t.ifSomethingGoesWrong : t.failureHandling}\n\n${handling.join("\n\n")}`,
           );
       }
       if (others.length)
         sections.push(
-          `## Alternatives\n\n${others.map((a) => `- ${link(a.procedure.id)} — ${prose(availability(a))}${a.deprecated ? "; deprecated dependency" : ""}`).join("\n")}`,
+          `## ${t.alternatives}\n\n${others.map((a) => `- ${link(a.procedure.id)} — ${prose(availability(a))}${a.deprecated ? `; ${t.deprecatedDependencySuffix}` : ""}`).join("\n")}`,
         );
       if (warnings.length)
         sections.push(
-          `## Warnings\n\n${[...new Set(warnings)].map((w) => `- ${prose(w)}`).join("\n")}`,
+          `## ${t.warnings}\n\n${[...new Set(warnings)].map((w) => `- ${prose(w)}`).join("\n")}`,
         );
     }
     return {
@@ -341,6 +327,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
         ...siteIndexes(
           graph,
           pages.find((page) => page.path === "index.md"),
+          m,
         ),
         ...pages.filter((page) => page.path !== "index.md"),
       ]

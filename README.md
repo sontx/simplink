@@ -116,6 +116,7 @@ const pages = exportDocs(kb.graph); // Pure: returns { path, content }[]
 const tenantPages = kb.docs(); // Uses the configured resolve defaults
 const otherPages = kb.docs({ tenant: { plan: "basic" } });
 const graphPages = kb.docs({ layout: "graph" }); // Original source paths and graph headings
+const vietnamesePages = kb.docs({ locale: "vi" }); // Generated wording in Vietnamese
 ```
 
 ```sh
@@ -124,7 +125,16 @@ simp-docs --kb test/fixtures/kb --out /path/to/scratch/docs
 node packages/core/dist/docs-cli.js --kb test/fixtures/kb --out /path/to/scratch/docs
 # Keep the original one-page-per-node structure:
 simp-docs --kb test/fixtures/kb --out /path/to/scratch/graph --layout graph
+# Generated headings and steps in Vietnamese:
+simp-docs --kb test/fixtures/kb --out /path/to/scratch/vi --lang vi
 ```
+
+Generated wording (headings, step phrasing, availability labels, and resolver
+warnings) uses `--lang`/`locale`, then `language` in `simp.md`, then English.
+`en` and `vi` are built in; `createKB(dir, { locales: { ja: { ... } } })` adds or
+rewords a language with partial messages. Node content and page paths never change.
+`simp-resolve --lang`, the `language` argument of `resolve_goal`/`resolve_procedure`,
+and the browser UI's language menu choose the same wording for plans.
 
 Site layout is the default for `exportDocs`, `kb.docs()`, and `simp-docs`.
 Default locations preserve the product folders under each node type:

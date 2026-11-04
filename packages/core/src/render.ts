@@ -1,5 +1,12 @@
 import type { MaybePromise } from "./types.js";
 import { estimateTokens } from "./markdown.js";
+import {
+  en,
+  messagesFor,
+  translateDiagnostic,
+  type LocaleOptions,
+  type Messages,
+} from "./i18n/index.js";
 import type {
   AvailabilityInfo,
   ChooseStep,
@@ -9,9 +16,9 @@ import type {
 } from "./resolve.js";
 
 /**
- * Token budget and section customization for plan rendering.
+ * Token budget, section customization, and output language for plan rendering.
  */
-export interface RenderOptions {
+export interface RenderOptions extends LocaleOptions {
   /** Approximate token budget (chars / 4). Default 2000. */
   tokenBudget?: number;
   /** Default renderer only. Priority-zero sections may exceed the token budget. */
@@ -53,18 +60,24 @@ export interface RenderSection {
   text: string;
 }
 
-const availabilityLabel = (a: AvailabilityInfo) =>
+const availabilityLabel = (a: AvailabilityInfo, m: Messages) =>
   a.available === true
-    ? "available"
+    ? m.availability.available
     : a.available === null
-      ? "unknown (no tenant context)"
-      : `unavailable — ${a.unavailableReasons.join("; ")}`;
+      ? m.availability.unknown
+      : m.availability.unavailable(
+          a.unavailableReasons.map((r) => translateDiagnostic(r, m)),
+        );
 
 const defaultReference = (id: string) => `\`${id}\``;
 
-const whenLabel = (s: PlanStep, formatReference: (id: string) => string) =>
+const whenLabel = (
+  s: PlanStep,
+  formatReference: (id: string) => string,
+  m: Messages,
+) =>
   s.when?.length
-    ? ` _(only if ${s.when.map((c) => `${formatReference(c.state)} is false`).join(" and ")})_`
+    ? m.plan.onlyIf(s.when.map((c) => formatReference(c.state)))
     : "";
 
 function renderChoose(
@@ -72,18 +85,19 @@ function renderChoose(
   n: number,
   pad: string,
   formatReference: (id: string) => string,
+  m: Messages,
 ): string {
-  const head = `${pad}${n}. **CHOOSE** \`${c.choice}\` — ${c.question}${c.selected ? ` _(selected: ${c.selected})_` : ""}`;
+  const head = `${pad}${n}. **${m.plan.choose}** \`${c.choice}\` — ${c.question}${c.selected ? m.plan.selected(c.selected) : ""}`;
   const opts = c.options.map((o) => {
     const blocking = o.constraints
       .filter((k) => k.severity === "blocking")
       .map((k) => formatReference(k.id));
     return [
-      `${pad}   - **${o.key}**: ${o.when} — ${availabilityLabel(o)}`,
+      `${pad}   - **${o.key}**: ${o.when} — ${availabilityLabel(o, m)}`,
       blocking.length
-        ? `${pad}     Blocking constraints: ${blocking.join(", ")}`
+        ? `${pad}     ${m.plan.blockingConstraints}: ${blocking.join(", ")}`
         : "",
-      renderPlanSteps(o.plan, `${pad}     `, formatReference),
+      renderPlanSteps(o.plan, `${pad}     `, formatReference, m),
     ]
       .filter(Boolean)
       .join("\n");
@@ -96,12 +110,14 @@ function renderChoose(
  * @param plan - Ordered resolved steps.
  * @param pad - Indentation prefix; defaults to an empty string.
  * @param formatReference - Formats node identifiers; defaults to inline code.
+ * @param m - Output language messages; defaults to English.
  * @returns Markdown for the supplied steps.
  */
 export function renderPlanSteps(
   plan: PlanStep[],
   pad = "",
   formatReference: (id: string) => string = defaultReference,
+  m: Messages = en,
 ): string {
   const stepNo = new Map<string, number>();
   plan.forEach((s, i) => s.kind === "run" && stepNo.set(s.procedure.id, i + 1));
@@ -109,12 +125,15 @@ export function renderPlanSteps(
     .map((s, i) => {
       if (s.kind === "check") {
         const ifFalse = s.ifFalse
-          ? `run step ${stepNo.get(s.ifFalse) ?? "?"} (${formatReference(s.ifFalse)})`
-          : "no known fix — ask the user";
+          ? m.plan.runStep(
+              stepNo.get(s.ifFalse) ?? "?",
+              formatReference(s.ifFalse),
+            )
+          : m.plan.noFix;
         return [
-          `${pad}${i + 1}. **CHECK** ${formatReference(s.state.id)} — ${s.state.title}${whenLabel(s, formatReference)}`,
-          s.how && `${pad}   How: ${s.how}`,
-          `${pad}   If false: ${ifFalse}`,
+          `${pad}${i + 1}. **${m.plan.check}** ${formatReference(s.state.id)} — ${s.state.title}${whenLabel(s, formatReference, m)}`,
+          s.how && `${pad}   ${m.plan.how}: ${s.how}`,
+          `${pad}   ${m.plan.ifFalse}: ${ifFalse}`,
         ]
           .filter(Boolean)
           .join("\n");
@@ -122,14 +141,14 @@ export function renderPlanSteps(
       const sub = s.steps.map((t: StepItem, j) =>
         typeof t === "string"
           ? `${pad}   ${j + 1}. ${t}`
-          : renderChoose(t, j + 1, `${pad}   `, formatReference),
+          : renderChoose(t, j + 1, `${pad}   `, formatReference, m),
       );
       const optional = (s.optional ?? []).map(
         (o) =>
-          `${pad}   _Optional:_ ${formatReference(o.state.id)} — ${o.state.title}${o.fix ? ` (if not true, consider ${formatReference(o.fix)})` : ""}`,
+          `${pad}   _${m.plan.optional}:_ ${formatReference(o.state.id)} — ${o.state.title}${o.fix ? m.plan.considerFix(formatReference(o.fix)) : ""}`,
       );
       return [
-        `${pad}${i + 1}. **RUN** ${formatReference(s.procedure.id)} — ${s.procedure.title}${whenLabel(s, formatReference)}`,
+        `${pad}${i + 1}. **${m.plan.run}** ${formatReference(s.procedure.id)} — ${s.procedure.title}${whenLabel(s, formatReference, m)}`,
         ...sub,
         ...optional,
       ].join("\n");
@@ -137,57 +156,67 @@ export function renderPlanSteps(
     .join("\n");
 }
 
-/** Renders a resolved goal as Markdown for LLM context, trimming low-priority sections to fit the budget. */
-export function buildRenderSections(r: ResolvedGoal): RenderSection[] {
+/**
+ * Builds the default plan sections for LLM context.
+ * @param r - Resolution result.
+ * @param m - Output language messages; defaults to English. Section names stay stable identifiers.
+ * @returns Named sections with retention priorities.
+ */
+export function buildRenderSections(
+  r: ResolvedGoal,
+  m: Messages = en,
+): RenderSection[] {
   const [best, ...others] = r.alternatives;
   const sections: RenderSection[] = [];
   const add = (name: string, priority: number, text: string) =>
     text && sections.push({ name, priority, text });
+  const severity = (value: string) => m.severity[value] ?? value;
 
   add(
     "goal",
     0,
-    `# ${r.subject === "procedure" ? "Procedure" : "Goal"}: ${r.goal.title} (\`${r.goal.id}\`)\n${r.goal.summary}`,
+    `# ${r.subject === "procedure" ? m.plan.procedure : m.plan.goal}: ${r.goal.title} (\`${r.goal.id}\`)\n${r.goal.summary}`,
   );
 
   if (!best) {
-    add("plan", 0, "No resolvable procedure for this goal.");
+    add("plan", 0, m.plan.noProcedure);
   } else {
     const satisfied = best.satisfiedStates.length
-      ? `\nAlready satisfied: ${best.satisfiedStates.map((s) => `\`${s}\``).join(", ")}`
+      ? `\n${m.plan.alreadySatisfied}: ${best.satisfiedStates.map((s) => `\`${s}\``).join(", ")}`
       : "";
     add(
       "plan",
       0,
-      `## ${r.subject === "procedure" ? "Plan" : "Recommended"}: ${best.procedure.title} (\`${best.procedure.id}\`)\nAvailability: ${availabilityLabel(best)}${satisfied}\n\n### Plan\n${renderPlanSteps(best.plan)}`,
+      `## ${r.subject === "procedure" ? m.plan.plan : m.plan.recommended}: ${best.procedure.title} (\`${best.procedure.id}\`)\n${m.plan.availability}: ${availabilityLabel(best, m)}${satisfied}\n\n### ${m.plan.plan}\n${renderPlanSteps(best.plan, "", defaultReference, m)}`,
     );
     // Blocking constraints are never trimmed.
     add(
       "constraints",
       best.constraints.some((c) => c.severity === "blocking") ? 0 : 1,
       best.constraints.length
-        ? `## Constraints\n${best.constraints.map((c) => `- [${c.severity}] ${c.title} (\`${c.id}\`): ${c.summary}`).join("\n")}`
+        ? `## ${m.plan.constraints}\n${best.constraints.map((c) => `- [${severity(c.severity)}] ${c.title} (\`${c.id}\`): ${c.summary}`).join("\n")}`
         : "",
     );
     add(
       "alternatives",
       2,
       others.length
-        ? `## Alternatives\n${others.map((a) => `${a.rank}. ${a.procedure.title} (\`${a.procedure.id}\`) — ${availabilityLabel(a)}; ${a.plan.length} step(s)`).join("\n")}`
+        ? `## ${m.plan.alternatives}\n${others.map((a) => `${a.rank}. ${a.procedure.title} (\`${a.procedure.id}\`) — ${availabilityLabel(a, m)}; ${m.plan.stepCount(a.plan.length)}`).join("\n")}`
         : "",
     );
+    const warnings = [...r.warnings, ...best.warnings];
     add(
       "warnings",
       2,
-      [...r.warnings, ...best.warnings].length
-        ? `## Warnings\n${[...r.warnings, ...best.warnings].map((w) => `- ${w}`).join("\n")}`
+      warnings.length
+        ? `## ${m.plan.warnings}\n${warnings.map((w) => `- ${translateDiagnostic(w, m)}`).join("\n")}`
         : "",
     );
     add(
       "capabilities",
       3,
       best.capabilities.length
-        ? `## Capabilities used\n${best.capabilities.map((c) => `- ${c.title} (\`${c.id}\`): ${c.summary}`).join("\n")}`
+        ? `## ${m.plan.capabilities}\n${best.capabilities.map((c) => `- ${c.title} (\`${c.id}\`): ${c.summary}`).join("\n")}`
         : "",
     );
     const failures = best.plan.filter(
@@ -197,7 +226,7 @@ export function buildRenderSections(r: ResolvedGoal): RenderSection[] {
       "failure-handling",
       4,
       failures.length
-        ? `## Failure handling\n${failures.map((s) => s.kind === "run" && `### ${s.procedure.title}\n${s.failureHandling}`).join("\n\n")}`
+        ? `## ${m.plan.failureHandling}\n${failures.map((s) => s.kind === "run" && `### ${s.procedure.title}\n${s.failureHandling}`).join("\n\n")}`
         : "",
     );
   }
@@ -211,11 +240,13 @@ export function buildRenderSections(r: ResolvedGoal): RenderSection[] {
  * Stops at the first nonzero-priority section that does not fit.
  * @param sections - Named Markdown sections to consider.
  * @param budget - Approximate token limit; omission notices may increase the final count.
+ * @param m - Output language messages for the omission notice; defaults to English.
  * @returns Combined text, estimated token count, and omitted section names.
  */
 export function fitSections(
   sections: RenderSection[],
   budget: number,
+  m: Messages = en,
 ): RenderResult {
   // Keep strictly by priority: stop at the first section that does not fit. Output keeps original order.
   const kept = new Set<RenderSection>();
@@ -231,24 +262,25 @@ export function fitSections(
     .filter((s) => kept.has(s))
     .map((s) => s.text)
     .join("\n\n");
-  if (omitted.length)
-    text += `\n\n_Omitted for budget: ${omitted.join(", ")}. Use get_node for details._`;
+  if (omitted.length) text += `\n\n${m.plan.omitted(omitted)}`;
   return { text, tokens: estimateTokens(text), omitted };
 }
 
 /**
  * Renders a resolved goal or procedure as Markdown within an approximate token budget.
  * @param r - Resolution result.
- * @param opts - Budget and section overrides; the budget defaults to 2000.
+ * @param opts - Budget, section overrides, and output language; the budget defaults to 2000 and the language to English.
  * @returns Text, estimated tokens, and omitted section names. Priority-zero sections may exceed the budget.
  */
 export function renderResolvedGoal(
   r: ResolvedGoal,
   opts: RenderOptions = {},
 ): RenderResult {
-  const defaults = buildRenderSections(r);
+  const m = messagesFor(opts);
+  const defaults = buildRenderSections(r, m);
   return fitSections(
     opts.sections ? opts.sections(defaults, r) : defaults,
     opts.tokenBudget ?? 2000,
+    m,
   );
 }

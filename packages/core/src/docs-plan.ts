@@ -1,43 +1,51 @@
+import { en, translateDiagnostic, type Messages } from "./i18n/index.js";
 import type { AvailabilityInfo, PlanStep } from "./resolve.js";
 
-export const docAvailability = (a: AvailabilityInfo): string =>
+export const docAvailability = (
+  a: AvailabilityInfo,
+  m: Messages = en,
+): string =>
   a.available === true
-    ? "available"
+    ? m.availability.available
     : a.available === null
-      ? "check plan and permission requirements"
-      : `unavailable — ${a.unavailableReasons.join("; ")}`;
+      ? m.availability.docsUnknown
+      : m.availability.unavailable(
+          a.unavailableReasons.map((r) => translateDiagnostic(r, m)),
+        );
 
 /** Reader-facing steps; generated references are formatted separately from authored prose. */
 export function renderDocPlan(
   plan: PlanStep[],
   link: (id: string) => string,
   pad = "",
+  m: Messages = en,
 ): string {
+  const severity = (value: string) => m.severity[value] ?? value;
   return plan
     .map((s, i) => {
       const when = s.when?.length
-        ? ` — only if ${s.when.map((c) => `${link(c.state)} is not satisfied`).join(" and ")}`
+        ? m.docPlan.onlyIf(s.when.map((c) => link(c.state)))
         : "";
       if (s.kind === "check")
         return [
-          `${pad}${i + 1}. Check ${link(s.state.id)}${when}.`,
+          `${pad}${i + 1}. ${m.docPlan.check(link(s.state.id), when)}`,
           s.how && `${pad}   ${s.how}`,
-          `${pad}   If not satisfied: ${s.ifFalse ? `follow ${link(s.ifFalse)} below.` : "ask for help; no resolution is documented."}`,
+          `${pad}   ${m.docPlan.ifNotSatisfied(s.ifFalse ? m.docPlan.followFix(link(s.ifFalse)) : m.docPlan.noFix)}`,
         ]
           .filter(Boolean)
           .join("\n");
       const steps = s.steps.map((step, j) => {
         if (typeof step === "string") return `${pad}   ${j + 1}. ${step}`;
         return [
-          `${pad}   ${j + 1}. ${step.question}${step.selected ? ` (selected: ${step.selected})` : ""}`,
+          `${pad}   ${j + 1}. ${step.question}${step.selected ? m.docPlan.selected(step.selected) : ""}`,
           ...step.options.map((o) =>
             [
-              `${pad}      - **${o.key}**: ${o.when} — ${link(o.procedure.id)}; ${docAvailability(o)}`,
+              `${pad}      - **${o.key}**: ${o.when} — ${link(o.procedure.id)}; ${docAvailability(o, m)}`,
               ...o.constraints.map(
                 (c) =>
-                  `${pad}        - [${c.severity}] ${link(c.id)}: ${c.summary}`,
+                  `${pad}        - [${severity(c.severity)}] ${link(c.id)}: ${c.summary}`,
               ),
-              renderDocPlan(o.plan, link, `${pad}        `),
+              renderDocPlan(o.plan, link, `${pad}        `, m),
             ]
               .filter(Boolean)
               .join("\n"),
@@ -49,7 +57,7 @@ export function renderDocPlan(
         ...steps,
         ...(s.optional ?? []).map(
           (o) =>
-            `${pad}   Optional: ${link(o.state.id)}${o.how ? ` — ${o.how}` : ""}${o.fix ? ` If not satisfied, consider ${link(o.fix)}.` : ""}`,
+            `${pad}   ${m.docPlan.optional}: ${link(o.state.id)}${o.how ? ` — ${o.how}` : ""}${o.fix ? m.docPlan.considerFix(link(o.fix)) : ""}`,
         ),
       ].join("\n");
     })

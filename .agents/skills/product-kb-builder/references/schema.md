@@ -85,6 +85,7 @@ the resolver then checks first and fixes only if needed.
 Create the optional root manifest with `node <skill>/scripts/new_node.mjs simp --kb kb`.
 It uses `type: simp`, required `name`, `title`, and `summary`. The stable product name must match
 `^[a-z0-9]+(-[a-z0-9]+)*$`. Optional `docs_url` is an absolute HTTP(S) documentation root.
+Optional `language` (for example `vi`) sets the default language of generated docs and plan wording; use the KB's writing language.
 `serves` defaults to `[pull]`; use a nonempty unique subset of `[pull, delegate]`.
 `peers` contains entries with required `name` and optional `url`, `mode` (`pull` or `delegate`),
 and HTTP(S) `docs_url`. Peer names must be unique and differ from the owning simp name.

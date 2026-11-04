@@ -93,16 +93,16 @@ function outline(content: string) {
 
 function Docs() {
   const { service } = useWorkspace();
-  const { t, label } = usePreferences();
+  const { t, label, language } = usePreferences();
 
   const { _splat } = Route.useParams();
   const { layout } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { data: paths, error } = useQuery(docsQuery(service, layout));
+  const { data: paths, error } = useQuery(docsQuery(service, layout, language));
   const tree = buildTree(paths ?? []);
   const order = flatten(tree);
   const path = _splat || order[0] || "";
-  const page = useQuery(pageQuery(service, layout, path));
+  const page = useQuery(pageQuery(service, layout, path, language));
   const { data: kb } = useQuery(kbQuery(service));
   // Under 780px the page list folds away so the article keeps the full width.
   // It stays open only for the page it was opened on, so following a link closes it.
@@ -112,7 +112,7 @@ function Docs() {
   const downloadZip = useMutation({
     mutationFn: async () =>
       downloadBlob(
-        new Blob([new Uint8Array(service.exportDocsZip(layout))], {
+        new Blob([new Uint8Array(service.exportDocsZip(layout, language))], {
           type: "application/zip",
         }),
         `${service.store.name}-docs-${layout}.zip`,

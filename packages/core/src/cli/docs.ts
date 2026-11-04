@@ -62,15 +62,20 @@ export async function runDocs(
         kb: { type: "string", default: "kb" },
         out: { type: "string" },
         layout: { type: "string", default: "site" },
+        lang: { type: "string" },
         help: { type: "boolean", short: "h", default: false },
       },
     });
     if (values.help) {
-      stdout("Usage: simp-docs [--kb dir] --out dir [--layout site|graph]");
+      stdout(
+        "Usage: simp-docs [--kb dir] --out dir [--layout site|graph] [--lang code]",
+      );
       return 0;
     }
     if (values.layout !== "site" && values.layout !== "graph")
       throw new Error("--layout expects site|graph");
+    if (values.lang !== undefined && !values.lang.trim())
+      throw new Error("--lang expects a language code, e.g. vi");
     if (!values.out?.trim())
       throw new Error("Missing or blank --out directory");
     const input = await realpath(path.resolve(values.kb!));
@@ -87,7 +92,7 @@ export async function runDocs(
       );
       return 2;
     }
-    const pages = kb.docs({ layout: values.layout });
+    const pages = kb.docs({ layout: values.layout, locale: values.lang });
     const destinations: string[] = [];
     // Preflight every destination before the first write. Concurrent filesystem changes are outside scope.
     for (const page of pages) {

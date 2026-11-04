@@ -102,6 +102,12 @@ const resolveProps = {
     default: 2000,
     description: "Approximate size limit for the returned plan.",
   },
+  language: {
+    type: "string",
+    pattern: "^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$",
+    description:
+      'Language for the generated plan wording, e.g. "vi". Defaults to the language declared by the KB, then English. Node content is returned as written.',
+  },
 } as const;
 
 const idProp = (what: string) => ({
@@ -325,6 +331,7 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
         content: (
           await kb.render(await kb.resolveGoal(a.goal_id, resolveOpts(a)), {
             tokenBudget: a.token_budget,
+            locale: a.language,
           })
         ).text,
       };
@@ -337,6 +344,7 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
             await kb.resolveProcedure(a.procedure_id, resolveOpts(a)),
             {
               tokenBudget: a.token_budget,
+              locale: a.language,
             },
           )
         ).text,

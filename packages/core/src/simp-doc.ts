@@ -23,6 +23,8 @@ export interface SimpDoc {
   tags: string[];
   /** Root of this product's published docs. */
   docsUrl?: string;
+  /** Default language tag for generated docs and plan text, e.g. `vi`. */
+  language?: string;
   /** Resolution modes this simp serves; defaults to `["pull"]`. */
   serves: ("pull" | "delegate")[];
   /** Declared peers. */
@@ -40,6 +42,7 @@ export function simpDoc(graph: KBGraph): SimpDoc | undefined {
     summary: node.summary,
     tags: node.tags,
     ...(typeof d.docs_url === "string" ? { docsUrl: d.docs_url } : {}),
+    ...(typeof d.language === "string" ? { language: d.language } : {}),
     serves: Array.isArray(d.serves)
       ? d.serves.filter(
           (s): s is "pull" | "delegate" => s === "pull" || s === "delegate",
