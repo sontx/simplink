@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -7,9 +7,7 @@ import {
   type ToolResult,
 } from "@sontx/simplink-core/browser";
 import {
-  Search,
   Route as RouteIcon,
-  ListChecks,
   FileText,
   Network,
   ChevronDown,
@@ -63,31 +61,26 @@ const actions = [
     tool: "search_kb",
     title: "Find answers",
     description: "Describe what you want to do and find a starting point.",
-    Icon: Search,
   },
   {
     tool: "resolve_goal",
     title: "Plan a goal",
     description: "Turn a goal into a step-by-step plan.",
-    Icon: RouteIcon,
   },
   {
     tool: "resolve_procedure",
     title: "Plan a procedure",
     description: "Get guidance for a specific procedure.",
-    Icon: ListChecks,
   },
   {
     tool: "get_node",
     title: "View details",
     description: "Read an item and its relationships.",
-    Icon: FileText,
   },
   {
     tool: "get_related",
     title: "Explore connections",
     description: "See what an item needs and what depends on it.",
-    Icon: Network,
   },
 ] as const;
 type Action = (typeof actions)[number];
@@ -266,8 +259,8 @@ function Playground() {
                 aria-label={t(a.title)}
                 aria-pressed={active}
                 className={cn(
-                  "flex shrink-0 items-start gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
-                  active && "bg-muted",
+                  "shrink-0 rounded-lg px-3 py-2 text-left transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                  active && "bg-accent hover:bg-accent",
                 )}
                 onClick={() => {
                   setSelectedId("");
@@ -276,20 +269,14 @@ function Playground() {
               >
                 <span
                   className={cn(
-                    "grid size-8 shrink-0 place-items-center rounded-md border bg-background text-muted-foreground",
-                    active &&
-                      "border-primary bg-primary text-primary-foreground",
+                    "block text-sm font-medium whitespace-nowrap",
+                    active && "text-primary",
                   )}
                 >
-                  <a.Icon size={16} />
+                  {t(a.title)}
                 </span>
-                <span className="min-w-0 self-center">
-                  <span className="block text-sm font-medium whitespace-nowrap">
-                    {t(a.title)}
-                  </span>
-                  <span className="block text-xs text-muted-foreground max-lg:hidden">
-                    {t(a.description)}
-                  </span>
+                <span className="block text-xs text-muted-foreground max-lg:hidden">
+                  {t(a.description)}
                 </span>
               </button>
             );
@@ -340,19 +327,32 @@ function ActionForm({
         ? n.type === "procedure"
         : true,
   );
-  const decisions = planning
-    ? nodes
-        .filter((n) => n.type === "procedure")
-        .flatMap((n) =>
-          (
-            (service.nodeDetail(n.id).node.data.choices ?? []) as ChoiceDef[]
-          ).map((choice) => ({
-            ...choice,
-            key: `${n.id}:${choice.id}`,
-            title: n.title,
-          })),
-        )
-    : [];
+  // Only ask about what the chosen goal or procedure can actually reach.
+  const reach = useMemo(
+    () =>
+      planning && id
+        ? service.planInputs(id, choices)
+        : { states: [], choices: [] },
+    [service, kb, planning, id, choices],
+  );
+  const stateNodes = reach.states.flatMap((stateId) => {
+    const node = nodes.find((n) => n.id === stateId);
+    return node ? [node] : [];
+  });
+  const decisions = reach.choices.flatMap((key) => {
+    const at = key.lastIndexOf(":");
+    const procedureId = key.slice(0, at);
+    const node = nodes.find((n) => n.id === procedureId);
+    const choice = (
+      (node && service.nodeDetail(procedureId).node.data.choices) as
+        ChoiceDef[] | undefined
+    )?.find((c) => c.id === key.slice(at + 1));
+    return node && choice ? [{ ...choice, key, title: node.title }] : [];
+  });
+  const pick = <T,>(values: Record<string, T>, keys: string[]) =>
+    Object.fromEntries(
+      Object.entries(values).filter(([key]) => keys.includes(key)),
+    );
   const run = useMutation({
     mutationFn: async () => {
       const args =
@@ -365,8 +365,8 @@ function ActionForm({
             ? {
                 [action.tool === "resolve_goal" ? "goal_id" : "procedure_id"]:
                   id,
-                states,
-                choices,
+                states: pick(states, reach.states),
+                choices: pick(choices, reach.choices),
                 ...(plan.trim() ? { plan: plan.trim() } : {}),
                 ...(permissions.trim()
                   ? {
@@ -395,9 +395,6 @@ function ActionForm({
         }}
       >
         <div className="flex items-start gap-3 border-b px-5 py-4">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-            <action.Icon size={18} />
-          </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-base font-semibold">{t(action.title)}</h2>
             <p className="text-sm text-muted-foreground">
@@ -460,36 +457,15 @@ function ActionForm({
             <More title={t("Tailor your plan")}>
               <p className="text-sm text-muted-foreground">
                 {t(
-                  "Leave anything you do not know unanswered. The plan will tell you what to check.",
+                  !id
+                    ? action.tool === "resolve_goal"
+                      ? "Choose a goal to see the conditions and decisions its plan depends on."
+                      : "Choose a procedure to see the conditions and decisions its plan depends on."
+                    : stateNodes.length || decisions.length
+                      ? "Leave anything you do not know unanswered. The plan will tell you what to check."
+                      : "This plan has no conditions or decisions to answer.",
                 )}
               </p>
-              {nodes
-                .filter((n) => n.type === "state")
-                .map((n) => (
-                  <Field key={n.id} title={n.title}>
-                    <Options
-                      title={n.title}
-                      value={
-                        states[n.id] === undefined
-                          ? "unknown"
-                          : String(states[n.id])
-                      }
-                      onChange={(value) =>
-                        setStates((old) => {
-                          const next = { ...old };
-                          if (value === "unknown") delete next[n.id];
-                          else next[n.id] = value === "true";
-                          return next;
-                        })
-                      }
-                      items={[
-                        { value: "unknown", title: t("Not sure") },
-                        { value: "true", title: t("Yes") },
-                        { value: "false", title: t("No") },
-                      ]}
-                    />
-                  </Field>
-                ))}
               {decisions.map((choice) => (
                 <Field
                   key={choice.key}
@@ -512,6 +488,31 @@ function ActionForm({
                         value: o.key,
                         title: o.when,
                       })),
+                    ]}
+                  />
+                </Field>
+              ))}
+              {stateNodes.map((n) => (
+                <Field key={n.id} title={n.title}>
+                  <Options
+                    title={n.title}
+                    value={
+                      states[n.id] === undefined
+                        ? "unknown"
+                        : String(states[n.id])
+                    }
+                    onChange={(value) =>
+                      setStates((old) => {
+                        const next = { ...old };
+                        if (value === "unknown") delete next[n.id];
+                        else next[n.id] = value === "true";
+                        return next;
+                      })
+                    }
+                    items={[
+                      { value: "unknown", title: t("Not sure") },
+                      { value: "true", title: t("Yes") },
+                      { value: "false", title: t("No") },
                     ]}
                   />
                 </Field>

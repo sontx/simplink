@@ -243,3 +243,32 @@ test("edge edits re-read the file so external changes are kept", async () => {
   ]);
   assert.match(await store.read(rel), /External/);
 });
+
+test("plan inputs list only the states and choices a plan can reach", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  const all = service.planInputs("goal.send-zalo-message");
+  assert.deepEqual(
+    new Set(all.states),
+    new Set([
+      "state.channel.zalo-connected",
+      "state.audience.segment-created",
+      "state.zalo.template-approved",
+      "state.zalo.recipients-follow-oa",
+    ]),
+  );
+  assert.equal(all.choices.length, 1);
+  assert.ok(all.choices[0].startsWith("procedure.zalo.send-message:"));
+  const byPhone = service.planInputs("goal.send-zalo-message", {
+    [all.choices[0]]: "phone",
+  });
+  assert.ok(byPhone.states.includes("state.zalo.template-approved"));
+  assert.ok(!byPhone.states.includes("state.zalo.recipients-follow-oa"));
+  assert.deepEqual(byPhone.choices, all.choices);
+  const broadcast = service.planInputs("goal.send-zalo-broadcast");
+  assert.deepEqual(broadcast.choices, []);
+  assert.ok(!broadcast.states.includes("state.zalo.recipients-follow-oa"));
+  assert.deepEqual(service.planInputs("state.channel.zalo-connected"), {
+    states: [],
+    choices: [],
+  });
+});

@@ -11,6 +11,7 @@ import {
   type KB,
   type KBNode,
   type Peer,
+  type PlanStep,
 } from "@sontx/simplink-core/browser";
 import { httpPeer } from "@sontx/simplink-node/http-peer";
 import { zipSync, strToU8 } from "fflate";
@@ -220,6 +221,43 @@ export class WorkspaceService {
       in: [],
       raw,
     };
+  }
+
+  /**
+   * States and choices a goal or procedure plan can ask about, in plan order.
+   * States are left unknown so every reachable check appears; answered
+   * choices narrow the plan to their branch.
+   */
+  planInputs(
+    id: string,
+    choices: Record<string, string> = {},
+  ): { states: string[]; choices: string[] } {
+    const node = this.kb.node(id);
+    if (node?.type !== "goal" && node?.type !== "procedure")
+      return { states: [], choices: [] };
+    const resolved =
+      node.type === "goal"
+        ? this.kb.resolveGoal(id, { choices })
+        : this.kb.resolveProcedure(id, { choices });
+    const states = new Set<string>();
+    const keys = new Set<string>();
+    const walk = (plan: PlanStep[]) => {
+      for (const step of plan) {
+        if (step.kind === "check") {
+          states.add(step.state.id);
+          continue;
+        }
+        for (const optional of step.optional ?? [])
+          states.add(optional.state.id);
+        for (const item of step.steps) {
+          if (typeof item === "string") continue;
+          keys.add(`${step.procedure.id}:${item.choice}`);
+          for (const option of item.options) walk(option.plan);
+        }
+      }
+    };
+    for (const alternative of resolved.alternatives) walk(alternative.plan);
+    return { states: [...states], choices: [...keys] };
   }
 
   resolve(id: string) {

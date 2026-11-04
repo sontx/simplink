@@ -55,6 +55,12 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "Tailor your plan": "Điều chỉnh kế hoạch",
   "Leave anything you do not know unanswered. The plan will tell you what to check.":
     "Bỏ qua những điều chưa biết. Kế hoạch sẽ cho biết cần kiểm tra gì.",
+  "Choose a goal to see the conditions and decisions its plan depends on.":
+    "Chọn một mục tiêu để xem các điều kiện và lựa chọn mà kế hoạch phụ thuộc vào.",
+  "Choose a procedure to see the conditions and decisions its plan depends on.":
+    "Chọn một quy trình để xem các điều kiện và lựa chọn mà kế hoạch phụ thuộc vào.",
+  "This plan has no conditions or decisions to answer.":
+    "Kế hoạch này không có điều kiện hay lựa chọn nào cần trả lời.",
   "Not sure": "Chưa rõ",
   "Decide later": "Quyết định sau",
   "Account plan (optional)": "Gói tài khoản (không bắt buộc)",
@@ -147,6 +153,9 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "Only with issues": "Chỉ hiện nút có vấn đề",
   Orphans: "Nút không có liên kết đến",
   "Every node has an entry point.": "Mọi nút đều có điểm truy cập.",
+  "Show all {count}": "Hiện tất cả {count}",
+  "Show fewer": "Thu gọn",
+  Filters: "Bộ lọc",
   "NODE INSPECTOR": "CHI TIẾT NÚT",
   "Explore a connection": "Khám phá một kết nối",
   "Select a node to inspect its relationships and edit its source.":
