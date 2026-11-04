@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -257,7 +257,7 @@ function Playground() {
                 <span
                   className={cn(
                     "block text-sm font-medium whitespace-nowrap",
-                    active && "text-primary",
+                    active && "text-primary-ink",
                   )}
                 >
                   {t(a.title)}
@@ -372,232 +372,268 @@ function ActionForm({
       return readToolResult(result);
     },
   });
+  const nodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
+  const results = useRef<HTMLElement>(null);
+  // A finished run brings its result into view when it starts below the fold
+  // (stacked under the form). Beside the form it is already visible, so the page stays put.
+  useEffect(() => {
+    const section = results.current;
+    if (!run.data || !section) return;
+    if (section.getBoundingClientRect().top > window.innerHeight * 0.6) {
+      const still = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      section.scrollIntoView({
+        block: "start",
+        behavior: still ? "auto" : "smooth",
+      });
+    }
+    section.focus({ preventScroll: true });
+  }, [run.data]);
   return (
-    <div className="min-w-0 space-y-6">
-      <form
-        className="overflow-hidden rounded-xl border bg-card"
-        onSubmit={(event) => {
-          event.preventDefault();
-          run.mutate();
-        }}
-      >
-        <div className="flex items-start gap-3 border-b px-5 py-4">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold">{t(action.title)}</h2>
-            <p className="text-sm text-muted-foreground">
-              {t(action.description)}
-            </p>
-          </div>
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground max-sm:hidden">
-            {action.tool}
-          </code>
-        </div>
-        <div className="max-w-2xl space-y-5 p-5">
-          {action.tool === "search_kb" ? (
-            <>
-              <Field title={t("What would you like to do?")}>
-                <Input
-                  aria-label={t("What would you like to do?")}
-                  placeholder={t("Describe your goal…")}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  required
-                />
-              </Field>
-              <Field title={t("Content type")}>
-                <Options
-                  title={t("Content type")}
-                  value={type}
-                  onChange={setType}
-                  items={[
-                    { value: "all", title: t("All types") },
-                    ...NODE_TYPES.map((value) => ({
-                      value,
-                      title: label(value),
-                    })),
-                  ]}
-                />
-              </Field>
-            </>
-          ) : (
-            <Field
-              title={t(
-                action.tool === "resolve_goal"
-                  ? "Goal"
-                  : action.tool === "resolve_procedure"
-                    ? "Procedure"
-                    : "Item",
-              )}
-            >
-              <NodePicker
-                title={t("Choose an item…")}
-                nodes={candidates}
-                value={id}
-                onChange={(value) => {
-                  setId(value);
-                  run.reset();
-                }}
-              />
-            </Field>
-          )}
-          {planning && (
-            <More title={t("Tailor your plan")}>
-              <p className="text-sm text-muted-foreground">
-                {t(
-                  !id
-                    ? action.tool === "resolve_goal"
-                      ? "Choose a goal to see the conditions and decisions its plan depends on."
-                      : "Choose a procedure to see the conditions and decisions its plan depends on."
-                    : stateNodes.length || decisions.length
-                      ? "Leave anything you do not know unanswered. The plan will tell you what to check."
-                      : "This plan has no conditions or decisions to answer.",
-                )}
-              </p>
-              {decisions.map((choice) => (
+    <div className="@container min-w-0">
+      <div className="grid items-start gap-6 @4xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-4">
+          <form
+            className="overflow-hidden rounded-xl border bg-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              run.mutate();
+            }}
+          >
+            <div className="flex items-start gap-3 border-b px-5 py-4">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base font-semibold">{t(action.title)}</h2>
+                <p className="text-sm text-muted-foreground">
+                  {t(action.description)}
+                </p>
+              </div>
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground max-sm:hidden">
+                {action.tool}
+              </code>
+            </div>
+            <div className="space-y-5 p-5">
+              {action.tool === "search_kb" ? (
+                <>
+                  <Field title={t("What would you like to do?")}>
+                    <Input
+                      aria-label={t("What would you like to do?")}
+                      placeholder={t("Describe your goal…")}
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      required
+                    />
+                  </Field>
+                  <Field title={t("Content type")}>
+                    <Options
+                      title={t("Content type")}
+                      value={type}
+                      onChange={setType}
+                      items={[
+                        { value: "all", title: t("All types") },
+                        ...NODE_TYPES.map((value) => ({
+                          value,
+                          title: label(value),
+                        })),
+                      ]}
+                    />
+                  </Field>
+                </>
+              ) : (
                 <Field
-                  key={choice.key}
-                  title={`${choice.title}: ${choice.question}`}
+                  title={t(
+                    action.tool === "resolve_goal"
+                      ? "Goal"
+                      : action.tool === "resolve_procedure"
+                        ? "Procedure"
+                        : "Item",
+                  )}
                 >
-                  <Options
-                    title={choice.question}
-                    value={choices[choice.key] ?? "__unanswered"}
-                    onChange={(value) =>
-                      setChoices((old) => {
-                        const next = { ...old };
-                        if (value === "__unanswered") delete next[choice.key];
-                        else next[choice.key] = value;
-                        return next;
-                      })
-                    }
-                    items={[
-                      { value: "__unanswered", title: t("Decide later") },
-                      ...choice.options.map((o) => ({
-                        value: o.key,
-                        title: o.when,
-                      })),
-                    ]}
+                  <NodePicker
+                    title={t("Choose an item…")}
+                    nodes={candidates}
+                    value={id}
+                    onChange={(value) => {
+                      setId(value);
+                      run.reset();
+                    }}
                   />
                 </Field>
-              ))}
-              {stateNodes.map((n) => (
-                <Field key={n.id} title={n.title}>
-                  <Options
-                    title={n.title}
-                    value={
-                      states[n.id] === undefined
-                        ? "unknown"
-                        : String(states[n.id])
-                    }
-                    onChange={(value) =>
-                      setStates((old) => {
-                        const next = { ...old };
-                        if (value === "unknown") delete next[n.id];
-                        else next[n.id] = value === "true";
-                        return next;
-                      })
-                    }
-                    items={[
-                      { value: "unknown", title: t("Not sure") },
-                      { value: "true", title: t("Yes") },
-                      { value: "false", title: t("No") },
-                    ]}
-                  />
-                </Field>
-              ))}
-              <Field title={t("Account plan (optional)")}>
-                <Input
-                  aria-label={t("Account plan (optional)")}
-                  value={plan}
-                  onChange={(e) => setPlan(e.target.value)}
-                />
-              </Field>
-              <Field title={t("Permissions (optional, separated by commas)")}>
-                <Input
-                  aria-label={t("Permissions (optional, separated by commas)")}
-                  value={permissions}
-                  onChange={(e) => setPermissions(e.target.value)}
-                />
-              </Field>
-            </More>
-          )}
-          {action.tool === "get_related" && (
-            <>
-              <Field title={t("Show connections")}>
-                <Options
-                  title={t("Show connections")}
-                  value={direction}
-                  onChange={setDirection}
-                  items={[
-                    { value: "both", title: t("All connections") },
-                    { value: "out", title: t("What this needs") },
-                    { value: "in", title: t("What depends on this") },
-                  ]}
-                />
-              </Field>
-              <Field title={t("How far to explore")}>
-                <Options
-                  title={t("How far to explore")}
-                  value={depth}
-                  onChange={setDepth}
-                  items={[1, 2, 3].map((n) => ({
-                    value: String(n),
-                    title: String(n),
-                  }))}
-                />
-              </Field>
-            </>
-          )}
+              )}
+              {planning && (
+                <More title={t("Tailor your plan")}>
+                  <p className="text-sm text-muted-foreground">
+                    {t(
+                      !id
+                        ? action.tool === "resolve_goal"
+                          ? "Choose a goal to see the conditions and decisions its plan depends on."
+                          : "Choose a procedure to see the conditions and decisions its plan depends on."
+                        : stateNodes.length || decisions.length
+                          ? "Leave anything you do not know unanswered. The plan will tell you what to check."
+                          : "This plan has no conditions or decisions to answer.",
+                    )}
+                  </p>
+                  {decisions.map((choice) => (
+                    <Field
+                      key={choice.key}
+                      title={`${choice.title}: ${choice.question}`}
+                    >
+                      <Options
+                        title={choice.question}
+                        value={choices[choice.key] ?? "__unanswered"}
+                        onChange={(value) =>
+                          setChoices((old) => {
+                            const next = { ...old };
+                            if (value === "__unanswered")
+                              delete next[choice.key];
+                            else next[choice.key] = value;
+                            return next;
+                          })
+                        }
+                        items={[
+                          { value: "__unanswered", title: t("Decide later") },
+                          ...choice.options.map((o) => ({
+                            value: o.key,
+                            title: o.when,
+                          })),
+                        ]}
+                      />
+                    </Field>
+                  ))}
+                  {stateNodes.map((n) => (
+                    <Field key={n.id} title={n.title}>
+                      <Options
+                        title={n.title}
+                        value={
+                          states[n.id] === undefined
+                            ? "unknown"
+                            : String(states[n.id])
+                        }
+                        onChange={(value) =>
+                          setStates((old) => {
+                            const next = { ...old };
+                            if (value === "unknown") delete next[n.id];
+                            else next[n.id] = value === "true";
+                            return next;
+                          })
+                        }
+                        items={[
+                          { value: "unknown", title: t("Not sure") },
+                          { value: "true", title: t("Yes") },
+                          { value: "false", title: t("No") },
+                        ]}
+                      />
+                    </Field>
+                  ))}
+                  <Field title={t("Account plan (optional)")}>
+                    <Input
+                      aria-label={t("Account plan (optional)")}
+                      value={plan}
+                      onChange={(e) => setPlan(e.target.value)}
+                    />
+                  </Field>
+                  <Field
+                    title={t("Permissions (optional, separated by commas)")}
+                  >
+                    <Input
+                      aria-label={t(
+                        "Permissions (optional, separated by commas)",
+                      )}
+                      value={permissions}
+                      onChange={(e) => setPermissions(e.target.value)}
+                    />
+                  </Field>
+                </More>
+              )}
+              {action.tool === "get_related" && (
+                <>
+                  <Field title={t("Show connections")}>
+                    <Options
+                      title={t("Show connections")}
+                      value={direction}
+                      onChange={setDirection}
+                      items={[
+                        { value: "both", title: t("All connections") },
+                        { value: "out", title: t("What this needs") },
+                        { value: "in", title: t("What depends on this") },
+                      ]}
+                    />
+                  </Field>
+                  <Field title={t("How far to explore")}>
+                    <Options
+                      title={t("How far to explore")}
+                      value={depth}
+                      onChange={setDepth}
+                      items={[1, 2, 3].map((n) => ({
+                        value: String(n),
+                        title: String(n),
+                      }))}
+                    />
+                  </Field>
+                </>
+              )}
+            </div>
+            <div className="flex justify-end border-t bg-muted/30 px-5 py-3">
+              <Button
+                type="submit"
+                disabled={
+                  run.isPending ||
+                  (action.tool === "search_kb" ? !query.trim() : !id)
+                }
+              >
+                {run.isPending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Play size={16} />
+                )}
+                {t(run.isPending ? "Working…" : action.title)}
+              </Button>
+            </div>
+          </form>
+          <ErrorMessage error={run.error} />
         </div>
-        <div className="flex justify-end border-t bg-muted/30 px-5 py-3">
-          <Button
-            type="submit"
-            disabled={
-              run.isPending ||
-              (action.tool === "search_kb" ? !query.trim() : !id)
-            }
-          >
-            {run.isPending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Play size={16} />
-            )}
-            {t(run.isPending ? "Working…" : action.title)}
-          </Button>
-        </div>
-      </form>
-      <ErrorMessage error={run.error} />
-      <section
-        aria-label={t("Results")}
-        aria-live="polite"
-        aria-busy={run.isPending}
-        className="rounded-xl border bg-card p-5"
-      >
-        {!run.data && (
-          <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
-            <Sparkles size={20} />
-            {t("Run an action to see results here.")}
-          </div>
-        )}
-        {run.data?.warning && (
-          <p
-            role="status"
-            className="mb-4 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground"
-          >
-            {t(
-              "This knowledge base has validation errors. Results may be incomplete.",
-            )}
-          </p>
-        )}
-        {run.data && (
-          <Results
-            id={id}
-            tool={action.tool}
-            result={run.data}
-            nodes={nodes}
-            onNavigate={onNavigate}
-          />
-        )}
-      </section>
+        <p role="status" className="sr-only">
+          {run.isPending
+            ? t("Working…")
+            : run.data
+              ? t("Results are ready.")
+              : ""}
+        </p>
+        <section
+          ref={results}
+          tabIndex={-1}
+          aria-label={t("Results")}
+          aria-busy={run.isPending}
+          className="min-w-0 scroll-mt-6 rounded-xl border bg-card p-5 outline-none"
+        >
+          {!run.data && (
+            <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
+              <Sparkles size={20} />
+              {t("Run an action to see results here.")}
+            </div>
+          )}
+          {run.data?.warning && (
+            <p
+              role="status"
+              className="mb-4 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground"
+            >
+              {t(
+                "This knowledge base has validation errors. Results may be incomplete.",
+              )}
+            </p>
+          )}
+          {run.data && (
+            <Results
+              id={id}
+              tool={action.tool}
+              result={run.data}
+              nodes={nodes}
+              nodeIds={nodeIds}
+              onNavigate={onNavigate}
+            />
+          )}
+        </section>
+      </div>
     </div>
   );
 }
@@ -629,12 +665,14 @@ function Results({
   tool,
   result,
   nodes,
+  nodeIds,
   onNavigate,
 }: {
   id: string;
   tool: string;
   result: ToolResult;
   nodes: NodeSummary[];
+  nodeIds: ReadonlySet<string>;
   onNavigate(tool: string, id: string): void;
 }) {
   const { t, label } = usePreferences();
@@ -699,7 +737,11 @@ function Results({
           <h3 className="text-base font-semibold my-0">{t("Your plan")}</h3>
           <MarkdownDownload content={result.content} name={`${id}-plan.md`} />
         </div>
-        <Markdown content={result.content} />
+        <Markdown
+          content={result.content}
+          className="markdown-compact"
+          nodeIds={nodeIds}
+        />
       </div>
     );
   if (tool === "search_kb") {
@@ -775,7 +817,9 @@ function Results({
           <p className="text-muted-foreground">{data.summary}</p>
         )}
       </div>
-      {data.body && <Markdown content={data.body} />}
+      {data.body && (
+        <Markdown content={data.body} className="markdown-compact" />
+      )}
       {data.body_truncated && (
         <p className="text-sm text-muted-foreground">
           {t("Open the item to read its full content.")}

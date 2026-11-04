@@ -21,7 +21,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "../components/ui/command.js";
-import { groupByType } from "../lib/utils.js";
+import { groupByType, isMac } from "../lib/utils.js";
 import { Kbd } from "../components/ui/kbd.js";
 import {
   BookOpen,
@@ -108,7 +108,14 @@ function Shell() {
   const navigate = useNavigate();
   const mode = storeModes[service.store.kind];
   const issueCount = (kb?.status.errors ?? 0) + (kb?.status.warnings ?? 0);
-  const issueSummary = `${kb?.status.errors ?? 0} ${t("errors")} · ${kb?.status.warnings ?? 0} ${t("warnings")}`;
+  const errors = kb?.status.errors ?? 0;
+  const warnings = kb?.status.warnings ?? 0;
+  const issueSummary = [
+    errors === 1 ? t("1 error") : t("{count} errors", { count: errors }),
+    warnings === 1
+      ? t("1 warning")
+      : t("{count} warnings", { count: warnings }),
+  ].join(" · ");
   const reload = useMutation({
     mutationFn: () => reloadWorkspace(),
     // A failed reload also changes the stale flag, so refetch either way.
@@ -192,11 +199,14 @@ function Shell() {
           variant="outline"
           className="w-72 justify-start bg-background text-muted-foreground max-[1100px]:w-56 max-[900px]:w-auto"
           aria-label={t("Search nodes…")}
+          aria-keyshortcuts={isMac ? "Meta+K" : "Control+K"}
           onClick={() => setOpen(true)}
         >
           <Search size={15} />
           <span className="max-[900px]:hidden">{t("Search nodes…")}</span>
-          <Kbd className="ml-auto max-[900px]:hidden">⌘K</Kbd>
+          <Kbd className="ml-auto max-[900px]:hidden">
+            {isMac ? "⌘K" : "Ctrl K"}
+          </Kbd>
         </Button>
         <div className="ml-auto flex items-center gap-1">
           <Button
@@ -322,7 +332,7 @@ function Shell() {
               key={label}
               to={to}
               params={to === "/docs/$" ? { _splat: "" } : undefined}
-              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-center text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary data-[status=active]:bg-accent data-[status=active]:text-primary max-[780px]:text-[9px]"
+              className="flex flex-col items-center gap-1.5 rounded-[7px] px-1 py-3 text-center text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-primary-ink data-[status=active]:bg-accent data-[status=active]:text-primary-ink max-[780px]:text-[9px]"
             >
               <span className="relative">
                 <Icon aria-hidden size={19} className="max-[780px]:w-4.25" />
@@ -344,7 +354,7 @@ function Shell() {
           ))}
           <div
             title={t(mode.detail)}
-            className="mt-auto text-center text-[9px] leading-loose tracking-[1px] text-muted-foreground max-[780px]:hidden"
+            className="mt-auto text-center text-[11px] leading-normal tracking-[0.5px] text-muted-foreground max-[780px]:hidden"
           >
             {t(mode.label)}
             {service.store.readOnly && (

@@ -202,6 +202,18 @@ export function manifestIssues(value: unknown): Issue[] | undefined {
   );
 }
 
+/** The node did not answer: a wrong URL, or a node that does not allow this page's origin. */
+export class UnreachableNodeError extends Error {
+  constructor(
+    readonly url: string,
+    readonly origin: string,
+  ) {
+    super(
+      `Cannot reach ${url}. Check the URL and that the node allows this page's origin (--allowed-origin ${origin}).`,
+    );
+  }
+}
+
 // Read-only snapshot of a simp node's own KB: list every node, then fetch bodies through lookup.
 export async function remoteStore(
   url: string,
@@ -215,8 +227,9 @@ export async function remoteStore(
   const manifest = await peer.manifest().catch((error: Error) => {
     // Browsers report CORS refusals and unreachable hosts as the same TypeError.
     throw error instanceof TypeError
-      ? new Error(
-          `Cannot reach ${base}. Check the URL and that the node allows this page's origin (--allowed-origin ${globalThis.location?.origin ?? "<origin>"}).`,
+      ? new UnreachableNodeError(
+          base,
+          globalThis.location?.origin ?? "<origin>",
         )
       : error;
   });

@@ -125,6 +125,16 @@ test("workspace reads, edits, validates, resolves and repairs fixture documents"
   assert.throws(() => service.nodeDetail("goal.new.nested"), /Node not found/);
 });
 
+test("a file whose frontmatter stops parsing still opens from its source", async () => {
+  const service = await WorkspaceService.open(memoryStore(await fixture()));
+  const broken = "---\ntitle: [unclosed\n---\nBody\n";
+  await service.writeFile(rel, broken);
+  assert.ok(!service.snapshot().nodes.some((node) => node.path === rel));
+  const detail = service.nodeDetail("procedure.zalo.send-message");
+  assert.equal(detail.node.path, rel);
+  assert.equal(detail.raw, broken);
+});
+
 test("memory edits survive reload and closed workspaces cannot affect a new folder", async () => {
   const a = await WorkspaceService.open(memoryStore(await fixture(), {}, "A"));
   const bFiles = await fixture();

@@ -1,4 +1,4 @@
-import { useRouter, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { cn } from "../lib/utils.js";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -39,11 +39,14 @@ export function Markdown({
   path = "",
   layout = "site",
   className,
+  nodeIds,
 }: {
   content: string;
   path?: string;
   layout?: string;
   className?: string;
+  /** Inline code that is exactly one of these ids links to that node, as in rendered plans. */
+  nodeIds?: ReadonlySet<string>;
 }) {
   const router = useRouter();
   const hash = useRouterState({ select: (state) => state.location.hash });
@@ -86,6 +89,18 @@ export function Markdown({
           h4: ({ children }) => <h4 id={headingId(children)}>{children}</h4>,
           h5: ({ children }) => <h5 id={headingId(children)}>{children}</h5>,
           h6: ({ children }) => <h6 id={headingId(children)}>{children}</h6>,
+          code: ({ children, className, node: _node, ...props }) => {
+            const id = typeof children === "string" ? children : undefined;
+            return id && !className && nodeIds?.has(id) ? (
+              <Link to="/nodes/$id" params={{ id }} className="node-ref">
+                <code {...props}>{id}</code>
+              </Link>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
           a: ({ href, children, node: _node, ...props }) => {
             const to = docHref(href ?? "", path, layout);
             const internal = to.startsWith("/") && !to.startsWith("//");

@@ -41,3 +41,8 @@ export function label(value: string, language: Language = "en"): string {
     LABELS[value] ?? text.charAt(0).toUpperCase() + text.slice(1),
   );
 }
+
+/** Apple platforms label the command key ⌘; everywhere else it is Ctrl. */
+export const isMac =
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.userAgent);

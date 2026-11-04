@@ -13,6 +13,9 @@
   --popover: #ffffff;
   --popover-foreground: #31262c;
   --primary: #db2777;
+  /* Simp Pink for text: the brand pink is 3.9-4.4:1 on the desk's tints, so pink
+     words (links, active labels) use this deeper ink to clear 4.5:1 on all of them. */
+  --primary-ink: #be185d;
   --primary-foreground: #ffffff;
   --secondary: #fce7f3;
   --secondary-foreground: #831843;
@@ -46,6 +49,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -69,6 +73,7 @@
   --popover: #282030;
   --popover-foreground: #f1eaf4;
   --primary: #f472b6;
+  --primary-ink: #f472b6;
   --primary-foreground: #301021;
   --secondary: #392334;
   --secondary-foreground: #f9a8d4;
@@ -93,7 +98,7 @@
     cursor: pointer;
   }
   a:not([data-slot="button"]) {
-    color: var(--primary);
+    color: var(--primary-ink);
     text-decoration: none;
   }
   a:not([data-slot="button"]):hover {
@@ -104,6 +109,11 @@
   h3,
   p {
     margin-top: 0;
+  }
+  /* No single word stranded on a paragraph's last line. */
+  p,
+  li {
+    text-wrap: pretty;
   }
   h1 {
     font-size: 25px;
@@ -313,13 +323,38 @@
     margin: 28px 0 8px;
   }
   .markdown a {
-    color: var(--primary);
+    color: var(--primary-ink);
     text-decoration: underline;
     text-decoration-color: color-mix(in srgb, var(--primary) 35%, transparent);
     text-underline-offset: 3px;
   }
   .markdown a:hover {
     text-decoration-color: currentColor;
+  }
+  /* A node id in a plan links to its node. The chip keeps ink text, so a plan
+     full of ids stays calm; the link's soft underline and hover border carry it. */
+  .markdown a.node-ref code {
+    color: var(--foreground);
+    transition: border-color 120ms ease-out;
+  }
+  .markdown a.node-ref:hover code {
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  /* Plans and previews sit inside app chrome, so headings stay on the UI title scale. */
+  .markdown.markdown-compact h1 {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+  .markdown.markdown-compact h1 + p {
+    font-size: inherit;
+  }
+  .markdown.markdown-compact h2 {
+    font-size: 16px;
+    margin-top: 28px;
+  }
+  .markdown.markdown-compact h3 {
+    font-size: 14px;
+    margin-top: 20px;
   }
   .markdown ul,
   .markdown ol {
@@ -392,8 +427,18 @@
     h1 {
       font-size: 22px;
     }
-    .markdown h1 {
+    .markdown:not(.markdown-compact) h1 {
       font-size: 26px;
     }
   }
+}
+
+/* Unlayered, so it outranks React Flow's own stylesheet. */
+/* React Flow's stock attribution is 9px #999 on paper (2.7:1); keep it, readable. */
+.react-flow__attribution {
+  background: color-mix(in srgb, var(--background) 85%, transparent);
+}
+.react-flow__attribution a {
+  color: var(--muted-foreground);
+  font-size: 11px;
 }

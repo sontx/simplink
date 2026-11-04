@@ -15,7 +15,7 @@ export function SourceFiles({ sources }: { sources: string[] }) {
               href={source}
               target="_blank"
               rel="noopener noreferrer"
-              className="min-w-0 font-mono text-primary hover:underline"
+              className="min-w-0 font-mono text-primary-ink hover:underline"
             >
               {source}
             </a>

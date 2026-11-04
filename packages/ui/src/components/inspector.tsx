@@ -1,7 +1,7 @@
 import { useWorkspace } from "../workspace/context.js";
 import { usePreferences } from "./preferences.js";
 import { cn, groupByType } from "../lib/utils.js";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,11 +33,36 @@ export const issueClass = (severity: string) =>
     severity === "error" ? "bg-destructive/10" : "bg-warning/10",
   );
 
-export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
+/** The rendered agent plan for a goal or procedure, its node ids linking to their nodes. */
+export function PlanBody({ id }: { id: string }) {
   const { service } = useWorkspace();
   const { t } = usePreferences();
-
   const plan = useQuery(planQuery(service, id));
+  const { data: kb } = useQuery(kbQuery(service));
+  const nodeIds = useMemo(
+    () => new Set(kb?.nodes.map((node) => node.id)),
+    [kb],
+  );
+  return (
+    <>
+      <ErrorMessage error={plan.error} />
+      {plan.isPending ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {t("Resolving plan…")}
+        </p>
+      ) : (
+        <Markdown
+          content={plan.data?.rendered.text ?? ""}
+          className="markdown-compact"
+          nodeIds={nodeIds}
+        />
+      )}
+    </>
+  );
+}
+
+export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
+  const { t } = usePreferences();
   return (
     <Dialog
       open
@@ -46,12 +71,7 @@ export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
       sheet
       resizeKey="simplink.planDrawerWidth"
     >
-      <ErrorMessage error={plan.error} />
-      {plan.isPending ? (
-        <p>{t("Resolving plan…")}</p>
-      ) : (
-        <Markdown content={plan.data?.rendered.text ?? ""} />
-      )}
+      <PlanBody id={id} />
     </Dialog>
   );
 }

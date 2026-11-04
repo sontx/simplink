@@ -53,7 +53,7 @@ export function IssueList({
                 <button
                   type="button"
                   onClick={() => onLine(issue.line!, index)}
-                  className="ml-2 rounded-sm text-xs text-primary tabular-nums underline-offset-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="ml-2 rounded-sm text-xs text-primary-ink tabular-nums underline-offset-3 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {t("Line {line}", { line: issue.line })}
                 </button>

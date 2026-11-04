@@ -9,7 +9,21 @@ import { Inspector, inspectorClass } from "../components/inspector.js";
 import { Checkbox } from "../components/ui/checkbox.js";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group.js";
 import { Button } from "../components/ui/button.js";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CircleCheck, Plus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { IssueCounts } from "../components/issue-list.js";
+import {
+  groupState,
+  relationshipGroups,
+  toggleGroup,
+} from "../lib/relationship-groups.js";
+import { NodeDialog } from "../components/node-dialog.js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu.js";
 import { cn } from "../lib/utils.js";
 import { Glossary, Page } from "../components/ui/primitives.js";
 export const Route = createFileRoute("/graph")({
@@ -40,12 +54,16 @@ export const Route = createFileRoute("/graph")({
   component: Graph,
 });
 
-const muted = "text-muted-foreground";
-const heading = "mt-6 mb-2.75";
+// Section labels under the page h1: h2 in the outline, small in the panel.
+const heading = "mt-6 mb-2.75 text-xs leading-normal font-[650]";
 const ORPHAN_PREVIEW = 5;
 const types = ["goal", "procedure", "capability", "state", "constraint"];
 const check =
   "my-2.25 flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground";
+// Filters are settings, not the author's current action, so their checks use
+// plum ink rather than Simp Pink (the One Pen Rule).
+const plumCheck =
+  "data-checked:border-foreground data-checked:bg-foreground data-checked:text-background dark:data-checked:bg-foreground data-[state=indeterminate]:border-foreground data-[state=indeterminate]:bg-foreground data-[state=indeterminate]:text-background";
 
 function Graph() {
   const { service } = useWorkspace();
@@ -57,11 +75,15 @@ function Graph() {
   const [expanded, setExpanded] = useState(false);
   // While expanded, the inspector only peeks in after a node is selected.
   const [peek, setPeek] = useState(false);
+  // The keyboard path to a new node; right-clicking the canvas is the pointer one.
+  const [create, setCreate] = useState<string>();
   // Below 780px the filters fold away so the canvas keeps the screen.
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [allOrphans, setAllOrphans] = useState(false);
   const selectedTypes = search.types?.split(",") ?? types;
   const kinds = [...new Set(kb?.edges.map((e) => e.kind) ?? [])];
+  const groups = relationshipGroups(kinds);
+  const selectedKinds = search.kinds?.split(",") ?? kinds;
   const update = (next: Partial<typeof search>) =>
     void navigate({ search: (old) => ({ ...old, ...next }) });
   const toggle = (key: "types" | "kinds", value: string, all: string[]) => {
@@ -75,7 +97,11 @@ function Graph() {
   };
   if (!kb) return <Page>{t("Loading graph…")}</Page>;
   const orphans = kb.nodes.filter(
-    (n) => n.type !== "goal" && !kb.edges.some((e) => e.to === n.id),
+    // Goals are entry points and simp.md is the KB's root, so nothing need point to them.
+    (n) =>
+      n.type !== "goal" &&
+      n.type !== "simp" &&
+      !kb.edges.some((e) => e.to === n.id),
   );
   return (
     <div className="relative flex h-full min-h-132.5 max-[780px]:min-h-full max-[780px]:flex-col">
@@ -90,6 +116,34 @@ function Graph() {
                 {kb.nodes.length} {t("nodes")} · {kb.edges.length}{" "}
                 {t("relationships")}
               </p>
+              {!service.store.readOnly && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 max-[780px]:mt-2"
+                    >
+                      <Plus data-icon="inline-start" />
+                      {t("New node")}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {types.map((type) => (
+                      <DropdownMenuItem
+                        key={type}
+                        onSelect={() => setCreate(type)}
+                      >
+                        <span
+                          aria-hidden
+                          className={`${type} size-1.5 rounded-full bg-(--type-color)`}
+                        />
+                        {label(type)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             <Button
               variant="outline"
@@ -108,14 +162,87 @@ function Graph() {
               />
             </Button>
           </div>
+          {/* Problems first: what is broken or unreachable leads the panel. */}
+          <section
+            aria-label={t("Health")}
+            className="mt-4 border-y border-border py-3 text-[11px] max-[780px]:mt-2.5 max-[780px]:py-2"
+          >
+            {kb.status.errors || kb.status.warnings ? (
+              <Link to="/issues" search={{ severity: "" }} className="block">
+                <IssueCounts
+                  errors={kb.status.errors}
+                  warnings={kb.status.warnings}
+                  className="text-[11px]"
+                />
+              </Link>
+            ) : (
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <CircleCheck aria-hidden className="size-3.5 text-success" />
+                {t("No lint issues")}
+              </span>
+            )}
+            {orphans.length ? (
+              <details className="group/orphans mt-1.5">
+                <summary className="flex cursor-pointer list-none items-center gap-1 text-warning select-none [&::-webkit-details-marker]:hidden">
+                  {orphans.length === 1
+                    ? t("1 orphan")
+                    : t("{count} orphans", { count: orphans.length })}
+                  <ChevronDown
+                    aria-hidden
+                    className="size-3.5 transition-transform group-open/orphans:rotate-180"
+                  />
+                </summary>
+                <p className="mt-1.5 mb-1 text-muted-foreground">
+                  {t("Nothing points to these nodes, so no goal reaches them.")}
+                </p>
+                <div className="-mx-2.5 flex flex-col">
+                  {(allOrphans
+                    ? orphans
+                    : orphans.slice(0, ORPHAN_PREVIEW)
+                  ).map((n) => (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      key={n.id}
+                      className="h-auto flex-col items-start gap-0 py-1.5 text-left text-xs whitespace-normal"
+                      onClick={() => update({ focus: n.id })}
+                    >
+                      {n.title}
+                      <span className="max-w-full truncate font-mono text-[11px] font-normal text-muted-foreground">
+                        {n.id}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+                {orphans.length > ORPHAN_PREVIEW && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto px-0 text-[11px]"
+                    aria-expanded={allOrphans}
+                    onClick={() => setAllOrphans((all) => !all)}
+                  >
+                    {allOrphans
+                      ? t("Show fewer")
+                      : t("Show all {count}", { count: orphans.length })}
+                  </Button>
+                )}
+              </details>
+            ) : (
+              <span className="mt-1.5 block text-muted-foreground">
+                {t("Every node has an entry point.")}
+              </span>
+            )}
+          </section>
           <div
             id="graph-filters"
             className={cn(!filtersOpen && "max-[780px]:hidden")}
           >
-            <h3 className={heading}>{t("Node types")}</h3>
+            <h2 className={heading}>{t("Node types")}</h2>
             {types.map((type) => (
               <label className={check} key={type}>
                 <Checkbox
+                  className={plumCheck}
                   checked={selectedTypes.includes(type)}
                   onCheckedChange={() => toggle("types", type, types)}
                 />
@@ -134,26 +261,57 @@ function Graph() {
                 description: enumDescription(type),
               }))}
             />
-            <h3 className={heading}>{t("Relationships")}</h3>
-            {kinds.map((kind) => (
-              <label className={check} key={kind}>
+            <h2 className={heading}>{t("Relationships")}</h2>
+            {groups.map((group) => (
+              <label className={check} key={group.key}>
                 <Checkbox
-                  checked={(search.kinds?.split(",") ?? kinds).includes(kind)}
-                  onCheckedChange={() => toggle("kinds", kind, kinds)}
+                  className={plumCheck}
+                  checked={groupState(group.kinds, selectedKinds)}
+                  onCheckedChange={() =>
+                    update({
+                      kinds: toggleGroup(group.kinds, selectedKinds).join(","),
+                    })
+                  }
                 />
-                {label(kind)}
+                {t(group.title)}
               </label>
             ))}
-            <Glossary
-              className="mt-1"
-              summary={t("What these relationships mean")}
-              entries={kinds.map((kind) => ({
-                key: kind,
-                term: label(kind),
-                description: enumDescription(kind),
-              }))}
-            />
-            <h3 className={heading}>{t("Depth")}</h3>
+            <details className="group/kinds mt-1 text-[11px]">
+              <summary className="flex cursor-pointer list-none items-center gap-1 text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+                <ChevronDown
+                  aria-hidden
+                  className="size-3.5 -rotate-90 transition-transform group-open/kinds:rotate-0"
+                />
+                {t("Each relationship")}
+              </summary>
+              {groups.map((group) => (
+                <div key={group.key} className="mt-2.5 ml-1.5">
+                  <div className="text-muted-foreground">{t(group.title)}</div>
+                  {group.kinds.map((kind) => (
+                    <label
+                      className={cn(check, "my-1.5 ml-1 items-start")}
+                      key={kind}
+                      title={enumDescription(kind)}
+                    >
+                      <Checkbox
+                        className={plumCheck}
+                        checked={selectedKinds.includes(kind)}
+                        onCheckedChange={() => toggle("kinds", kind, kinds)}
+                      />
+                      <span>
+                        {label(kind)}
+                        {enumDescription(kind) && (
+                          <span className="block text-muted-foreground/80">
+                            {enumDescription(kind)}
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </details>
+            <h2 className={heading}>{t("Depth")}</h2>
             <ToggleGroup
               className="mt-2 mb-4"
               type="single"
@@ -167,10 +325,14 @@ function Graph() {
             >
               {[1, 2, 3, "all"].map((depth) => (
                 <ToggleGroupItem
-                  className="data-[state=on]:text-primary"
+                  className="data-[state=on]:text-primary-ink"
                   key={depth}
                   value={String(depth)}
-                  aria-label={t("Depth {depth}", { depth })}
+                  aria-label={
+                    depth === "all"
+                      ? t("All depths")
+                      : t("Depth {depth}", { depth })
+                  }
                 >
                   {label(String(depth))}
                 </ToggleGroupItem>
@@ -178,6 +340,7 @@ function Graph() {
             </ToggleGroup>
             <label className={check}>
               <Checkbox
+                className={plumCheck}
                 checked={!!search.deprecated}
                 onCheckedChange={(checked) =>
                   update({ deprecated: checked === true || undefined })
@@ -187,6 +350,7 @@ function Graph() {
             </label>
             <label className={check}>
               <Checkbox
+                className={plumCheck}
                 checked={!!search.issuesOnly}
                 onCheckedChange={(checked) =>
                   update({ issuesOnly: checked === true || undefined })
@@ -194,47 +358,6 @@ function Graph() {
               />
               {t("Only with issues")}
             </label>
-            <h3 className={heading}>
-              {t("Orphans")}
-              <span className={`${muted} ml-1.5 font-normal`}>
-                {orphans.length}
-              </span>
-            </h3>
-            <div className="flex flex-col gap-1.25">
-              {(allOrphans ? orphans : orphans.slice(0, ORPHAN_PREVIEW)).map(
-                (n) => (
-                  <Button
-                    variant="ghost"
-                    key={n.id}
-                    className="h-auto flex-col items-start gap-0.5 text-left whitespace-normal"
-                    onClick={() => update({ focus: n.id })}
-                  >
-                    {n.title}
-                    <span className="max-w-full truncate text-xs text-muted-foreground">
-                      {n.id}
-                    </span>
-                  </Button>
-                ),
-              )}
-              {orphans.length > ORPHAN_PREVIEW && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="self-start px-3"
-                  aria-expanded={allOrphans}
-                  onClick={() => setAllOrphans((all) => !all)}
-                >
-                  {allOrphans
-                    ? t("Show fewer")
-                    : t("Show all {count}", { count: orphans.length })}
-                </Button>
-              )}
-              {!orphans.length && (
-                <small className={muted}>
-                  {t("Every node has an entry point.")}
-                </small>
-              )}
-            </div>
           </div>
         </aside>
       )}
@@ -282,11 +405,20 @@ function Graph() {
                   "Select a node to inspect its relationships and edit its source.",
                 )}
               </p>
-              <small className="mt-5 block leading-[1.7]">
-                {t("Right-click the canvas to create a node.")}
-              </small>
+              {!service.store.readOnly && (
+                <small className="mt-5 block leading-[1.7]">
+                  {t("Use New node, or right-click the canvas, to create one.")}
+                </small>
+              )}
             </aside>
           )}
+      {create && (
+        <NodeDialog
+          type={create}
+          onClose={() => setCreate(undefined)}
+          onCreated={(id) => update({ focus: id })}
+        />
+      )}
     </div>
   );
 }

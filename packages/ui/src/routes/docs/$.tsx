@@ -32,7 +32,7 @@ export const Route = createFileRoute("/docs/$")({
 });
 
 const pagerLink =
-  "max-w-[50%] flex-1 rounded-lg border px-4 py-3 font-medium text-foreground hover:border-primary hover:text-primary";
+  "max-w-[50%] flex-1 rounded-lg border px-4 py-3 font-medium text-foreground hover:border-primary hover:text-primary-ink";
 const pagerLabel =
   "mb-0.5 flex items-center gap-0.5 text-[11px] font-normal text-muted-foreground";
 
@@ -108,6 +108,7 @@ function Docs() {
   // It stays open only for the page it was opened on, so following a link closes it.
   const [openedOn, setOpenedOn] = useState<string>();
   const pagesOpen = openedOn === `${layout}:${path}`;
+  const [openFolders, setOpenFolders] = useState<string[]>([]);
   const downloadZip = useMutation({
     mutationFn: async () =>
       downloadBlob(
@@ -131,7 +132,7 @@ function Docs() {
       className={cn(
         "block rounded-md px-2 py-1.25 wrap-anywhere",
         p === path
-          ? "bg-accent font-medium text-primary"
+          ? "bg-accent font-medium text-primary-ink"
           : "text-muted-foreground hover:bg-background hover:text-foreground",
       )}
     >
@@ -139,25 +140,85 @@ function Docs() {
     </Link>
   );
 
-  const renderFolder = (folder: Folder, depth: number) => (
+  // A folder's heading is the link to its index page, so the tree does not
+  // repeat "Overview" under every folder. Nested folders stay folded unless
+  // they hold the current page or the reader opened them.
+  const folderOpen = (prefix: string) =>
+    path.startsWith(prefix) || openFolders.includes(prefix);
+  const renderFolder = (folder: Folder, depth: number, prefix = "") => (
     <ul className={depth >= 2 ? "ml-2.5 border-l pl-2" : undefined}>
-      {folder.index && <li>{pageLink(folder.index, t("Overview"))}</li>}
+      {depth === 0 && folder.index && (
+        <li>{pageLink(folder.index, t("Overview"))}</li>
+      )}
       {folder.pages.map((p) => (
         <li key={p}>{pageLink(p)}</li>
       ))}
-      {sortedFolders(folder).map((child) => (
-        <li key={child.name} className={depth === 0 ? "mt-4.5" : undefined}>
-          <div
-            className={cn(
-              sectionHeading,
-              depth === 0 ? "px-2 pb-1.5" : "px-2 pt-2 pb-0.5",
-            )}
-          >
-            {label(child.name)}
-          </div>
-          {renderFolder(child, depth + 1)}
-        </li>
-      ))}
+      {sortedFolders(folder).map((child) => {
+        const childPrefix = `${prefix}${child.name}/`;
+        const name = label(child.name);
+        if (depth === 0)
+          return (
+            <li key={child.name} className="mt-4.5">
+              {child.index ? (
+                <Link
+                  to="/docs/$"
+                  params={{ _splat: child.index }}
+                  search={{ layout }}
+                  aria-current={child.index === path ? "page" : undefined}
+                  className={cn(
+                    sectionHeading,
+                    "block rounded-md px-2 pt-1 pb-1.5 hover:text-primary-ink aria-[current=page]:text-primary-ink",
+                  )}
+                >
+                  {name}
+                </Link>
+              ) : (
+                <div className={cn(sectionHeading, "px-2 pb-1.5")}>{name}</div>
+              )}
+              {renderFolder(child, depth + 1, childPrefix)}
+            </li>
+          );
+        const open = folderOpen(childPrefix);
+        return (
+          <li key={child.name}>
+            <div className="flex items-center">
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-label={t(open ? "Collapse {name}" : "Expand {name}", {
+                  name,
+                })}
+                onClick={() =>
+                  setOpenFolders((old) =>
+                    open
+                      ? old.filter((p) => p !== childPrefix)
+                      : [...old, childPrefix],
+                  )
+                }
+                className="-ml-1 grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <ChevronRight
+                  aria-hidden
+                  className={cn(
+                    "size-3.5 transition-transform",
+                    open && "rotate-90",
+                  )}
+                />
+              </button>
+              <div className="min-w-0 flex-1">
+                {child.index ? (
+                  pageLink(child.index, name)
+                ) : (
+                  <span className="block px-2 py-1.25 text-muted-foreground">
+                    {name}
+                  </span>
+                )}
+              </div>
+            </div>
+            {open && renderFolder(child, depth + 1, childPrefix)}
+          </li>
+        );
+      })}
     </ul>
   );
 
@@ -295,7 +356,7 @@ function Docs() {
                             to="/docs/$"
                             params={{ _splat: index }}
                             search={{ layout }}
-                            className="hover:text-primary"
+                            className="hover:text-primary-ink"
                           >
                             {label(name)}
                           </Link>
@@ -373,7 +434,7 @@ function Docs() {
                 <a
                   key={h.id}
                   href={"#" + h.id}
-                  className="py-0.75 text-muted-foreground hover:text-primary"
+                  className="py-0.75 text-muted-foreground hover:text-primary-ink"
                   style={{ paddingLeft: (h.depth - 2) * 12 }}
                 >
                   {h.text}

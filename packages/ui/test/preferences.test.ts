@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { resolvePreferences, translate, vietnamese } from "../src/lib/i18n.js";
+import { REQUESTS } from "../src/lib/simp-network.js";
 import { enumDescription } from "../src/lib/enum-description.js";
 import { EDGE_KINDS, NODE_TYPES } from "@sontx/simplink-core";
 import { groupByType, label } from "../src/lib/utils.js";
@@ -102,4 +103,11 @@ test("labels keep initialisms upper case", () => {
   assert.equal(label("ui"), "UI");
   assert.equal(label("constrained_by"), "Constrained by");
   assert.equal(label("guidance"), "Guidance");
+});
+
+test("every open-screen question and answer has a Vietnamese translation", () => {
+  for (const { ask, answer } of Object.values(REQUESTS)) {
+    assert.ok(vietnamese[ask], ask);
+    assert.ok(vietnamese[answer], answer);
+  }
 });

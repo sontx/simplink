@@ -1,8 +1,17 @@
 import type { Issue } from "@sontx/simplink-core";
+import { deriveId } from "@sontx/simplink-core/browser";
 
 export interface FileIssues<N> {
   path: string;
   node?: N;
+  /**
+   * The id the Source tab opens this file under: its node's, or for a file
+   * that never became a node (broken frontmatter), the id its path derives.
+   * Undefined when the path maps to no node id, so only an editor can fix it.
+   */
+  id?: string;
+  /** The node type, or the type its folder implies when it is not a node. */
+  type?: string;
   issues: Issue[];
   errors: number;
   warnings: number;
@@ -12,17 +21,28 @@ export interface FileIssues<N> {
  * Groups issues by file in fix order: files with the most errors first, then
  * the most warnings, then by path. Within a file, errors precede warnings.
  */
-export function groupIssuesByFile<N extends { path: string }>(
-  issues: readonly Issue[],
-  nodes: readonly N[],
-): FileIssues<N>[] {
+export function groupIssuesByFile<
+  N extends { path: string; id?: string; type?: string },
+>(issues: readonly Issue[], nodes: readonly N[]): FileIssues<N>[] {
   const groups = new Map<string, FileIssues<N>>();
   for (const issue of issues) {
     let group = groups.get(issue.path);
     if (!group) {
+      const node = nodes.find((node) => node.path === issue.path);
+      const derived = node ? {} : deriveId(issue.path);
+      // simp.md is not a type folder file, and a derived id another file already
+      // holds would open that node instead of this one.
+      const openable =
+        derived.derivedId &&
+        derived.folderType !== "simp" &&
+        !nodes.some((other) => other.id === derived.derivedId);
       group = {
         path: issue.path,
-        node: nodes.find((node) => node.path === issue.path),
+        node,
+        id: node ? node.id : openable ? derived.derivedId : undefined,
+        type:
+          node?.type ??
+          (derived.folderType !== "simp" ? derived.folderType : undefined),
         issues: [],
         errors: 0,
         warnings: 0,
@@ -55,14 +75,14 @@ export interface QueuedIssue<N> {
 }
 
 /**
- * Every issue in an editable node, in fix order: files as grouped, then
- * each file's issues. Files without a node cannot be opened, so they are left out.
+ * Every issue the Source tab can open, in fix order: files as grouped, then
+ * each file's issues. Files with no id cannot be opened, so they are left out.
  */
 export function issueQueue<N extends { path: string }>(
   groups: readonly FileIssues<N>[],
 ): QueuedIssue<N>[] {
   return groups
-    .filter((file) => file.node)
+    .filter((file) => file.id)
     .flatMap((file) =>
       file.issues.map((issue, index) => ({ file, issue, index })),
     );

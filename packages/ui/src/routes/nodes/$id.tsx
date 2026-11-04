@@ -11,11 +11,17 @@ import {
 } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ChevronLeft, CircleCheck } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  CircleCheck,
+  TriangleAlert,
+} from "lucide-react";
 import { kbQuery, nodeQuery } from "../../api.js";
 import { IssueCounts, IssueList } from "../../components/issue-list.js";
 import { Kbd, KbdGroup } from "../../components/ui/kbd.js";
 import type { Issue } from "@sontx/simplink-core";
+import { parseDoc } from "@sontx/simplink-core/browser";
 import {
   clearedIssues,
   groupIssuesByFile,
@@ -43,6 +49,8 @@ import {
 } from "../../components/ui/tabs.js";
 import { KBGraph } from "../../components/kb-graph.js";
 import { Plan } from "../../components/inspector.js";
+import { SourcePreview } from "../../components/source-preview.js";
+import { isMac } from "../../lib/utils.js";
 export const Route = createFileRoute("/nodes/$id")({
   validateSearch: (
     s: Record<string, unknown>,
@@ -68,9 +76,6 @@ const SourceEditor = lazy(() => import("../../components/source-editor.js"));
 type EditorInstance = Parameters<
   NonNullable<ComponentProps<typeof SourceEditor>["onMount"]>
 >[0];
-const isMac =
-  typeof navigator !== "undefined" &&
-  /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 function NodePage() {
   const { id } = Route.useParams();
@@ -165,8 +170,34 @@ function NodeContent() {
   if (!detail)
     return (
       <Page>
-        <ErrorMessage error={error} />
-        {!error && t("Loading node…")}
+        {error && /not found/i.test(String((error as Error).message)) ? (
+          <div className="max-w-xl">
+            <h1 className="mb-2">{t("Node not found")}</h1>
+            <p className="text-muted-foreground">
+              {t(
+                "No node or file has the ID {id}. It may have been renamed or deleted.",
+                { id },
+              )}
+            </p>
+            <div className={actions}>
+              <Button asChild>
+                <Link to="/nodes" search={{ q: id.split(".").pop() ?? "" }}>
+                  {t("Search nodes")}
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/issues" search={{ severity: "" }}>
+                  {t("Issues")}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <ErrorMessage error={error} />
+            {!error && t("Loading node…")}
+          </>
+        )}
       </Page>
     );
   const { node } = detail;
@@ -191,6 +222,8 @@ function NodeContent() {
     ].join("/");
   const file = files.find((group) => group.path === node.path);
   const issues = file?.issues ?? [];
+  // A file whose frontmatter does not parse opens from its source, outside the graph.
+  const inGraph = !kb || kb.nodes.some((other) => other.path === node.path);
   const queue = issueQueue(files);
   // Arriving from a link picks the issue it names, or the first one on its line.
   const current =
@@ -203,12 +236,27 @@ function NodeContent() {
   const canSave = dirty && !save.isPending && !service.store.readOnly;
   // A remote node's issue lines refer to its original files, not this rebuilt source.
   const localLines = service.store.kind !== "remote";
-  const saveFile = () => {
+  const saveFile = async () => {
     if (!canSave) return;
+    // Saving frontmatter that no longer parses takes the node out of the graph.
+    const broken = inGraph && parseDoc(node.path, raw ?? detail.raw).parseError;
+    if (
+      broken &&
+      !(await confirm({
+        title: t("Save frontmatter that doesn't parse?"),
+        description: t(
+          "{error}. Until it parses, this node leaves the graph and links to it stop resolving.",
+          // YAML messages end mid-sentence ("…at line 3, column 5:").
+          { error: broken.replace(/[\s:.]+$/, "") },
+        ),
+        confirmLabel: t("Save anyway"),
+      }))
+    )
+      return;
     setSavedFrom(issues);
     save.mutate();
   };
-  saveShortcut.current = saveFile;
+  saveShortcut.current = () => void saveFile();
   const selectIssue = (index: number) => {
     setCursor(index);
     const target = issues[index]?.line;
@@ -221,7 +269,7 @@ function NodeContent() {
     </>
   );
   const nextLink =
-    next?.file.node &&
+    next?.file.id &&
     (next.file.path === node.path ? (
       <Button
         variant="outline"
@@ -234,7 +282,7 @@ function NodeContent() {
       <Button variant="outline" size="xs" asChild>
         <Link
           to="/nodes/$id"
-          params={{ id: next.file.node.id }}
+          params={{ id: next.file.id }}
           search={{
             tab: "source",
             issue: next.index,
@@ -261,7 +309,7 @@ function NodeContent() {
             text:
               unparsed(issues) && !unparsed(savedFrom)
                 ? t(
-                    "Saved, but the frontmatter no longer parses, so its other issues can't be checked.",
+                    "Saved, but the frontmatter no longer parses: the node is out of the graph and its other issues can't be checked.",
                   )
                 : t("Saved. No issues cleared yet."),
           }
@@ -287,22 +335,45 @@ function NodeContent() {
       <div className="mt-5.5 mb-6.25 flex items-center justify-between gap-6.25 max-[780px]:items-start max-[780px]:gap-2.5">
         <div>
           <Badge type={node.type}>{label(node.type)}</Badge>
-          <h1 className="mt-1.25 mb-2">{node.title}</h1>
+          {/* Out of the graph, the title is only the id, so name the file instead. */}
+          <h1 className="mt-1.25 mb-2 wrap-anywhere">
+            {inGraph ? node.title : node.path}
+          </h1>
           <code className={muted}>{id}</code>
         </div>
         <div className="flex flex-wrap items-center gap-2.25 max-[780px]:justify-end">
-          <Button variant="outline" asChild>
-            <Link to="/graph" search={{ focus: id }}>
-              {t("View in graph")}
-            </Link>
-          </Button>
-          {["goal", "procedure"].includes(node.type) && (
-            <Button variant="outline" onClick={() => setPlan(true)}>
-              {t("Plan")}
-            </Button>
+          {inGraph && (
+            <>
+              <Button variant="outline" asChild>
+                <Link to="/graph" search={{ focus: id }}>
+                  {t("View in graph")}
+                </Link>
+              </Button>
+              {["goal", "procedure"].includes(node.type) && (
+                <Button variant="outline" onClick={() => setPlan(true)}>
+                  {t("Plan")}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>
+      {!inGraph && (
+        <div
+          role="note"
+          className="mb-5 flex items-start gap-2.5 rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm"
+        >
+          <TriangleAlert
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-destructive"
+          />
+          <span className="min-w-0">
+            {t(
+              "This file isn't in the graph: its frontmatter doesn't parse. Fix it in Source and save to bring it back.",
+            )}
+          </span>
+        </div>
+      )}
       <Tabs
         value={tab}
         onValueChange={(value) => void navigate({ search: { tab: value } })}
@@ -312,7 +383,7 @@ function NodeContent() {
             <TabsTrigger
               key={value}
               value={value}
-              className="data-active:bg-accent data-active:text-primary"
+              className="data-active:bg-accent data-active:text-primary-ink"
             >
               {label(value)}
             </TabsTrigger>
@@ -323,7 +394,9 @@ function NodeContent() {
           className="grid grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)] gap-11.25 max-[1100px]:grid-cols-1 max-[780px]:gap-3.75"
         >
           <div>
-            <div className="font-semibold mb-2">{t("Frontmatter")}</div>
+            <h2 className="mb-2 text-base leading-normal font-semibold">
+              {t("Frontmatter")}
+            </h2>
             <dl className="mb-7.5 border-t border-border">
               {Object.entries(node.data).map(([key, value]) => (
                 <div
@@ -353,10 +426,14 @@ function NodeContent() {
               ))}
             </dl>
             <Markdown content={node.body} />
-            <div className="font-semibold mb-2 mt-6">{t("Relationships")}</div>
+            <h2 className="mt-6 mb-2 text-base leading-normal font-semibold">
+              {t("Relationships")}
+            </h2>
             {["out", "in"].map((dir) => (
               <section key={dir}>
-                <h4>{dir === "out" ? t("Outgoing") : t("Incoming")}</h4>
+                <h3 className="m-0 text-base font-normal">
+                  {dir === "out" ? t("Outgoing") : t("Incoming")}
+                </h3>
                 {Object.entries(
                   detail[dir as "out" | "in"].reduce<
                     Record<string, typeof detail.out>
@@ -508,49 +585,74 @@ function NodeContent() {
                 .filter(Boolean)
                 .join(" ")}
           </p>
-          <div className="mt-4 h-[52dvh] min-h-80 overflow-hidden rounded-md border border-input">
-            <Suspense fallback={t("Loading node…")}>
-              <SourceEditor
-                nodeType={node.type}
-                issues={localLines ? issues : undefined}
-                onMount={(instance) => {
-                  editor.current = instance;
-                  if (line) goToLine(line);
-                }}
-                theme={theme === "dark" ? "vs-dark" : "light"}
-                value={raw ?? detail.raw}
-                options={{
-                  ariaLabel: t("Markdown source"),
-                  readOnly: save.isPending || service.store.readOnly,
-                  automaticLayout: true,
-                  minimap: { enabled: false },
-                  lineNumbers: "on",
-                  lineNumbersMinChars: 3,
-                  fontSize: 12,
-                  tabSize: 2,
-                  quickSuggestions: {
-                    other: true,
-                    comments: false,
-                    strings: true,
-                  },
-                  wordWrap: "on",
-                  scrollBeyondLastLine: false,
-                  padding: { top: 20, bottom: 20 },
-                }}
-                onChange={(value) => {
-                  setRaw(value ?? "");
-                  setSaved(false);
-                }}
+          {/* Wide enough for both, the output sits beside the source that makes it. */}
+          <div className="@container mt-4">
+            <div className="grid gap-4 @5xl:grid-cols-2">
+              <div className="h-[62dvh] min-h-80 overflow-hidden rounded-md border border-input">
+                <Suspense
+                  fallback={
+                    <p
+                      role="status"
+                      className="p-5 text-sm text-muted-foreground"
+                    >
+                      {t("Loading editor…")}
+                    </p>
+                  }
+                >
+                  <SourceEditor
+                    nodeType={node.type}
+                    issues={localLines ? issues : undefined}
+                    onMount={(instance) => {
+                      editor.current = instance;
+                      if (line) goToLine(line);
+                    }}
+                    theme={
+                      theme === "dark" ? "simplink-dark" : "simplink-light"
+                    }
+                    value={raw ?? detail.raw}
+                    options={{
+                      ariaLabel: t("Markdown source"),
+                      readOnly: save.isPending || service.store.readOnly,
+                      automaticLayout: true,
+                      minimap: { enabled: false },
+                      lineNumbers: "on",
+                      lineNumbersMinChars: 3,
+                      fontSize: 12,
+                      tabSize: 2,
+                      quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: true,
+                      },
+                      wordWrap: "on",
+                      scrollBeyondLastLine: false,
+                      padding: { top: 20, bottom: 20 },
+                    }}
+                    onChange={(value) => {
+                      setRaw(value ?? "");
+                      setSaved(false);
+                    }}
+                  />
+                </Suspense>
+              </div>
+              <SourcePreview
+                id={id}
+                type={node.type}
+                docPath={docPath}
+                inGraph={inGraph}
+                dirty={dirty}
+                className="hidden h-[62dvh] min-h-80 @5xl:flex"
               />
-            </Suspense>
+            </div>
           </div>
-          <ErrorMessage error={save.error} />
+          <ErrorMessage error={save.error} className="mt-4" />
           {!service.store.readOnly && (
-            <div className={actions}>
+            // Pinned to the bottom of the scroll area, so Save stays in reach below a tall editor.
+            <div className="sticky bottom-0 z-10 mt-4 flex flex-wrap items-center gap-2.25 border-t border-border bg-background py-3">
               <Button
                 variant="default"
                 disabled={!canSave}
-                onClick={saveFile}
+                onClick={() => void saveFile()}
                 aria-keyshortcuts={isMac ? "Meta+S" : "Control+S"}
               >
                 {save.isPending ? t("Saving…") : t("Save file")}

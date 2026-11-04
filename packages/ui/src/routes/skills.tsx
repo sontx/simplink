@@ -82,7 +82,7 @@ function Skills() {
         {SKILLS.map((skill) => (
           <section key={skill.name} className="rounded-lg border bg-card p-5">
             <h2 className="font-mono text-base">{skill.name}</h2>
-            <p className="mt-2">{t(skill.summary)}</p>
+            <p className="mt-2 max-w-[68ch]">{t(skill.summary)}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {t("Try asking:")} <em>“{skill.example}”</em>
             </p>
@@ -93,15 +93,19 @@ function Skills() {
       <h2 className="mt-8.75 mb-3">{t("Set up in your coding agent")}</h2>
       <ol className="grid list-decimal gap-5 pl-5">
         <li>
-          {t(
-            "Install the Simplink CLI in the project; the skills run simp-lint, simp-search, and simp-resolve.",
-          )}
+          <p className="m-0 max-w-[68ch]">
+            {t(
+              "Install the Simplink CLI in the project; the skills run simp-lint, simp-search, and simp-resolve.",
+            )}
+          </p>
           <Code>npm install -D @sontx/simplink-core</Code>
         </li>
         <li>
-          {t(
-            "Unzip the bundle into your agent's skills folder. Keep the folders side by side.",
-          )}
+          <p className="m-0 max-w-[68ch]">
+            {t(
+              "Unzip the bundle into your agent's skills folder. Keep the folders side by side.",
+            )}
+          </p>
           <div className="mt-3 text-sm font-semibold">Claude Code</div>
           <Code>
             {
@@ -114,21 +118,25 @@ function Skills() {
               "# this project only\nunzip simplink-skills.zip -d .agents/skills\n# or every project\nunzip simplink-skills.zip -d ~/.codex/skills"
             }
           </Code>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 max-w-[68ch] text-sm text-muted-foreground">
             {t(
               "Other agents: use the agent's skills folder if it supports Agent Skills, or tell it to read the SKILL.md file before starting.",
             )}
           </p>
         </li>
         <li>
-          {t(
-            "Restart the agent, then ask for a knowledge base in plain words. The agent loads the matching skill.",
-          )}
+          <p className="m-0 max-w-[68ch]">
+            {t(
+              "Restart the agent, then ask for a knowledge base in plain words. The agent loads the matching skill.",
+            )}
+          </p>
         </li>
         <li>
-          {t(
-            "Open the resulting kb folder here to review the graph and fix issues.",
-          )}
+          <p className="m-0 max-w-[68ch]">
+            {t(
+              "Open the resulting kb folder here to review the graph and fix issues.",
+            )}
+          </p>
         </li>
       </ol>
     </Page>

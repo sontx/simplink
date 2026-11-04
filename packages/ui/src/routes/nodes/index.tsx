@@ -101,13 +101,14 @@ function Nodes() {
   const columns = useMemo(
     () =>
       helper.columns([
-        helper.accessor("id", {
-          header: () => t("ID"),
-          cell: ({ getValue }) => (
+        // Title first: it is what people scan for, and on a phone it stays on screen.
+        helper.accessor("title", {
+          header: () => t("Title"),
+          cell: ({ row, getValue }) => (
             <Link
               to="/nodes/$id"
-              params={{ id: getValue() }}
-              className="font-mono text-xs"
+              params={{ id: row.original.id }}
+              className="block max-w-80 truncate font-medium text-foreground hover:text-primary-ink max-[480px]:max-w-52"
               onClick={(e) => e.stopPropagation()}
             >
               {getValue()}
@@ -120,12 +121,17 @@ function Nodes() {
             <Badge type={getValue()}>{label(getValue())}</Badge>
           ),
         }),
-        helper.accessor("title", {
-          header: () => t("Title"),
+        helper.accessor("id", {
+          header: () => t("ID"),
           cell: ({ getValue }) => (
-            <span className="block max-w-80 truncate font-medium">
+            <Link
+              to="/nodes/$id"
+              params={{ id: getValue() }}
+              className="font-mono text-xs"
+              onClick={(e) => e.stopPropagation()}
+            >
               {getValue()}
-            </span>
+            </Link>
           ),
         }),
         helper.accessor("status", {

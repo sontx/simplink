@@ -12,6 +12,7 @@ import {
   directoryStore,
   pickFolder,
   remoteStore,
+  UnreachableNodeError,
   type DirectoryHandle,
   type KBStore,
 } from "./store.js";
@@ -460,22 +461,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             <div className="text-xs font-medium text-muted-foreground">
               {t("Or connect to a simp node")}
             </div>
-            <Input
-              type="url"
-              required
-              aria-label={t("Simp node URL")}
-              placeholder="http://localhost:3393"
-              value={nodeUrl}
-              onChange={(event) => setNodeUrl(event.target.value)}
-            />
-            <Input
-              type="password"
-              autoComplete="off"
-              aria-label={t("Token (optional)")}
-              placeholder={t("Token (optional)")}
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-            />
+            <label className="block space-y-1">
+              <span className="text-xs text-muted-foreground">
+                {t("Simp node URL")}
+              </span>
+              <Input
+                type="url"
+                required
+                placeholder="http://localhost:3393"
+                value={nodeUrl}
+                onChange={(event) => setNodeUrl(event.target.value)}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs text-muted-foreground">
+                {t("Token (optional)")}
+              </span>
+              <Input
+                type="password"
+                autoComplete="off"
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+              />
+            </label>
             <Button
               type="submit"
               variant="outline"
@@ -515,7 +523,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           )}
           {error ? (
             <div className="mt-4">
-              <ErrorMessage error={error} />
+              <ErrorMessage
+                error={
+                  error instanceof UnreachableNodeError
+                    ? t(
+                        "Cannot reach {url}. Check the URL and that the node allows this page's origin (--allowed-origin {origin}).",
+                        { url: error.url, origin: error.origin },
+                      )
+                    : error
+                }
+              />
             </div>
           ) : null}
         </section>

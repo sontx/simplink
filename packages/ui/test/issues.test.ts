@@ -80,6 +80,37 @@ test("next issue steps through each file's issues, skips files without nodes, an
   assert.equal(nextIssue([], "goals/a.md", 0).next, undefined);
 });
 
+test("files that never became nodes open under the id their path derives", () => {
+  const groups = groupIssuesByFile(
+    [
+      issue("goals/typo.md", "E013"),
+      issue("goals/nested/index.md", "E013"),
+      issue("simp.md", "E013"),
+      issue("notes/readme.md", "E001"),
+      // A node declaring id goal.custom in another file owns that id.
+      issue("goals/custom.md", "E013"),
+      issue("goals/a.md", "W001"),
+    ],
+    [...nodes, { path: "goals/other.md", id: "goal.custom" }],
+  );
+  const byPath = Object.fromEntries(
+    groups.map((group) => [group.path, [group.id, group.type]]),
+  );
+  assert.deepEqual(byPath["goals/typo.md"], ["goal.typo", "goal"]);
+  assert.deepEqual(byPath["goals/nested/index.md"], [
+    "goal.nested.index",
+    "goal",
+  ]);
+  assert.deepEqual(byPath["simp.md"], [undefined, undefined]);
+  assert.deepEqual(byPath["notes/readme.md"], [undefined, undefined]);
+  assert.equal(byPath["goals/custom.md"][0], undefined);
+  assert.equal(byPath["goals/a.md"][0], "goal.a");
+  assert.deepEqual(
+    issueQueue(groups).map((item) => item.file.path),
+    ["goals/nested/index.md", "goals/typo.md", "goals/a.md"],
+  );
+});
+
 test("cleared issues are the ones a save removed, counting duplicates", () => {
   const before = [
     issue("goals/a.md", "E001"),

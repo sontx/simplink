@@ -3,6 +3,7 @@ name: Simplink
 description: A quiet browser desk for mapping, fixing, and previewing Markdown knowledge graphs.
 colors:
   simp-pink: "#db2777"
+  simp-pink-ink: "#be185d"
   simp-pink-ring: "#ec4899"
   blush-wash: "#fce7f3"
   petal-mist: "#fff1f5"
@@ -195,6 +196,7 @@ The palette is a tinted-paper desk with one pink pen and four map inks.
 ### Primary
 
 - **Simp Pink** (`simp-pink`): the brand accent. It's the "simp" half of the wordmark, the primary button, links, active nav item, selected graph node border, and the question pulse in the simp-network animation. In dark mode it lightens to #f472b6 with a deep #301021 foreground.
+- **Simp Pink Ink** (`simp-pink-ink`, token `--primary-ink`): Simp Pink for _text_. Links, active nav and tab labels, the active depth toggle and the Docs sidebar's current page use it, because the brand pink reads only 3.9–4.4:1 on Blush Wash, Petal Mist and Lavender Paper; the ink clears 5.1:1 on all of them. Fills, borders, rings, icons and the wordmark stay Simp Pink. Dark: the same #f472b6 as Simp Pink, which already passes.
 - **Simp Pink Ring** (`simp-pink-ring`): focus rings at 50% alpha, the selected-node halo at 12%, and the blockquote rule in rendered Markdown. It's the same in both themes.
 - **Blush Wash** (`blush-wash`): secondary buttons, nav hover and active backgrounds, and accent surfaces. Dark: #392334.
 - **Deep Berry** (`deep-berry`) and **Mulberry** (`mulberry`): text on blush surfaces and the link hover colour. Dark: #f9a8d4.

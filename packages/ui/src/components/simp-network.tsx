@@ -11,6 +11,7 @@ import {
   type NetworkOptions,
   type Talk,
 } from "../lib/simp-network.js";
+import { usePreferences } from "./preferences.js";
 
 const GAP = 120;
 const SIZE = 36;
@@ -39,6 +40,10 @@ export function SimpNetwork({
   const packets = useRef<(HTMLDivElement | null)[]>([]);
   const hovered = useRef(-1);
   const [count, setCount] = useState(0);
+  // The animation loop outlives renders, so it reads the current language through a ref.
+  const { t } = usePreferences();
+  const translate = useRef(t);
+  translate.current = t;
   const edges = networkEdges(count);
 
   useEffect(() => {
@@ -120,7 +125,7 @@ export function SimpNetwork({
         ),
       );
     const show = (element: HTMLDivElement, talk: Talk) => {
-      element.querySelector("span")!.textContent = talk.text;
+      element.querySelector("span")!.textContent = translate.current(talk.text);
       element.dataset.answer = String(talk.answer);
     };
     let nextLaunch = 0;

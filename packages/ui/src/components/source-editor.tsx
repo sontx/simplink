@@ -18,6 +18,77 @@ import {
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });
 
+// The editor wears the desk's tokens, not Monaco's stock blue and teal: plum
+// paper, Deep Berry frontmatter keys, sage values, ochre literals, mauve comments.
+monaco.editor.defineTheme("simplink-light", {
+  base: "vs",
+  inherit: true,
+  rules: [
+    { token: "", foreground: "302b3b" },
+    { token: "type", foreground: "9d174d" },
+    { token: "string", foreground: "317461" },
+    // Monaco's stock themes style YAML values by this more specific token.
+    { token: "string.yaml", foreground: "317461" },
+    { token: "type.yaml", foreground: "9d174d" },
+    { token: "number", foreground: "8c6120" },
+    { token: "keyword", foreground: "8c6120" },
+    { token: "comment", foreground: "75636c", fontStyle: "italic" },
+    { token: "meta.separator", foreground: "75636c" },
+    { token: "operators", foreground: "75636c" },
+    { token: "keyword.md", foreground: "302b3b", fontStyle: "bold" },
+    { token: "variable.md", foreground: "be185d" },
+    { token: "string.link.md", foreground: "be185d" },
+  ],
+  colors: {
+    "editor.background": "#ffffff",
+    "editor.foreground": "#302b3b",
+    "editorLineNumber.foreground": "#a3949c",
+    "editorLineNumber.activeForeground": "#302b3b",
+    "editor.lineHighlightBackground": "#fff1f5",
+    "editor.lineHighlightBorder": "#00000000",
+    "editor.selectionBackground": "#fce7f3",
+    "editor.inactiveSelectionBackground": "#fdf0f6",
+    "editorCursor.foreground": "#db2777",
+    "editorIndentGuide.background1": "#e8e5ed",
+    "editorWidget.background": "#ffffff",
+    "editorWidget.border": "#e8e5ed",
+  },
+});
+monaco.editor.defineTheme("simplink-dark", {
+  base: "vs-dark",
+  inherit: true,
+  rules: [
+    { token: "", foreground: "f1eaf4" },
+    { token: "type", foreground: "f9a8d4" },
+    { token: "string", foreground: "8dceb5" },
+    // Monaco's stock themes style YAML values by this more specific token.
+    { token: "string.yaml", foreground: "8dceb5" },
+    { token: "type.yaml", foreground: "f9a8d4" },
+    { token: "number", foreground: "e5bd7d" },
+    { token: "keyword", foreground: "e5bd7d" },
+    { token: "comment", foreground: "b8aabd", fontStyle: "italic" },
+    { token: "meta.separator", foreground: "b8aabd" },
+    { token: "operators", foreground: "b8aabd" },
+    { token: "keyword.md", foreground: "f1eaf4", fontStyle: "bold" },
+    { token: "variable.md", foreground: "f472b6" },
+    { token: "string.link.md", foreground: "f472b6" },
+  ],
+  colors: {
+    "editor.background": "#211b28",
+    "editor.foreground": "#f1eaf4",
+    "editorLineNumber.foreground": "#7d6f83",
+    "editorLineNumber.activeForeground": "#f1eaf4",
+    "editor.lineHighlightBackground": "#2c2433",
+    "editor.lineHighlightBorder": "#00000000",
+    "editor.selectionBackground": "#392334",
+    "editor.inactiveSelectionBackground": "#31232e",
+    "editorCursor.foreground": "#f472b6",
+    "editorIndentGuide.background1": "#2f2836",
+    "editorWidget.background": "#282030",
+    "editorWidget.border": "#3a3241",
+  },
+});
+
 const languageId = "simplink-markdown";
 const modelTypes = new WeakMap<monaco.editor.ITextModel, NodeType>();
 monaco.languages.register({ id: languageId });
