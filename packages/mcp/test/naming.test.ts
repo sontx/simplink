@@ -19,6 +19,6 @@ test("MCP server identifies itself with the simp name", async () => {
   await client.connect(clientTransport);
 
   assert.equal(client.getServerVersion()?.name, "simp-graph");
-  assert.equal(client.getServerVersion()?.version, "0.2.0");
+  assert.equal(client.getServerVersion()?.version, "0.2.1");
   await client.close();
 });
