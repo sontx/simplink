@@ -1,29 +1,358 @@
 # @sontx/simplink-core
 
-Load, validate, search, resolve, and render Markdown knowledge bases. ESM for Node.js 22+, with TypeScript declarations and bundled schemas. For MCP transports use `@sontx/simplink-mcp`.
+[![npm version](https://img.shields.io/npm/v/@sontx/simplink-core.svg)](https://www.npmjs.com/package/@sontx/simplink-core)
+[![node](https://img.shields.io/node/v/@sontx/simplink-core.svg)](https://nodejs.org)
+[![license](https://img.shields.io/npm/l/@sontx/simplink-core.svg)](https://github.com/sontx/simplink/blob/main/LICENSE)
 
-## Library use
+> Turn linked Markdown into searchable product guidance, step-by-step agent plans, and reader-facing docs.
+
+Simplink stores product knowledge as a **typed graph of Markdown files**:
+goals, procedures, capabilities, states, and constraints, each with YAML
+frontmatter. This package loads that graph, validates it, searches it, resolves
+a user's goal into an ordered plan that fits their context, and exports the
+same source as a documentation site.
+
+**Try it in your browser:** [simp.sontx.dev](https://simp.sontx.dev) is the
+Simplink workspace. Open a local KB folder or connect to a running simp node to
+browse the graph, fix lint issues, preview agent plans, and download docs. No
+install is needed, and your files stay in your browser.
+
+## Contents
+
+- [Features](#features)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Concepts and terms](#concepts-and-terms)
+- [CLI](#cli)
+- [Library API](#library-api)
+- [Exporting docs](#exporting-docs)
+- [Extensions](#extensions)
+- [Related packages](#related-packages)
+- [Migrating to 0.2.0](#migrating-to-020)
+- [License](#license)
+
+## Features
+
+- **Validation:** JSON Schema checks for every node type, plus graph lint for
+  broken links, cycles, orphans, and wrong reference types (`simp-lint`).
+- **Search:** BM25 full-text search with fuzzy and prefix matching that
+  surfaces the goals behind matching nodes (`simp-search`).
+- **Plan resolution:** Turns a goal into ordered steps, filling in prerequisites,
+  required states, choices, constraints, and plan or permission availability
+  (`simp-resolve`).
+- **Docs export:** Generates a Markdown site with guides, reference, and
+  troubleshooting sections, or a page-per-node graph layout (`simp-docs`).
+- **Agent tools:** Provider-independent tool definitions (`search_kb`,
+  `resolve_goal`, `resolve_procedure`, `get_node`, `get_related`) that you can
+  plug into any LLM tool-calling loop.
+- **Pluggable:** Supports filesystem, in-memory, and Git sources, plus custom
+  validators, lint rules, search engines, availability policies, renderers,
+  and tools.
+- **Localization:** English and Vietnamese are built in, and you can add other
+  languages.
+- ESM, TypeScript declarations, and bundled JSON schemas
+  (`@sontx/simplink-core/schemas/*`). The package has no MCP dependency and
+  includes a browser entry at `@sontx/simplink-core/browser`.
+
+## Install
+
+```sh
+npm install @sontx/simplink-core
+# or run the CLI without installing
+npx -p @sontx/simplink-core simp lint ./kb
+```
+
+Requires Node.js 22 or newer. Git must be installed only if you use `gitSource`.
+
+## Quick start
+
+### 1. Write a small KB
+
+```text
+kb/
+├── simp.md
+├── goals/send-broadcast.md
+├── procedures/broadcast/send.md
+├── procedures/channel/connect.md
+└── states/channel/connected.md
+```
+
+```md
+<!-- kb/simp.md  →  the KB's root manifest -->
+
+---
+
+type: simp
+name: demo
+title: Demo product
+summary: Messaging guidance for the demo product.
+---
+```
+
+```md
+<!-- kb/goals/send-broadcast.md  →  id: goal.send-broadcast -->
+
+---
+
+type: goal
+title: Send a broadcast
+summary: Broadcast a message to an audience.
+when_to_use: [Send a message to many customers at once]
+procedures: [procedure.broadcast.send]
+---
+```
+
+```md
+<!-- kb/procedures/broadcast/send.md  →  id: procedure.broadcast.send -->
+
+---
+
+type: procedure
+title: Send a broadcast
+summary: Deliver a message to an audience.
+preconditions: [state.channel.connected]
+availability:
+plans: [pro]
+---
+
+## Steps
+
+1. Select an audience.
+2. Write the message and send it.
+```
+
+```md
+<!-- kb/states/channel/connected.md  →  id: state.channel.connected -->
+
+---
+
+type: state
+title: Channel connected
+summary: The messaging channel is connected.
+check: Check the channel connection indicator.
+satisfied_by: [procedure.channel.connect]
+---
+```
+
+```md
+<!-- kb/procedures/channel/connect.md  →  id: procedure.channel.connect -->
+
+---
+
+type: procedure
+title: Connect the channel
+summary: Connect the messaging channel.
+produces: [state.channel.connected]
+---
+
+## Steps
+
+1. Open channel settings and connect.
+```
+
+### 2. Validate, search, and resolve
+
+```sh
+npx simp-lint ./kb
+npx simp-search "send to many customers" --kb ./kb
+npx simp-resolve goal.send-broadcast --kb ./kb --plan pro
+```
+
+The resolver produces a plan that checks whether the channel is connected,
+connects it if it isn't, and then sends the broadcast. If you already know the
+channel is connected, pass `--state state.channel.connected=true` and the plan
+skips the check and the connect step.
+
+### 3. Use it from code
 
 ```ts
-import { createKB, createKBTools, memorySource } from "@sontx/simplink-core";
+import { createKB } from "@sontx/simplink-core";
+
+const kb = await createKB("./kb");
+const found = await kb.search("send to many customers");
+const plan = kb.resolveGoal(found.goals[0].id, {
+  states: { "state.channel.connected": true },
+});
+const { text } = await kb.render(plan, { tokenBudget: 1500 });
+console.log(text);
+```
+
+## Concepts and terms
+
+Simplink introduces several terms. You need to know these to write a KB or read
+the API.
+
+### Knowledge base (KB)
+
+A **KB** is a folder of Markdown files. Each file is one **node**, and the
+frontmatter fields that point at other nodes are **edges**. Together they form
+a graph that Simplink validates and traverses. Dot-files and non-Markdown files
+are ignored.
+
+### Node types
+
+Each node declares a `type`, which must match its top-level folder.
+
+| Type           | Folder          | What it means                                                                                                                                                 |
+| -------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **goal**       | `goals/`        | Something a user wants to achieve, phrased in their terms. It is the entry point for search and planning and lists the procedures that can achieve it.        |
+| **procedure**  | `procedures/`   | A concrete how-to with `## Steps`. It can require other procedures, need states, produce states, use capabilities, and offer choices.                         |
+| **capability** | `capabilities/` | A product feature or ability that procedures use, such as "scheduled sending". It explains what the product can do.                                           |
+| **state**      | `states/`       | A condition that can be true or false, such as "channel connected". It has a `check` that explains how to verify it and lists the procedures that satisfy it. |
+| **constraint** | `constraints/`  | A rule, limit, or policy with a `severity`, such as consent requirements or rate limits. It is attached to procedures and capabilities.                       |
+| **simp**       | `simp.md`       | The KB's root manifest: product `name`, `language`, published `docs_url`, and the **peers** it federates with. Its body can serve as the docs homepage.       |
+
+Every node needs `title` and `summary`. Optional fields include `aliases` and
+`tags` (indexed for search), `related`, `status: deprecated`, `availability`,
+`sources`, and `docs`.
+
+### Node IDs
+
+IDs come from the file path: `procedures/broadcast/send.md` becomes
+`procedure.broadcast.send`. The type prefix is singular, the segments are
+lowercase kebab-case, and renaming a file changes its ID. To refer to a node in
+another product's KB, prefix the ID with that product's simp name, for example
+`crm:state.customers-imported`.
+
+### Edges
+
+| Field                    | On                    | Points to    | Meaning                                              |
+| ------------------------ | --------------------- | ------------ | ---------------------------------------------------- |
+| `procedures`             | goal                  | procedures   | Alternative ways to reach the goal                   |
+| `requires`               | procedure             | procedures   | Procedures that must be done first                   |
+| `requires`               | capability            | capabilities | Capabilities this one depends on                     |
+| `preconditions`          | procedure             | states       | States that must be true before starting             |
+| `optional_preconditions` | procedure             | states       | Helpful but not required states                      |
+| `produces`               | procedure             | states       | States that are true after the procedure runs        |
+| `satisfied_by`           | state                 | procedures   | How to make the state true                           |
+| `uses`                   | procedure             | capabilities | Features the procedure relies on                     |
+| `constrained_by`         | procedure, capability | constraints  | Rules that apply                                     |
+| `choices`                | procedure             | procedures   | A question with options, each leading to a procedure |
+| `related`                | any                   | any node     | Loose "see also" link                                |
+
+In prose, link nodes with `[[procedure.broadcast.send]]` wikilinks or canonical
+`simp:///goal.local` links. For another product, use `simp://crm/goal.import`.
+
+### Resolution and plans
+
+**Resolving** a goal walks the graph from the goal. For each step, the resolver
+picks the best procedure, adds the procedures that satisfy unmet preconditions,
+orders prerequisites first, and gathers constraints, choices, and warnings. The
+result is a **plan**. `render` turns a plan into compact Markdown that fits a
+token budget, ready for an agent prompt.
+
+Plans depend on context:
+
+- **Known states** (`--state id=true|false`) skip steps that are already
+  satisfied.
+- A **tenant** describes who is asking: their account `plan`, their
+  `permissions`, and app-specific `context`. Nodes can declare `availability`
+  (`plans`, `permissions`). The resolver prefers available alternatives and
+  marks unavailable ones. Availability is advice for planning, not access
+  control.
+
+### Lint
+
+**Lint** runs schema validation and graph checks. Errors (`E0xx`) block search,
+resolve, and docs export. Warnings (`W1xx`) report problems such as orphan nodes
+or deprecated links. `--max-warnings` turns warnings into failures for CI.
+
+### Federation: simp, peers, and simp nodes
+
+- A **simp** is a KB that is identified by the `name` in its `simp.md`. The
+  `simp` prefix also names the CLI commands.
+- A **peer** is another simp that this KB declares in `simp.md`. It can be a
+  running simp node, a statically hosted KB, or a local folder. Once a peer is
+  declared, nodes can reference its nodes with qualified IDs such as `crm:goal.x`.
+- A **simp node** is an HTTP server that serves a KB to peers and to the
+  browser workspace. It is provided by
+  [`@sontx/simplink-node`](https://www.npmjs.com/package/@sontx/simplink-node).
+- **Serving modes:**
+  - In **pull** mode (the default), consumers fetch remote nodes and plan
+    locally.
+  - In **delegate** mode, the remote simp resolves the plan itself.
+- **simp index** (`simp-index.yaml`) is an optional search index that you
+  publish beside a static KB so that peers can search it.
+
+## CLI
+
+`simp` bundles all commands. On an interactive terminal, it prompts for any
+missing arguments and shows progress. In pipes or CI, it prints plain output.
+Each command is also available as its own executable, and every command
+supports `--help`.
+
+| Command        | Standalone bin | Purpose                                       |
+| -------------- | -------------- | --------------------------------------------- |
+| `simp lint`    | `simp-lint`    | Validate schemas and graph rules              |
+| `simp search`  | `simp-search`  | Full-text search over nodes and goals         |
+| `simp resolve` | `simp-resolve` | Resolve a goal into a plan                    |
+| `simp docs`    | `simp-docs`    | Export a Markdown docs site                   |
+| `simp index`   | `simp-index`   | Write `simp-index.yaml` for static publishing |
+
+```sh
+simp                                   # pick a command interactively
+simp lint ./kb --max-warnings 0        # fail CI on any warning
+simp-lint ./kb --format json
+simp-search export --kb ./kb --type procedure --limit 5
+simp-resolve goal.export --kb ./kb --state state.ready=true --budget 1500
+simp-resolve goal.export --kb ./kb --lang vi
+simp-docs --kb ./kb --out ./site                 # site layout
+simp-docs --kb ./kb --out ./graph-docs --layout graph
+simp-index ./kb
+```
+
+Exit codes: `0` means success. `1` means lint found problems or the warning
+threshold was exceeded. `2` means a usage, loading, or execution error.
+`search`, `resolve`, and `docs` refuse to run on a KB that has lint errors.
+
+## Library API
+
+### `createKB(input, extensions?)`
+
+`input` can be a directory path or a `DocSource` (`fsSource`, `memorySource`,
+`gitSource`, or your own). `createKB` loads and lints the KB once, builds a
+search engine, and returns a facade:
+
+```ts
+import { createKB, memorySource } from "@sontx/simplink-core";
 
 const kb = await createKB("/path/to/kb");
-const found = await kb.search("export records");
-const resolved = kb.resolveGoal(found.goals[0].id, {
+kb.status; // load summary; kb.graph and kb.issues hold the snapshot
+await kb.search("export records"); // { hits, goals }
+const resolved = kb.resolveGoal("goal.export", {
   states: { "state.ready": true },
 });
-const rendered = await kb.render(resolved, { tokenBudget: 1500 });
-const pages = kb.docs(); // Reader-facing Markdown pages and directory indexes
-const node = kb.node("procedure.export");
-const tools = await createKBTools(kb);
+kb.resolveProcedure("procedure.export");
+await kb.render(resolved, { tokenBudget: 1500, locale: "vi" });
+kb.node("procedure.export");
+kb.docs(); // [{ path, content }] reader-facing pages
+```
+
+The facade is a snapshot, so create it again after documents change. `isKB(x)`
+recognizes a facade. The standalone functions are still available and run
+synchronously: `loadDocs`, `lintKB`, `createValidator`, `createSearchIndex`,
+`resolveGoal`, `resolveProcedure`, `renderResolvedGoal`, and `exportDocs`.
+
+### Agent tools
+
+```ts
+import { createKBTools } from "@sontx/simplink-core";
+
+const tools = await createKBTools("/path/to/kb");
+tools.definitions; // JSON-schema tool definitions for your LLM
 const result = await tools.call("search_kb", { query: "export records" });
 ```
 
-`createKB` loads and lints once, builds one search engine, and retains a snapshot with `graph`, `issues`, and `status`. Rebuild after changing documents or graph data; goal traversal is cached per graph. `isKB` recognizes facades using a non-enumerable `Symbol.for("simplink.kb")` brand. Sources report their name as `status.root` (default `<source>`).
+| Tool                | Purpose                                                             |
+| ------------------- | ------------------------------------------------------------------- |
+| `search_kb`         | Find goals and nodes that match the user's intent                   |
+| `resolve_goal`      | Build a plan for a goal with optional states, plan, and permissions |
+| `resolve_procedure` | Build a plan starting from a specific procedure                     |
+| `get_node`          | Read one node, with an optional body                                |
+| `get_related`       | Follow edges from a node                                            |
 
-Existing standalone functions remain available: `loadDocs`, `lintKB`, `createValidator`, `createSearchIndex`, `resolveGoal`, `resolveProcedure`, and `renderResolvedGoal`. Standalone search, resolution, and rendering remain synchronous. Facade search and rendering always return promises. Extension failures propagate from library methods; tools return errors and CLI runners return exit code 2.
-
-## Code extensions
+To expose these tools over MCP, use
+[`@sontx/simplink-mcp`](https://www.npmjs.com/package/@sontx/simplink-mcp).
 
 ### Git sources
 
@@ -38,62 +367,17 @@ const kb = await createKB(
 );
 ```
 
-`gitSource(repo, options?)` accepts a Git URL or local repository path. `ref` selects a branch or tag (default: the repository's default branch); `directory` selects a relative KB folder (default: repository root). Paths and node IDs are relative to that folder. Git must be installed; private repositories use existing Git credentials or SSH configuration, with interactive credential prompts disabled. By default, each load creates a fresh shallow clone and removes it afterward, including on failure. Clone operations time out after two minutes. Clone and read errors propagate to the caller. Recreate the KB to refresh its snapshot.
+By default, each load makes a fresh shallow clone and removes it afterward. Pass
+`checkout: "/path/to/clone"` to keep a persistent clone. Persistent clones are
+never pulled, reset, or pushed automatically. Private repositories use your
+existing Git credentials, and interactive prompts are disabled. Clones time out
+after two minutes.
 
-Set `checkout` to a local path to keep a persistent clone: `gitSource(repo, { checkout: "/path/to/clone" })`. An absent checkout is cloned; an existing checkout must have a matching `origin`. Subsequent loads read local files, preserving uncommitted edits. `ref` applies only when the clone is created. The source name is the local KB folder, also exposed as `kb.status.root`. Persistent clones are never deleted, pulled, reset, committed, or pushed automatically; manage them with Git yourself. Watching and special handling for submodules or Git LFS are not provided.
-
-### Other extensions
-
-Pass `KBExtensions` as the second argument to `createKB`, or as `createKBTools(input, { extensions })` when constructing from a path or source. Supplying extensions with an already constructed KB is rejected.
-
-- **Sources:** `fsSource(root)`, `memorySource(files, name?)`, or a `DocSource` with `list(): MaybePromise<SourceFile[]>`. Each file contains `relPath` and `content`. Paths must be relative and `/` separated, with no backslashes, empty, `.` or `..` segments, drive prefixes, or duplicates. All sources exclude non-Markdown files, hidden segments, and root documents, then sort paths before parsing. `memorySource` defaults to `<memory>`; `parseDoc` exposes the common YAML parser and its diagnostics.
-- **Validation:** `validator(type, data)` returns `SchemaFinding[]` or a promise. It replaces bundled schema validation; path, type/folder, ID, duplicate-ID, and YAML checks still run. `createValidator()` and `FrontmatterValidator` remain synchronous.
-- **Lint:** `lint.rules` contains synchronous or async `(graph) => Issue[]` functions run sequentially after built-in graph lint. `lint.disable` filters warning codes across all findings before counting and sorting. Disabling an `E*` error throws before loading; use a replacement validator to relax schemas. `lintKB(input, { validator, rules, disable })` exposes the same behavior directly.
-- **Search:** `search(graph)` returns a `SearchEngine` or promise. Its `search(query, opts)` returns `SearchMatch[]` or a promise. Core discards unknown IDs and nonpositive/nonfinite scores, keeps the highest score per ID (first on ties), sorts scores stably, and supplies `{}` for missing `matched`. Core applies deprecation/type filters, relevance normalization, limits, and goal aggregation. Hit relevance uses the best hit after type filtering; goal relevance uses the best eligible match before type filtering. Raw scores are engine-specific; the default uses BM25. Blank queries skip retrieval. Engines receive only `fuzzy`, `prefix`, and `includeDeprecated` (the interface also permits a `candidateLimit` hint), never `types`, `limit`, `goalLimit`, or `minRelevance`. Return enough candidates for filtering and goal surfacing. `createKBSearch`, `rankResults`, and `goalsOf` expose shared processing. `createMiniSearchEngine(graph, { stopwords, fold, boosts })` is synchronous; stopwords use the selected folding function and boosts merge over `FIELD_BOOST`. `createSearchIndex(graph, opts?)` uses the same default engine synchronously.
-- **Resolution:** `resolve.availability(node, tenant)` returns `[]` for available, `null` for unknown, or reasons for unavailable. It controls both final summaries and required/optional satisfier selection. `defaultAvailability` retains plan/permission checks. `resolve.rank(a, b)` compares `RankedCandidate` alternatives; returning zero preserves declaration order, and internal `order` is omitted from results. `defaultRank` orders by availability, deprecation, preparation, plan length, then declaration order. Policies and comparators must be synchronous. Fetch remote data first and pass it in `tenant.context`. Defaults support `maxDepth` and `tenant` too. Defined per-call options replace defaults; tenant `plan`, `permissions`, and `context` merge by defined field, with whole fields replaced, not deep merged. Omitted or `undefined` values preserve defaults.
-- **Rendering:** `renderer(resolved, opts)` returns `RenderResult` or a promise. The default `renderResolvedGoal` is synchronous. Its `RenderOptions.sections(defaults, resolved)` hook runs once to add/remove/reorder sections before budgeting. `buildRenderSections`, `fitSections`, and `renderPlanSteps` enable composition. Priority-zero sections always remain, even above budget. Custom renderers receive options but may ignore the sections hook.
-- **Tools:** `tools(defaults, kb)` in `KBToolsOptions` synchronously returns `KBToolSpec[]` to add, override, or remove tools. Each spec has a `definition` and a synchronous or async `handler(args, kb)`. `defaultToolSpecs` and `buildDefinitions` return independent copies. Duplicate names are rejected, schemas validate arguments and apply defaults, and thrown/rejected `ToolError` messages pass through. Other exceptions become internal tool errors. `tenantContext: false` hides public plan/permission arguments; configured tenant defaults still apply. Application `tenant.context` is never exposed in tool schemas. Missing-node suggestions use the configured search engine.
+### In-process CLI runners
 
 ```ts
-const custom = await createKB(
-  memorySource({
-    "procedures/export.md":
-      "---\ntype: procedure\ntitle: Export\nsummary: Export records\n---\n## Steps\n1. Export records\n",
-  }),
-  {
-    lint: { rules: [async () => []], disable: ["W101"] },
-    resolve: { tenant: { context: { entitlements: ["export"] } } },
-    renderer: async (resolved) => ({
-      text: resolved.goal.title,
-      tokens: 1,
-      omitted: [],
-    }),
-  },
-);
-```
+import { runLint, runSearch, runResolve, runDocs } from "@sontx/simplink-core";
 
-## CLI and in-process runners
-
-`simp` bundles every command (`lint`, `search`, `resolve`, `docs`, `index`). On an interactive terminal it prompts for missing arguments (command, query, goal, output directory) and shows progress; piped or in CI it prints plain output. The single-purpose bins `simp-lint`, `simp-search`, `simp-resolve`, `simp-docs`, and `simp-index` remain; each supports `--help`.
-
-```sh
-simp                      # pick a command interactively
-simp resolve --kb ./kb    # pick a goal from the KB
-simp lint ./kb --max-warnings 0
-```
-
-```sh
-simp-lint ./kb --format json
-simp-search export --kb ./kb --type procedure --limit 5
-simp-resolve goal.export --kb ./kb --state state.ready=true --budget 1500
-simp-docs --kb ./kb --out ./site
-simp-docs --kb ./kb --out ./graph-docs --layout graph
-simp-docs --kb ./kb --out ./site-vi --lang vi
-simp-resolve goal.export --kb ./kb --lang vi
-```
-
-```ts
-import { runLint, runSearch, runResolve } from "@sontx/simplink-core";
 const lines: string[] = [];
 const code = await runLint(["./kb", "--format", "json"], {
   stdout: (line) => lines.push(line),
@@ -102,36 +386,111 @@ const code = await runLint(["./kb", "--format", "json"], {
 });
 ```
 
-Runners take explicit argument arrays, return `Promise<number>`, and never change `process.exitCode` or terminate the host. Importing them performs no parsing or output. Callbacks receive line-oriented messages with no newline appended (a message can itself contain multiline JSON or Markdown); defaults are `console.log`/`console.error`. `runLint` applies validator/lint extensions; search and resolve use all facade extensions. Success returns 0; lint findings or the warning threshold return 1 in the linter; argument/loading/execution failures return 2 with stderr diagnostics. Search/resolve reject KBs with lint errors with code 2. Numeric limits/budgets must be positive finite integers; `max-warnings` must be -1 or nonnegative.
+Runners take argument arrays and return `Promise<number>` with the same exit
+codes as the CLI. They never touch `process.exitCode` or exit the host.
 
-`exportDocs(graph, opts?: DocsOptions)` and `kb.docs(opts?)` return `{ path, content }[]`
-without writing files. Site layout is the default: goals and supporting how-tos
-appear under `guides/`, constraints under `reference/`, and state checks under
-`troubleshooting/`, with a home page and directory indexes. `layout: "graph"`
-retains source paths and graph headings. `DocsOptions` also accepts resolve options;
-the facade merges its configured resolve defaults. Exports have no token-budget trimming.
+## Exporting docs
 
-`DocsOptions` and `RenderOptions` accept `locale` (BCP 47, e.g. `vi` or `vi-VN`) and
-partial `messages` for generated wording. The facade defaults `locale` to `simp.md`
-`language`, and `KBExtensions.locales` registers extra or reworded languages. English
-and Vietnamese are built in (`builtInLocales`); unknown tags and missing keys fall back
-to English. Resolution results keep canonical English warnings; renderers translate
-them with `translateDiagnostic`.
+```ts
+const pages = kb.docs(); // site layout
+const graphPages = kb.docs({ layout: "graph" }); // one page per node, source paths
+const vietnamese = kb.docs({ locale: "vi" });
+const forBasicPlan = kb.docs({ tenant: { plan: "basic" } });
+```
 
-Optional node frontmatter `docs: { path: getting-started/connect.md, order: 0 }`
-controls publication paths and navigation order. Paths use lowercase kebab-case
-POSIX segments and a `.md` suffix; `index.md` is reserved for generated indexes.
-Order is a nonnegative integer. Node IDs and source paths do not change. Use
-wikilinks for internal KB links so relative links follow the chosen output paths.
+In **site layout** (the default), each node type gets its own section:
 
-`runDocs` is the importable CLI runner. It passes extensions through the facade,
-rejects lint errors, duplicate routes, overlapping KB/output trees, escaping
-symlinks and hardlinked destinations before writing. Existing generated files
-are overwritten, unrelated files are preserved, and removed pages are not cleaned
-up. Write failures return 2 and can leave a partial export. Exported availability
-is recommendation context, not access control. Engine configuration, assets,
-and authored MDX/HTML compatibility remain the consuming site's responsibility.
+| Node type  | Default path                          |
+| ---------- | ------------------------------------- |
+| Goal       | `guides/<folders>/<name>.md`          |
+| Procedure  | `guides/<folders>/how-to/<name>.md`   |
+| Capability | `guides/<folders>/features/<name>.md` |
+| Constraint | `reference/<folders>/<name>.md`       |
+| State      | `troubleshooting/<folders>/<name>.md` |
+
+The export adds a home page and directory indexes. If `simp.md` has a body, that
+body becomes the root `index.md`. To override where a node is published, add
+frontmatter:
+
+```yaml
+docs:
+  path: getting-started/connect.md # lowercase kebab-case, .md; index.md is reserved
+  order: 0 # smaller numbers appear first in navigation
+```
+
+Use wikilinks for internal links so they follow the publication paths. The
+output is plain Markdown with relative links. Engine configuration and assets
+are up to you. `simp-docs` refuses to write if the KB has lint errors, if two
+pages share a route, or if the KB and output directories overlap. It
+overwrites the files it generates but does not remove stale pages, so use a
+fresh output directory for publishing.
+
+**Localization:** Generated wording follows `--lang` or `locale`, then the
+`language` in `simp.md`, then English. `en` and `vi` are built in. To add a
+language or change the wording, use
+`createKB(dir, { locales: { ja: { /* partial messages */ } } })`. Node content
+and page paths are never translated.
+
+## Extensions
+
+To customize behavior, pass `KBExtensions` as the second argument to `createKB`,
+or pass `{ extensions }` to `createKBTools`:
+
+```ts
+const kb = await createKB(
+  memorySource({ "procedures/export.md": "---\n..." }),
+  {
+    validator: (type, data) => [], // replace bundled schema validation
+    lint: { rules: [async (graph) => []], disable: ["W101"] },
+    search: (graph) => myEngine, // custom SearchEngine (default: BM25 via MiniSearch)
+    resolve: {
+      availability: (node, tenant) => [], // [] available, null unknown, reasons otherwise
+      rank: (a, b) => 0, // order alternative procedures
+      tenant: {
+        plan: "pro",
+        permissions: ["send"],
+        context: { entitlements: ["export"] },
+      },
+      maxDepth: 8,
+    },
+    renderer: async (resolved, opts) => ({
+      text: resolved.goal.title,
+      tokens: 1,
+      omitted: [],
+    }),
+    tools: (defaults, kb) => defaults, // add, override, or remove agent tools
+    locales: { ja: {} },
+  },
+);
+```
+
+| Hook           | Notes                                                                                                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `validator`    | Replaces schema validation. Path, type and folder, ID, duplicate, and YAML checks still run.                                                                                                     |
+| `lint.rules`   | Extra `(graph) => Issue[]` checks that run after the built-in graph lint.                                                                                                                        |
+| `lint.disable` | Filters warning codes. Disabling an `E*` error throws; to relax a schema, use a validator instead.                                                                                               |
+| `search`       | Returns candidates. Core applies type filters, limits, relevance normalization, and goal surfacing. Helpers: `createMiniSearchEngine`, `createKBSearch`, `rankResults`, `goalsOf`.               |
+| `resolve`      | Policies must be synchronous. Fetch remote data first and pass it in `tenant.context`. Defaults: `defaultAvailability`, `defaultRank`.                                                           |
+| `renderer`     | Replaces plan rendering. The default renderer's `sections` hook can add, remove, or reorder sections. Helpers: `buildRenderSections`, `fitSections`, `renderPlanSteps`.                          |
+| `tools`        | Returns `KBToolSpec[]`. Duplicate names are rejected. A `ToolError` message reaches the caller; other errors become internal errors. `tenantContext: false` hides plan and permission arguments. |
+
+Custom sources implement `{ list(): SourceFile[] | Promise<SourceFile[]> }`.
+Each file has a relative `/`-separated `relPath` and a `content` string.
+
+## Related packages
+
+| Package                                                                      | Purpose                                                                        |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [`@sontx/simplink-mcp`](https://www.npmjs.com/package/@sontx/simplink-mcp)   | Serve a KB to AI agents over MCP (stdio or HTTP)                               |
+| [`@sontx/simplink-node`](https://www.npmjs.com/package/@sontx/simplink-node) | Run a federated simp node and check cross-product references                   |
+| [simp.sontx.dev](https://simp.sontx.dev)                                     | Browser workspace to explore, edit, and preview a KB, with no install required |
 
 ## Migrating to 0.2.0
 
-`KBTools.call()` now returns `Promise<ToolResult>`: add `await` to every tool call. Release core and MCP together; MCP awaits handlers and advertises version `0.2.0`. Standalone synchronous APIs and default valid CLI output remain compatible.
+`KBTools.call()` now returns `Promise<ToolResult>`, so add `await` to every
+tool call. Upgrade `@sontx/simplink-core` and `@sontx/simplink-mcp` together.
+The standalone synchronous APIs and the default CLI output have not changed.
+
+## License
+
+[MIT](https://github.com/sontx/simplink/blob/main/LICENSE)
