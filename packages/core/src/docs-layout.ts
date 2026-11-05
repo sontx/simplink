@@ -100,6 +100,7 @@ export function siteIndexes(
   return [...folders].map((folder) => {
     const route = folder ? `${folder}/index.md` : "index.md";
     const home = !folder ? graph.nodes.get("simp") : undefined;
+    if (home?.body.trim() && homepage) return homepage;
     const heading = folder
       ? title(path.basename(folder), m)
       : (home?.title ?? m.site.documentation);

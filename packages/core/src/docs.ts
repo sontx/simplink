@@ -186,6 +186,8 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       return `[${label(title ?? target.title)}](${url}${fragment === undefined ? "" : `#${fragment}`})`;
     };
     const prose = (text: string) => proseLinks(text, link);
+    if (site && node.type === "simp" && node.body.trim())
+      return { path: node.path, content: prose(node.body).trim() + "\n" };
     const sections = [
       `---\ntitle: ${JSON.stringify(node.title)}\ndescription: ${JSON.stringify(node.summary)}\n---`,
       `# ${node.title}`,

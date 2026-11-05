@@ -137,6 +137,9 @@ rewords a language with partial messages. Node content and page paths never chan
 and the browser UI's language menu choose the same wording for plans.
 
 Site layout is the default for `exportDocs`, `kb.docs()`, and `simp-docs`.
+When `simp.md` has a nonempty body (excluding frontmatter and whitespace), that
+body becomes the entire root `index.md`, with internal KB links converted to docs
+links. Otherwise, the root index is generated automatically.
 Default locations preserve the product folders under each node type:
 
 | Node type  | Default publication path              |
