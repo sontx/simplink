@@ -1,21 +1,14 @@
 {
   "name": "@sontx/simplink-ui",
+  "private": true,
   "version": "0.2.0",
   "description": "Local graph manager and live docs preview for Simplink knowledge bases",
   "type": "module",
   "license": "MIT",
-  "files": [
-    "dist",
-    "LICENSE"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.json",
     "test": "tsx --test test/*.test.ts",
     "dev": "vite",
-    "prepack": "pnpm build",
     "preview": "vite preview",
     "test:browser": "node test/browser/run.mjs"
   },
