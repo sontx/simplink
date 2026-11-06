@@ -31,10 +31,13 @@ sibling `product-kb-builder` skill directory; reuse its references, templates, a
    - Limits, "max", "cannot", "not supported", notes/warnings → **constraints**.
    - Feature overview pages → **capabilities**.
    - FAQ and troubleshooting questions → aliases and `when_to_use` wording.
+   - The docs home / "Introduction" / "Overview" page → root `simp.md`: product `name`, `title`,
+     `summary`, the docs' language, and the "Get started" tasks that become its entry-goal links.
+     Integrations with other products the user also has KBs for → candidate `peers`.
 3. Group into areas following the docs' own navigation sections. Map candidates to node types with
    `<pkb>/references/modeling-guide.md`.
-4. Write `kb/INVENTORY.md` from `<pkb>/assets/templates/INVENTORY.md`. Evidence column = page URL with
-   `#anchor` when the heading has one (or local file path).
+4. Write `kb/INVENTORY.md` from `<pkb>/assets/templates/INVENTORY.md`, including the `simp` row.
+   Evidence column = page URL with `#anchor` when the heading has one (or local file path).
 5. **Stop and ask the user to review the inventory**, exactly as in `<pkb>` Phase 1. Add to open
    questions: pages that contradict each other, pages that look outdated (old screenshots, removed
    menus, old version banners), and steps that skip a prerequisite.
@@ -54,6 +57,9 @@ Follow `<pkb>/SKILL.md` Phases 2–4 unchanged (node order, `new_node.mjs`, lint
 - Screenshots/videos carry steps you cannot read: note `Unverified: steps shown only in image` rather
   than guessing.
 - Never copy example API keys, tokens, customer names, or internal URLs that appear in docs.
+- Write root `simp.md` as in `<pkb>` "Last step of Phase 2", with the docs home page in `sources:`.
+  Do **not** set `docs_url` to the crawled docs site: `docs_url` must be the root of this KB's own
+  graph-layout export (`simp-docs --layout graph`), because peers build ID-derived links from it.
 - In the report, also list pages skipped or out of scope, and doc contradictions found.
 
 ## Update mode (KB exists, docs changed)
@@ -62,4 +68,5 @@ Follow `<pkb>/SKILL.md` Phases 2–4 unchanged (node order, `new_node.mjs`, lint
    and compare with what the nodes say.
 2. Update affected nodes; add nodes for new pages; for pages that 404 or were removed, set
    `status: deprecated` instead of deleting (lint W104 shows who still references them).
-3. Re-run Phase 3 checks for the affected goals only.
+3. Sync `simp.md` entry links and `summary` with added or deprecated goals (never rename `name`).
+4. Re-run Phase 3 checks for the affected goals only.
