@@ -18,6 +18,8 @@ export interface HttpPeerOptions {
   fetch?: typeof fetch;
   /** Clock used for the 60-second manifest cache. */
   now?: () => number;
+  /** Largest response body accepted, in bytes. Defaults to `20000000`. */
+  maxResponseBytes?: number;
 }
 import {
   object,
@@ -61,9 +63,32 @@ export function httpPeer(baseUrl: string, opts: HttpPeerOptions = {}): Peer {
       throw new Error(
         response.status === 401 ? "unauthorized" : `HTTP ${response.status}`,
       );
+    // Read at most maxResponseBytes so a hostile peer cannot exhaust memory.
+    const limit = opts.maxResponseBytes ?? 20000000;
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    if (response.body) {
+      const reader = response.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.length;
+        if (size > limit) {
+          await reader.cancel();
+          throw new Error("response too large");
+        }
+        chunks.push(value);
+      }
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
     let value: unknown;
     try {
-      value = await response.json();
+      value = JSON.parse(new TextDecoder().decode(bytes));
     } catch {
       throw new Error("invalid response");
     }

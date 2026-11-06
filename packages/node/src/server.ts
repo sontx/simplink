@@ -32,7 +32,7 @@ export interface SimpNodeOptions {
   maxHops?: number;
   /** Per-peer request timeout in milliseconds. Defaults to `2000`. */
   timeoutMs?: number;
-  /** Host header allowlist; empty allows any host. */
+  /** Host header allowlist. Defaults to loopback hosts on the listen port when `host` is loopback; otherwise empty allows any host. */
   allowedHosts?: string[];
   /** Origin allowlist; defaults to `https://simp.sontx.dev`. Only these origins get CORS headers. */
   allowedOrigins?: string[];
@@ -98,12 +98,18 @@ export async function startSimpNode(
     timeoutMs,
     log: opts.log,
   });
+  // A loopback node without its own allowlist accepts only loopback Host
+  // headers, so a rebound DNS name cannot reach it from a browser.
+  const allowedHosts = opts.allowedHosts?.length ? opts.allowedHosts : [];
+  const loopback =
+    !opts.allowedHosts?.length &&
+    /^(localhost|127(?:\.\d{1,3}){3}|::1|\[::1\])$/i.test(host);
   const server = createServer(
     createSimpNodeHandler({
       service,
       basePath,
       token: opts.token,
-      allowedHosts: opts.allowedHosts,
+      allowedHosts,
       allowedOrigins: opts.allowedOrigins,
       onRequest: (entry) => opts.log?.({ msg: "request", ...entry }),
     }),
@@ -117,8 +123,16 @@ export async function startSimpNode(
       resolve();
     });
   });
+  const port = (server.address() as { port: number }).port;
+  if (loopback)
+    allowedHosts.push(
+      ...["localhost", "127.0.0.1", "[::1]"].map((h) => `${h}:${port}`),
+      ...(host.startsWith("127.") && host !== "127.0.0.1"
+        ? [`${host}:${port}`]
+        : []),
+    );
   return {
-    url: `http://${host}:${(server.address() as { port: number }).port}${basePath}`,
+    url: `http://${host}:${port}${basePath}`,
     server,
     service,
     status: kb.status,

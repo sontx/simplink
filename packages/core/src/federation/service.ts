@@ -101,7 +101,8 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
   const peers = () =>
     typeof opts.peers === "function" ? opts.peers() : (opts.peers ?? []);
   const unauthorized = new Map<string, number>();
-  const manifests = new Map<string, string[]>();
+  // In-flight or settled manifest fetches by peer, so concurrent routes share one request.
+  const manifests = new Map<string, Promise<string[] | undefined>>();
   const eligible = (trace: Trace) =>
     Math.min(trace.hops, opts.maxHops ?? 2) > 0
       ? peers().filter(
@@ -169,16 +170,21 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
     const available = eligible(trace);
     const direct = available.find((p) => p.name === owner);
     if (direct) return [direct];
-    await Promise.all(
-      available.map(async (p) => {
-        if (!manifests.has(p.name)) {
-          const result = await call(p, () => p.manifest());
-          if (result.value) manifests.set(p.name, result.value.peers);
+    const advertisedBy = await Promise.all(
+      available.map((p) => {
+        let peers = manifests.get(p.name);
+        if (!peers) {
+          peers = call(p, () => p.manifest()).then((result) => {
+            if (!result.value) manifests.delete(p.name);
+            return result.value?.peers;
+          });
+          manifests.set(p.name, peers);
         }
+        return peers;
       }),
     );
-    const advertised = available.filter((p) =>
-      manifests.get(p.name)?.includes(owner),
+    const advertised = available.filter((_, i) =>
+      advertisedBy[i]?.includes(owner),
     );
     return advertised.length ? advertised : available;
   }
@@ -265,46 +271,52 @@ export function createPeerService(opts: PeerServiceOptions): PeerService {
           if (node) nodes.set(id, node);
         }
       }
+      // Merge every owner routed to a peer into one forwarded lookup, so the
+      // number of distinct owners in a request cannot multiply peer traffic.
+      const routed = new Map<Peer, Set<string>>();
       await Promise.all(
         [...groups].map(async ([owner, wanted]) => {
-          const routes = await routeOwner(owner, r.trace);
-          const responses = await Promise.all(
-            routes.map(async (peer) => {
-              const response = await call(peer, () =>
-                peer.lookup({
-                  ...r,
-                  ids: wanted.map((id) => localize(id, peer.name)),
-                  trace: forwarded(r.trace),
-                }),
-              );
-              if (!response.value)
-                return {
-                  nodes: [],
-                  missing: wanted,
-                  sources: [response.source],
-                };
-              const value = response.value;
-              return qualifyResponse(
-                {
-                  ...value,
-                  nodes: value.nodes.filter((n) =>
-                    accepted(peer, value.sources, n.id),
-                  ),
-                  sources: [response.source, ...value.sources],
-                },
-                peer.name,
-                name,
-              );
-            }),
-          );
-          for (const response of responses) {
-            sources.push(...response.sources);
-            for (const node of response.nodes)
-              if (wanted.includes(node.id) && !nodes.has(node.id))
-                nodes.set(node.id, node);
+          for (const peer of await routeOwner(owner, r.trace)) {
+            const ids = routed.get(peer) ?? new Set<string>();
+            wanted.forEach((id) => ids.add(id));
+            routed.set(peer, ids);
           }
         }),
       );
+      const responses = await Promise.all(
+        [...routed].map(async ([peer, wanted]) => {
+          const response = await call(peer, () =>
+            peer.lookup({
+              ...r,
+              ids: [...wanted].map((id) => localize(id, peer.name)),
+              trace: forwarded(r.trace),
+            }),
+          );
+          if (!response.value)
+            return { wanted, nodes: [], sources: [response.source] };
+          const value = response.value;
+          return {
+            wanted,
+            ...qualifyResponse(
+              {
+                ...value,
+                nodes: value.nodes.filter((n) =>
+                  accepted(peer, value.sources, n.id),
+                ),
+                sources: [response.source, ...value.sources],
+              },
+              peer.name,
+              name,
+            ),
+          };
+        }),
+      );
+      for (const response of responses) {
+        sources.push(...response.sources);
+        for (const node of response.nodes)
+          if (response.wanted.has(node.id) && !nodes.has(node.id))
+            nodes.set(node.id, node);
+      }
       const statuses = new Map<string, SourceStatus>();
       for (const source of sources)
         if (!statuses.has(source.simp) || source.ok)

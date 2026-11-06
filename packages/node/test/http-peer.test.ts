@@ -98,3 +98,19 @@ test("rejects malformed nested response values before they enter core", async ()
     /invalid response/,
   );
 });
+test("rejects responses larger than maxResponseBytes", async () => {
+  const peer = httpPeer("https://example.test", {
+    maxResponseBytes: 100,
+    fetch: async () => Response.json({ ...manifest, summary: "x".repeat(200) }),
+  });
+  await assert.rejects(peer.manifest(), /response too large/);
+  assert.equal(
+    (
+      await httpPeer("https://example.test", {
+        maxResponseBytes: 1000,
+        fetch: async () => Response.json(manifest),
+      }).manifest()
+    ).name,
+    "crm",
+  );
+});

@@ -107,7 +107,7 @@ This command loads the KB, connects the declared peers, and serves the peer API.
 | `--token <token>`           | `SIMP_TOKEN`             | none (no auth)           |
 | `--log-format pretty\|json` | `SIMP_LOG_FORMAT`        | `pretty`                 |
 | `--max-hops <n>`            |                          | `2`                      |
-| `--allowed-host <host>`     | `ALLOWED_HOSTS`          | any host                 |
+| `--allowed-host <host>`     | `ALLOWED_HOSTS`          | loopback, see below      |
 | `--allowed-origin <origin>` | `ALLOWED_ORIGINS`        | `https://simp.sontx.dev` |
 | `--peer <name=url>`         | `SIMP_PEERS`             | URLs from `simp.md`      |
 | `--peer-token <name=token>` | `SIMP_PEER_TOKEN_<NAME>` | none                     |
@@ -115,8 +115,11 @@ This command loads the KB, connects the declared peers, and serves the peer API.
 
 `--peer`, `--peer-token`, `--allowed-host`, and `--allowed-origin` are
 repeatable, and flags override environment variables. Use
-`--allowed-origin '*'` to allow any browser origin. Declared peers without a URL
-are skipped and reported at startup.
+`--allowed-origin '*'` to allow any browser origin. A node listening on a
+loopback host without `--allowed-host` accepts only `localhost`, `127.0.0.1`,
+and `[::1]` Host headers on its port, which blocks DNS rebinding; on other
+hosts the default accepts any Host header. Declared peers without a URL are
+skipped and reported at startup.
 
 ### `simp-node lint --peers <kb>`
 

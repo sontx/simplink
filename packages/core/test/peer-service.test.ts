@@ -85,3 +85,28 @@ test("list returns every local node without bodies", async () => {
   );
   assert.ok(nodes.every((n) => n.body === undefined));
 });
+
+test("lookup sends one forwarded request per peer however many owners it names", async () => {
+  const calls = { manifest: 0, lookup: 0 };
+  const crm = {
+    name: "crm",
+    manifest: async () => {
+      calls.manifest++;
+      return await createPeerService({ kb: await product("crm") }).manifest();
+    },
+    explore: async () => ({ hits: [], goals: [], sources: [] }),
+    lookup: async () => {
+      calls.lookup++;
+      return { nodes: [], missing: [], sources: [] };
+    },
+  };
+  const service = createPeerService({
+    kb: await product("x", ["crm"]),
+    peers: [crm],
+  });
+  const ids = Array.from({ length: 200 }, (_, i) => `other${i}:goal.a`);
+  const result = await service.lookup({ ids, trace: newTrace() });
+  assert.equal(calls.lookup, 1);
+  assert.equal(calls.manifest, 1);
+  assert.equal(result.missing.length, 200);
+});

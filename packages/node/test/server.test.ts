@@ -45,3 +45,36 @@ test("startSimpNode accepts a loaded KB and requires simp.md", async () => {
     await node.close();
   }
 });
+
+test("startSimpNode on loopback refuses foreign Host headers by default", async () => {
+  const { request } = await import("node:http");
+  const node = await startSimpNode({ kb: crm, port: 0 });
+  const status = (host: string) =>
+    new Promise<number>((resolve, reject) => {
+      const url = new URL(`${node.url}/v1/nodes`);
+      request(url, { headers: { host } }, (res) => {
+        res.resume();
+        resolve(res.statusCode!);
+      })
+        .on("error", reject)
+        .end();
+    });
+  try {
+    const port = new URL(node.url).port;
+    assert.equal(await status(`127.0.0.1:${port}`), 200);
+    assert.equal(await status(`localhost:${port}`), 200);
+    assert.equal(await status(`evil.example:${port}`), 403);
+  } finally {
+    await node.close();
+  }
+  const open = await startSimpNode({
+    kb: crm,
+    port: 0,
+    allowedHosts: ["kb.example.com"],
+  });
+  try {
+    assert.equal((await fetch(`${open.url}/v1/nodes`)).status, 403);
+  } finally {
+    await open.close();
+  }
+});
