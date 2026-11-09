@@ -35,6 +35,7 @@
   "description": "Markdown graph KB: loading, validation, resolution, search, and tools",
   "bin": {
     "simp": "dist/simp-cli.js",
+    "simplink-core": "dist/simp-cli.js",
     "simp-lint": "dist/cli.js",
     "simp-resolve": "dist/resolve-cli.js",
     "simp-search": "dist/search-cli.js",

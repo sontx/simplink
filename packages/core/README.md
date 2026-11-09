@@ -59,7 +59,7 @@ install is needed, and your files stay in your browser.
 ```sh
 npm install @sontx/simplink-core
 # or run the CLI without installing
-npx -p @sontx/simplink-core simp lint ./kb
+npx @sontx/simplink-core lint ./kb
 ```
 
 Requires Node.js 22 or newer. Git must be installed only if you use `gitSource`.
