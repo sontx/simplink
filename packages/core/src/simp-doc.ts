@@ -11,6 +11,14 @@ export interface SimpPeerDecl {
   docsUrl?: string;
 }
 
+/** When and from which source revision the KB was last generated or updated. */
+export interface SimpCheckpoint {
+  /** ISO 8601 date or date-time of the last generate/update pass. */
+  updatedAt?: string;
+  /** Git commit of the product source the KB reflects; update passes diff from it. */
+  commit?: string;
+}
+
 /** The product manifest read from a KB's root `simp.md`. */
 export interface SimpDoc {
   /** Stable kebab-case simp name; empty when `simp.md` omits it. */
@@ -29,6 +37,8 @@ export interface SimpDoc {
   serves: ("pull" | "delegate")[];
   /** Declared peers. */
   peers: SimpPeerDecl[];
+  /** Last generate/update checkpoint, used to sync only newer changes. */
+  checkpoint?: SimpCheckpoint;
 }
 
 /** Reads the optional product manifest from a graph. */
@@ -36,6 +46,16 @@ export function simpDoc(graph: KBGraph): SimpDoc | undefined {
   const node = graph.nodes.get("simp");
   if (!node) return undefined;
   const d = node.data;
+  const cp = d.checkpoint as Record<string, unknown> | null | undefined;
+  const checkpoint: SimpCheckpoint | undefined =
+    cp && typeof cp === "object" && !Array.isArray(cp)
+      ? {
+          ...(typeof cp.updated_at === "string"
+            ? { updatedAt: cp.updated_at }
+            : {}),
+          ...(typeof cp.commit === "string" ? { commit: cp.commit } : {}),
+        }
+      : undefined;
   return {
     name: typeof d.name === "string" ? d.name : "",
     title: node.title,
@@ -66,5 +86,6 @@ export function simpDoc(graph: KBGraph): SimpDoc | undefined {
             : [],
         )
       : [],
+    ...(checkpoint && Object.keys(checkpoint).length ? { checkpoint } : {}),
   };
 }

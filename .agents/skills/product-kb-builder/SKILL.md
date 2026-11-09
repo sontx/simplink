@@ -23,7 +23,8 @@ quality of what you write here is the quality of the agent's answers.
    `simp-search`, and `simp-resolve` throughout.
 2. **Find the KB directory** (default `kb/`). If it already has files, you are in **update mode**: run
    `simp-lint` first, read `kb/INVENTORY.md` and root `kb/simp.md` if they exist, and work incrementally
-   (see "Update mode"). A KB without `simp.md` gets one in this pass.
+   (see "Update mode"). A KB without `simp.md` gets one in this pass. If `simp.md` has a `checkpoint`,
+   update mode reads only what changed since it — not the whole product.
 3. **Read `references/schema.md` now.** It defines every field, edge, and lint code. Writing files from
    memory of the format causes lint churn.
 4. **Ask two things** if the user hasn't said: the KB's primary language for titles and steps
@@ -99,6 +100,22 @@ links to them (see "Product manifest and federation" in `references/schema.md`):
 6. Put the evidence (README, package manifest, landing page) in `sources:`, run `simp-lint`, and mark
    the `simp` inventory row `drafted`.
 
+### Finish every pass — write the checkpoint
+
+After Phase 3 passes with zero lint errors (first build and every update), record where the KB now
+stands in `simp.md` so the next update can skip unchanged code:
+
+```yaml
+checkpoint:
+  updated_at: "2026-01-31T09:00:00Z" # date -u +%Y-%m-%dT%H:%M:%SZ
+  commit: "0123abc…" # git -C <product repo> rev-parse HEAD
+```
+
+Use the commit you actually read, not one made later. Omit `commit` when the source isn't a Git repo.
+If the working tree had uncommitted changes you documented, say so in the report — the next diff from
+`commit` will show them again, which is safe. Never advance the checkpoint after a partial or failing
+pass; the next update would silently skip what this one missed.
+
 ## Phase 3 — Verify retrieval and plans
 
 Lint checks structure, not usefulness. Check usefulness directly:
@@ -120,7 +137,8 @@ Lint checks structure, not usefulness. Check usefulness directly:
 
 Give the user a short report:
 
-- Product manifest: `name`, `language`, entry goals, and declared peers (or why none).
+- Product manifest: `name`, `language`, entry goals, declared peers (or why none), and the new
+  `checkpoint` (or why it was not advanced).
 - Areas covered, node counts per type, goals added.
 - Retrieval results: queries that failed to find their goal, if any.
 - Every `needs-review` node with its open question.
@@ -129,7 +147,14 @@ Give the user a short report:
 
 ## Update mode (KB exists, code changed)
 
-1. Get the changed paths (`git diff --name-only <base>...HEAD`, or ask the user).
+1. Get the changed paths since the last pass — and only those; don't re-read the whole product:
+   - `checkpoint.commit` in `simp.md` → `git diff --name-status <commit> HEAD` (add `git status --porcelain`
+     for uncommitted work). If the commit is unknown locally (shallow clone, rewritten history), try
+     `git fetch --deepen`, then fall back to `git log --since=<checkpoint.updated_at> --name-status`.
+   - Only `checkpoint.updated_at` → `git log --since=<updated_at> --name-status --format=` .
+   - No checkpoint → ask the user for a base (`git diff --name-only <base>...HEAD`), or do a full pass.
+   Ignore paths outside the documented scope (tests, lockfiles, CI) unless they change behavior.
+   Renamed paths (`R` status) need their `sources:` entries rewritten.
 2. Find affected nodes: `grep -rl "<changed path>" kb/` (this is what `sources:` is for).
 3. Re-read the changed code and update those nodes; add new nodes for new surface; set
    `status: deprecated` on removed features rather than deleting them immediately, so agents and links
@@ -137,7 +162,8 @@ Give the user a short report:
 4. Keep `simp.md` in sync: add new entry goals to "Start here", remove links to deprecated goals, and
    update `summary` when the product's scope changes. Never rename `name`. Create the manifest if the KB
    predates it.
-5. Re-run Phase 3 for the affected goals only.
+5. Re-run Phase 3 for the affected goals only, then advance `checkpoint` (see "Finish every pass").
+   If nothing in scope changed, still advance it so the next pass starts later.
 
 ## Quality bar
 

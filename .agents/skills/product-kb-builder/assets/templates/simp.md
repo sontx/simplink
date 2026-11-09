@@ -16,6 +16,9 @@ peers: []
 #     url: ../another-product/kb
 #     mode: pull
 #     docs_url: https://docs.example/another-product
+# checkpoint: # set at the end of every generate/update pass; update mode diffs from it
+#   updated_at: "2026-01-31T09:00:00Z"
+#   commit: "0123abc" # git rev-parse HEAD of the product source; omit for docs-only KBs
 sources: []
 ---
 

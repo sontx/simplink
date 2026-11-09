@@ -41,6 +41,19 @@ export function deriveId(relPath: string): {
   return { folderType, derivedId: [folderType, ...rest].join(".") };
 }
 
+/** Replaces YAML timestamps, which js-yaml loads as `Date`, with ISO strings so frontmatter stays JSON-shaped. */
+function plainDates(value: unknown): unknown {
+  if (value instanceof Date)
+    return Number.isNaN(value.getTime()) ? String(value) : value.toISOString();
+  if (Array.isArray(value)) return value.map(plainDates);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, plainDates(v)]),
+    );
+  }
+  return value;
+}
+
 /** Parses one document, preserving YAML diagnostics for linting.
  * @param relPath - Relative POSIX source path used to derive the identifier.
  * @param raw - Markdown text including frontmatter.
@@ -52,7 +65,7 @@ export function parseDoc(relPath: string, raw: string): RawDoc {
     return {
       relPath,
       ...ids,
-      data: parsed.data ?? {},
+      data: (plainDates(parsed.data) as Record<string, unknown>) ?? {},
       body: parsed.content,
       ...(!raw.trimStart().startsWith("---")
         ? { parseError: "missing frontmatter block" }

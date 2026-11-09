@@ -69,3 +69,37 @@ test("site docs generate the root index when simp.md has no body content", async
     assert.match(home.content, /\[Guides\]\(guides\/index.md\)/);
   }
 });
+
+test("reads an optional checkpoint from simp.md, including unquoted YAML timestamps", async () => {
+  const r = await fixture({
+    "simp.md": simp(
+      "checkpoint:\n  updated_at: 2026-11-09T07:12:00Z\n  commit: 7f0201f\n",
+    ),
+  });
+  assert.equal(r.errorCount, 0, JSON.stringify(r.issues));
+  assert.deepEqual(simpDoc(r.graph)?.checkpoint, {
+    updatedAt: "2026-11-09T07:12:00.000Z",
+    commit: "7f0201f",
+  });
+  const quoted = await fixture({
+    "simp.md": simp('checkpoint: {updated_at: "2026-11-09"}\n'),
+  });
+  assert.equal(quoted.errorCount, 0, JSON.stringify(quoted.issues));
+  assert.deepEqual(simpDoc(quoted.graph)?.checkpoint, {
+    updatedAt: "2026-11-09",
+  });
+  const none = await fixture({ "simp.md": simp() });
+  assert.equal(simpDoc(none.graph)?.checkpoint, undefined);
+});
+
+test("rejects malformed simp.md checkpoints", async () => {
+  for (const extra of [
+    "checkpoint: {}\n",
+    "checkpoint: {commit: HEAD}\n",
+    'checkpoint: {updated_at: "yesterday"}\n',
+    "checkpoint: {commit: abc1234, branch: main}\n",
+  ]) {
+    const r = await fixture({ "simp.md": simp(extra) });
+    assert.ok(r.errorCount > 0, `${extra}: ${JSON.stringify(r.issues)}`);
+  }
+});

@@ -6,6 +6,9 @@ summary: Turn linked Markdown into searchable product guidance, executable plans
 aliases: [Simplink knowledge base, cơ sở tri thức Simplink]
 tags: [knowledge-base, agents]
 peers: []
+checkpoint:
+  updated_at: "2026-11-09T09:26:47Z"
+  commit: "7f0201f4de90e85289c7ef1838a79b0ad0194f9d"
 sources:
   - packages/core/src/simp-doc.ts
   - packages/core/src/docs.ts

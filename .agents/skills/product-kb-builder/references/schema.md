@@ -90,6 +90,10 @@ Optional `language` (for example `vi`) sets the default language of generated do
 `peers` contains entries with required `name` and optional `url`, `mode` (`pull` or `delegate`),
 and HTTP(S) `docs_url`. Peer names must be unique and differ from the owning simp name.
 Peer URLs may identify an HTTP API, static HTTP KB, `file://` URL, or folder path relative to the KB root.
+Optional `checkpoint` records the last generate/update pass so the next pass only reads newer changes:
+`updated_at` (quoted ISO 8601 date or date-time, e.g. `"2026-01-31T09:00:00Z"`) and `commit`
+(quoted 7–64 char lowercase hex git SHA of the product source the KB reflects). Give at least one;
+no other keys. Set it only after a pass finishes with zero lint errors.
 Keep tokens outside the manifest. Its body becomes the documentation homepage.
 
 Reference a peer as `<simp>:<node-id>` in typed frontmatter fields and choice procedure IDs,

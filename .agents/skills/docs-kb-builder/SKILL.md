@@ -60,13 +60,21 @@ Follow `<pkb>/SKILL.md` Phases 2–4 unchanged (node order, `new_node.mjs`, lint
 - Write root `simp.md` as in `<pkb>` "Last step of Phase 2", with the docs home page in `sources:`.
   Do **not** set `docs_url` to the crawled docs site: `docs_url` must be the root of this KB's own
   graph-layout export (`simp-docs --layout graph`), because peers build ID-derived links from it.
+- After the final lint passes, set `checkpoint.updated_at` in `simp.md` to the crawl time (quoted ISO
+  8601, e.g. `"2026-01-31T09:00:00Z"`). Omit `checkpoint.commit` unless the docs live in a Git repo you
+  read, in which case use that repo's `HEAD`.
 - In the report, also list pages skipped or out of scope, and doc contradictions found.
 
 ## Update mode (KB exists, docs changed)
 
-1. Get the changed pages: ask the user, or re-fetch every URL in `sources:` (`grep -rhoE "https?://[^ \"']+" kb/ | sort -u`)
-   and compare with what the nodes say.
+1. Get the changed pages since `checkpoint` in `simp.md`, cheapest first:
+   - Docs in a local Git folder with `checkpoint.commit` → `git diff --name-status <commit> HEAD`.
+   - `/sitemap.xml` `<lastmod>` → re-fetch only pages modified after `checkpoint.updated_at`, plus pages
+     new to the sitemap; pages missing from it are removal candidates.
+   - Changelog / "What's new" entries dated after `checkpoint.updated_at`.
+   - Otherwise ask the user, or re-fetch every URL in `sources:` (`grep -rhoE "https?://[^ \"']+" kb/ | sort -u`)
+     and compare with what the nodes say.
 2. Update affected nodes; add nodes for new pages; for pages that 404 or were removed, set
    `status: deprecated` instead of deleting (lint W104 shows who still references them).
 3. Sync `simp.md` entry links and `summary` with added or deprecated goals (never rename `name`).
-4. Re-run Phase 3 checks for the affected goals only.
+4. Re-run Phase 3 checks for the affected goals only, then advance `checkpoint.updated_at`.
