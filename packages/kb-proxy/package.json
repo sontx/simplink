@@ -1,0 +1,14 @@
+{
+  "name": "@sontx/simplink-kb-proxy",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Cloudflare Worker CORS proxy that lets the Simplink UI read static KBs",
+  "type": "module",
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}

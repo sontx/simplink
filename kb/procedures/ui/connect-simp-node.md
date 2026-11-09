@@ -20,7 +20,7 @@ sources:
 ## Steps
 
 1. Start the simp node with the UI's origin allowed, for example `simp-node --allowed-origin http://localhost:5173` or `ALLOWED_ORIGINS=http://localhost:5173`. Use the exact origin shown in the browser address bar, or `*` to allow any origin; with `*`, protect the node with `--token`.
-2. Open the UI. Under **Or connect to a simp node**, enter the node URL, such as `http://localhost:3393`. A bare origin uses the `/simp` base path; include the path when the node uses a custom base.
+2. Open the UI. Under **Or connect to a simp node or static KB**, enter the node URL in **Simp node or static KB URL**, such as `http://localhost:3393`. A bare origin uses the `/simp` base path; include the path when the node uses a custom base.
 3. Enter the node's bearer token when it has one, then select **Connect**. The UI remembers the URL across visits. The token is kept only for the current browser tab, so refreshing the page reconnects to the node and stays on the same page; closing the tab or the workspace forgets it.
 4. Browse Graph, Nodes, Issues, Docs, and Playground. The workspace is read-only: editing controls are hidden and the files are rebuilt from the node's nodes, so formatting and comments can differ from the source files.
 

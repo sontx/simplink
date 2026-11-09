@@ -118,7 +118,10 @@ try {
     await once(node, "listening");
     try {
       await page
-        .getByRole("textbox", { name: "Simp node URL", exact: true })
+        .getByRole("textbox", {
+          name: "Simp node or static KB URL",
+          exact: true,
+        })
         .fill(`http://127.0.0.1:${node.address().port}`);
       await page
         .getByRole("textbox", { name: "Token (optional)", exact: true })

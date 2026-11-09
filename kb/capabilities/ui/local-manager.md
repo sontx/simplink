@@ -21,6 +21,7 @@ sources:
   - packages/ui/src/routes/issues.tsx
   - packages/ui/src/routes/docs/$.tsx
   - packages/ui/src/lib/i18n.ts
+  - packages/ui/src/workspace/static-kb.ts
   - README.md
 ---
 
@@ -36,6 +37,6 @@ The header shows the error and warning counts, **Search nodes…**, **Reload**, 
 
 All KB operations run in the browser. There is no UI server API. The header shows the folder name and actions to open another folder or close it. That menu and the navigation rail's footer name the workspace mode: **Folder** (changes save straight to disk), **Memory** (download the KB to keep changes), or **Remote** (read-only). In a read-only workspace, the node inspector offers **View source** instead of **Open editor**. Unsaved memory changes are guarded when closing, switching folders, reloading, or refreshing the page.
 
-The open screen can also connect to a simp node by URL and optional token. That workspace is a read-only snapshot of the node's own KB, rebuilt from its nodes; editing controls are hidden. Its Issues view shows the node's own lint findings from the manifest, so files and values the rebuild cannot reproduce still appear; line numbers refer to the node's original files and are not links. In any workspace, Playground tools also reach peers that `simp.md` declares with an `http(s)` simp-node URL; peers that need a token are not supported there.
+The open screen can also connect to a simp node by URL and optional token, or open a static KB published with `simp-index.yaml` (see `procedure.ui.open-static-kb`). That workspace is a read-only snapshot of the node's own KB, rebuilt from its nodes; editing controls are hidden. Its Issues view shows the node's own lint findings from the manifest, so files and values the rebuild cannot reproduce still appear; line numbers refer to the node's original files and are not links. In any workspace, Playground tools also reach peers that `simp.md` declares with an `http(s)` simp-node URL; peers that need a token are not supported there.
 
 Refreshing automatically restores the last selected directory when the browser still grants read/write permission. If permission must be renewed, use **Reopen** on the open screen. A connected simp node is restored on refresh within the same browser tab. Memory workspaces do not persist across refreshes.

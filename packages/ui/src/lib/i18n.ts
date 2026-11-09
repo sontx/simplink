@@ -109,8 +109,9 @@ export const vietnamese: Readonly<Record<string, string>> = {
   Recent: "Gần đây",
   Reopen: "Mở lại",
   "Reopen {name}": "Mở lại {name}",
-  "Or connect to a simp node": "Hoặc kết nối tới một nút simp",
-  "Simp node URL": "URL của nút simp",
+  "Or connect to a simp node or static KB":
+    "Hoặc kết nối tới một nút simp hoặc KB tĩnh",
+  "Simp node or static KB URL": "URL của nút simp hoặc KB tĩnh",
   "Token (optional)": "Mã truy cập (không bắt buộc)",
   Connect: "Kết nối",
   "Simp nodes open read-only. Add this page's origin to the node's allowed origins.":

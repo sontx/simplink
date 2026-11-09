@@ -51,6 +51,12 @@ export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
 
 export * from "./simp-doc.js";
 
+export {
+  parseSimpIndex,
+  SIMP_INDEX_FILE,
+  type SimpIndex,
+} from "./simp-index.js";
+
 export * from "./ids.js";
 
 export * from "./links.js";

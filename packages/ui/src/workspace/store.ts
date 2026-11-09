@@ -7,6 +7,11 @@ import {
 } from "@sontx/simplink-core/browser";
 import { httpPeer } from "@sontx/simplink-node/http-peer";
 import { stringify } from "yaml";
+import {
+  NotStaticKBError,
+  staticStore,
+  type StaticStoreOptions,
+} from "./static-kb.js";
 
 export interface WriteOptions {
   create?: boolean;
@@ -233,6 +238,9 @@ export class UnreachableNodeError extends Error {
   }
 }
 
+/** Something answered at the URL, but not as a simp node. */
+class NotSimpNodeError extends Error {}
+
 // Read-only snapshot of a simp node's own KB: list every node, then fetch bodies through lookup.
 export async function remoteStore(
   url: string,
@@ -252,7 +260,7 @@ export async function remoteStore(
       );
     // The peer client's terse codes, as the problem and what to try next.
     if (/^HTTP 404$/.test(error.message))
-      throw new Error(
+      throw new NotSimpNodeError(
         "No simp node answered at this URL. Check the base path (for example /simp).",
       );
     if (error.message === "unauthorized")
@@ -260,7 +268,7 @@ export async function remoteStore(
         "The simp node refused this token. Check the bearer token, or leave it empty for an open node.",
       );
     if (error.message === "invalid response")
-      throw new Error(
+      throw new NotSimpNodeError(
         "This URL answered, but not as a simp node. Check that it points at the node's base path.",
       );
     throw error;
@@ -313,6 +321,36 @@ export async function remoteStore(
     write: readOnly,
     remove: readOnly,
   };
+}
+
+/**
+ * Opens a URL as a simp node, or failing that as a static KB (`simp.md` plus
+ * `simp-index.yaml`). A token always means a simp node. When neither answers,
+ * the simp node's error is reported.
+ */
+export async function urlStore(
+  url: string,
+  token?: string,
+  staticOptions?: StaticStoreOptions,
+): Promise<KBStore> {
+  try {
+    return await remoteStore(url, token);
+  } catch (nodeError) {
+    if (
+      token ||
+      !(
+        nodeError instanceof UnreachableNodeError ||
+        nodeError instanceof NotSimpNodeError
+      )
+    )
+      throw nodeError;
+    try {
+      return await staticStore(url, staticOptions);
+    } catch (staticError) {
+      if (staticError instanceof NotStaticKBError) throw nodeError;
+      throw staticError;
+    }
+  }
 }
 
 export async function pickFolder(): Promise<{

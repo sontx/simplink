@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, `@sontx/simplink-node`, and `@sontx/simplink-ui`. The repository root is private.
+This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, `@sontx/simplink-node`, `@sontx/simplink-ui`, and the private Cloudflare Worker `@sontx/simplink-kb-proxy`. The repository root is private.
 
 - `packages/core/src/`: Loading, schemas, graphs, linting, resolution, rendering, search, and core CLI entry points; `index.ts` defines public exports.
 - `packages/core/src/source.ts`: Filesystem and in-memory document sources.
@@ -13,6 +13,7 @@ This pnpm monorepo contains `@sontx/simplink-core`, `@sontx/simplink-mcp`, `@son
 - `packages/node/src/`: HTTP simp node, peer clients, folder/static peers, and online peer lint.
 - `packages/mcp/src/`: MCP server, HTTP transport, executable entry points, and public `index.ts`. Import core through `@sontx/simplink-core`, never across package source directories.
 - `packages/ui/src/`: Static Vite React SPA with browser folder access, workspace services, graph management, and in-memory docs preview; no UI backend.
+- `packages/kb-proxy/src/`: Cloudflare Worker CORS proxy the UI falls back to for static KBs on hosts without CORS headers; deploy with `pnpm --filter @sontx/simplink-kb-proxy run deploy` and build the UI with `VITE_SIMPLINK_KB_PROXY`.
 - `packages/*/test/`: Package-owned tests; core fixture builders live in `packages/core/test/helpers.ts`.
 - `test/fixtures/kb/`: Shared synthetic knowledge base; tests must not depend on root `kb/`.
 - `kb/`: Simplink's own product knowledge base; `kb/INVENTORY.md` tracks coverage. Run `pnpm lint:kb` after changing it or the features it documents.

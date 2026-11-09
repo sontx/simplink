@@ -11,7 +11,7 @@ import { WorkspaceService } from "./service.js";
 import {
   directoryStore,
   pickFolder,
-  remoteStore,
+  urlStore,
   UnreachableNodeError,
   type DirectoryHandle,
   type KBStore,
@@ -66,6 +66,12 @@ function saveWorkspaceClosed(closed: boolean) {
     /* Closing still works when browser storage is unavailable. */
   }
 }
+
+// Static KBs on hosts without CORS headers load through this proxy (see workers/kb-proxy).
+const staticOptions = {
+  proxy:
+    (import.meta.env.VITE_SIMPLINK_KB_PROXY as string | undefined) || undefined,
+};
 
 interface RemoteSession {
   url: string;
@@ -139,7 +145,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       try {
         const remote = remoteSession();
         if (remote && !workspaceClosed()) {
-          if (await activate(await remoteStore(remote.url, remote.token)))
+          if (
+            await activate(
+              await urlStore(remote.url, remote.token, staticOptions),
+            )
+          )
             saveRemoteSession(remote);
           return;
         }
@@ -311,7 +321,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setMessage("");
     try {
       if (
-        await activate(await remoteStore(nodeUrl, token), undefined, wasDirty)
+        await activate(
+          await urlStore(nodeUrl, token, staticOptions),
+          undefined,
+          wasDirty,
+        )
       )
         saveRemoteSession({ url: nodeUrl.trim(), token });
       try {
@@ -459,11 +473,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             }}
           >
             <div className="text-xs font-medium text-muted-foreground">
-              {t("Or connect to a simp node")}
+              {t("Or connect to a simp node or static KB")}
             </div>
             <label className="block space-y-1">
               <span className="text-xs text-muted-foreground">
-                {t("Simp node URL")}
+                {t("Simp node or static KB URL")}
               </span>
               <Input
                 type="url"

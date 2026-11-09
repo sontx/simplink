@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "simplink-kb-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-22",
+  "vars": {
+    // Comma-separated UI origins allowed to use the proxy; empty allows any origin.
+    "ALLOWED_ORIGINS": "https://simp.sontx.dev",
+    "CACHE_SECONDS": "300",
+  },
+}
