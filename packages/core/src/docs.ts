@@ -4,10 +4,16 @@ import { simpDoc } from "./simp-doc.js";
 import * as path from "./posix-path.js";
 import { getChoices } from "./graph.js";
 import { siteGraph, siteIndexes } from "./docs-layout.js";
-import { docAvailability, renderDocPlan } from "./docs-plan.js";
+import {
+  docAvailability,
+  renderDocPlan,
+  requirementLabel,
+} from "./docs-plan.js";
 import {
   resolveGoal,
   type AvailabilityInfo,
+  type Condition,
+  type ConstraintRef,
   type PlanStep,
   type ResolveOptions,
 } from "./resolve.js";
@@ -203,6 +209,9 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
   const m = messagesFor(opts);
   const t = m.docs;
   const severity = (value: string) => m.severity[value] ?? value;
+  const requirement = (value: string) => requirementLabel(value, m);
+  const capitalize = (text: string) =>
+    text.charAt(0).toUpperCase() + text.slice(1);
   const sourceGraph = graph;
   if (site) graph = siteGraph(graph);
   const pages = [...graph.nodes.values()].map((node) => {
@@ -270,7 +279,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
     field(
       site ? t.requirementLevel : t.severity,
       typeof node.data.severity === "string"
-        ? severity(node.data.severity)
+        ? (site ? requirement : severity)(node.data.severity)
         : node.data.severity,
     );
     field(site ? t.availableOnPlans : t.plans, node.availability?.plans);
@@ -342,6 +351,25 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       const stepsHeading = `## ${site ? t.steps : t.recommendedPlan}`;
       if (!best) sections.push(`${stepsHeading}\n\n${t.noProcedure}`);
       else {
+        // Site guides group constraints by what the reader must do about them:
+        // blocking ones before the steps, warnings after. Graph docs keep one list.
+        // A blocking constraint reached only through a conditional step carries
+        // that step's condition; one reached only through a choice option is
+        // left to the option, which lists it inline.
+        const conditions = constraintConditions(sourceGraph, best.plan);
+        const constraintItem = (c: ConstraintRef, when: Condition[] = []) =>
+          `- **${link(c.id)}**${when.length ? m.docPlan.onlyIf(when.map((x) => link(x.state))) : ""}\\\n  ${prose(c.summary)}`;
+        const blocking = best.constraints.flatMap((c) => {
+          const when = conditions.get(c.id);
+          return c.severity === "blocking" && when
+            ? [constraintItem(c, when)]
+            : [];
+        });
+        const advisory = best.constraints.filter(
+          (c) => c.severity !== "blocking",
+        );
+        if (site && blocking.length)
+          sections.push(`## ${t.beforeYouStart}\n\n${blocking.join("\n")}`);
         sections.push(
           `${stepsHeading}\n\n${link(best.procedure.id)}\n\n${t.availability}: ${prose(availability(best))}`,
         );
@@ -357,9 +385,13 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
               : renderPlanSteps(best.plan, "", (id) => link(id), m),
           ),
         );
-        if (best.constraints.length)
+        if (site && advisory.length)
           sections.push(
-            `## ${site ? t.requirements : t.constraints}\n\n${best.constraints.map((c) => `- [${severity(c.severity)}] ${link(c.id)} — ${prose(c.summary)}`).join("\n")}`,
+            `## ${requirement("warning")}\n\n${advisory.map((c) => constraintItem(c)).join("\n")}`,
+          );
+        if (!site && best.constraints.length)
+          sections.push(
+            `## ${t.constraints}\n\n${best.constraints.map((c) => `- **${capitalize(severity(c.severity))}:** ${link(c.id)} — ${prose(c.summary)}`).join("\n")}`,
           );
         const failures = (plan: PlanStep[]): string[] =>
           plan.flatMap((s) =>
@@ -408,4 +440,39 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
         ...pages.filter((page) => page.path !== "index.md"),
       ]
     : pages;
+}
+
+/**
+ * Conditions under which each constraint applies to a plan's top-level steps:
+ * `[]` when an unconditional step needs it, otherwise the first conditional
+ * step's conditions. Constraints reached only through choice options are absent.
+ */
+function constraintConditions(
+  graph: KBGraph,
+  plan: PlanStep[],
+): Map<string, Condition[]> {
+  const ids = (id: string, kind: string): string[] => {
+    const v = graph.nodes.get(id)?.data[kind];
+    return Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === "string")
+      : [];
+  };
+  const result = new Map<string, Condition[]>();
+  for (const step of plan) {
+    if (step.kind !== "run") continue;
+    const when = step.when ?? [];
+    const owners = new Set([step.procedure.id]);
+    const addCapability = (id: string) => {
+      if (owners.has(id)) return;
+      owners.add(id);
+      ids(id, "requires").forEach(addCapability);
+    };
+    ids(step.procedure.id, "uses").forEach(addCapability);
+    for (const owner of owners)
+      for (const c of ids(owner, "constrained_by")) {
+        const seen = result.get(c);
+        if (!seen || (seen.length && !when.length)) result.set(c, when);
+      }
+  }
+  return result;
 }

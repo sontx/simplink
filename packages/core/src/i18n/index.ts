@@ -11,22 +11,50 @@ export { en, vi };
 /** Languages shipped with Simplink. Add a language by adding `<code>.ts` here and registering it. */
 export const builtInLocales: Readonly<Record<string, Messages>> = { en, vi };
 
-/** Merges overrides into a complete catalog without mutating either input. */
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+/** Merges `over` into `base` key by key at every depth; functions and arrays replace. */
+function deepMerge(
+  base: Record<string, unknown>,
+  over: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...base };
+  for (const [key, value] of Object.entries(over)) {
+    if (value === undefined) continue;
+    const current = base[key];
+    merged[key] =
+      isPlainObject(current) && isPlainObject(value)
+        ? deepMerge(current, value)
+        : value;
+  }
+  return merged;
+}
+
+/**
+ * Merges overrides into a complete catalog without mutating either input.
+ * Site requirement labels refine severity labels, so an override that rewords a
+ * severity without also rewording its requirement label drops the inherited
+ * requirement label and the reworded severity is shown instead.
+ */
 export function mergeMessages(
   base: Messages,
   overrides?: MessageOverrides,
 ): Messages {
   if (!overrides) return base;
-  const merged = { ...base } as Record<string, unknown>;
-  for (const [group, value] of Object.entries(overrides)) {
-    if (value === undefined) continue;
-    const current = (base as unknown as Record<string, unknown>)[group];
-    merged[group] =
-      current && typeof current === "object" && typeof value === "object"
-        ? { ...current, ...value }
-        : value;
+  const merged = deepMerge(
+    base as unknown as Record<string, unknown>,
+    overrides as Record<string, unknown>,
+  ) as unknown as Messages;
+  const reworded = Object.keys(overrides.severity ?? {}).filter(
+    (key) => overrides.docs?.requirementLabels?.[key] === undefined,
+  );
+  if (reworded.length) {
+    const labels = { ...merged.docs.requirementLabels };
+    for (const key of reworded) delete labels[key];
+    merged.docs = { ...merged.docs, requirementLabels: labels };
   }
-  return merged as unknown as Messages;
+  return merged;
 }
 
 /** Lowercased candidates from most to least specific, e.g. `vi-vn`, `vi`. */

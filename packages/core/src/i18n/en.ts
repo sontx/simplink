@@ -59,7 +59,11 @@ export const en: Messages = {
     deprecatedDependency: "Deprecated dependency in this recommendation.",
     alreadySatisfied: "Already satisfied",
     constraints: "Constraints",
-    requirements: "Requirements",
+    beforeYouStart: "Before you start",
+    requirementLabels: {
+      blocking: "Required",
+      warning: "Good to know",
+    },
     failureHandling: "Failure handling",
     ifSomethingGoesWrong: "If something goes wrong",
     alternatives: "Alternatives",

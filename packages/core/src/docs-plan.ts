@@ -17,6 +17,10 @@ export const docAvailability = (
           a.unavailableReasons.map((r) => translateDiagnostic(r, m)),
         );
 
+/** Reader-facing label for a constraint severity, falling back to the severity label, then the raw value. */
+export const requirementLabel = (value: string, m: Messages = en): string =>
+  m.docs.requirementLabels[value] ?? m.severity[value] ?? value;
+
 /** Reader-facing steps; generated references are formatted separately from authored prose. */
 export function renderDocPlan(
   plan: PlanStep[],
@@ -25,7 +29,6 @@ export function renderDocPlan(
   m: Messages = en,
   image: DocImage = () => "",
 ): string {
-  const severity = (value: string) => m.severity[value] ?? value;
   const images = (
     owner: string,
     list: NodeImage[] | undefined,
@@ -62,7 +65,7 @@ export function renderDocPlan(
               `${pad}      - **${o.key}**: ${o.when} — ${link(o.procedure.id)}; ${docAvailability(o, m)}`,
               ...o.constraints.map(
                 (c) =>
-                  `${pad}        - [${severity(c.severity)}] ${link(c.id)}: ${c.summary}`,
+                  `${pad}        - ${requirementLabel(c.severity, m)}: ${link(c.id)} — ${c.summary}`,
               ),
               renderDocPlan(o.plan, link, `${pad}        `, m, image),
             ]

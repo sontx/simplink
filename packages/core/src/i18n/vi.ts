@@ -59,7 +59,11 @@ export const vi: Messages = {
     deprecatedDependency: "Đề xuất này phụ thuộc vào mục đã ngừng sử dụng.",
     alreadySatisfied: "Đã đáp ứng",
     constraints: "Ràng buộc",
-    requirements: "Yêu cầu",
+    beforeYouStart: "Trước khi bắt đầu",
+    requirementLabels: {
+      blocking: "Bắt buộc",
+      warning: "Lưu ý",
+    },
     failureHandling: "Xử lý lỗi",
     ifSomethingGoesWrong: "Nếu có sự cố",
     alternatives: "Phương án khác",

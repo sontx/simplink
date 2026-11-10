@@ -125,7 +125,7 @@ test("site walkthroughs retain choices, conditional fixes, availability, constra
     "Pick?",
     "use phone",
     "requires plan: enterprise",
-    "blocking",
+    "Required: [C]",
     "Obtain consent",
     "max depth reached",
     "Retry carefully.",
@@ -271,5 +271,118 @@ test("site CLI preflights generated indexes and custom paths before writing any 
     assert.equal(await readFile(source, "utf8"), bytes);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("site guides list blocking constraints before the steps and warnings after them, without severity tags", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc(
+        "A",
+        "constrained_by: [constraint.consent, constraint.slow]\n",
+      ),
+      "constraints/consent.md":
+        "---\ntype: constraint\ntitle: Consent\nsummary: Obtain consent\nseverity: blocking\n---",
+      "constraints/slow.md":
+        "---\ntype: constraint\ntitle: Slow\nsummary: Large sends take a while\nseverity: warning\n---",
+    }),
+  );
+  assert.equal(kb.status.errors, 0, JSON.stringify(kb.issues));
+  const pages = kb.docs();
+  const guide = pages.find((p) => p.path === "guides/g.md")!.content;
+  const before = guide.indexOf("## Before you start");
+  const steps = guide.indexOf("## Steps");
+  const after = guide.indexOf("## Good to know");
+  assert.ok(before >= 0 && before < steps, guide);
+  assert.ok(after > steps, guide);
+  assert.match(
+    guide,
+    /## Before you start\n\n- \*\*\[Consent\]\([^)]+\)\*\*\\\n {2}Obtain consent\n\n## Steps/,
+  );
+  assert.match(
+    guide,
+    /## Good to know\n\n- \*\*\[Slow\]\([^)]+\)\*\*\\\n {2}Large sends take a while/,
+  );
+  assert.ok(!/\[(blocking|warning)\]/.test(guide), guide);
+  assert.ok(!guide.includes("## Requirements"));
+  const reference = pages.find(
+    (p) => p.path === "reference/consent.md",
+  )!.content;
+  assert.match(reference, /Requirement level[^\n]*Required$/m);
+
+  const only = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc("A", "constrained_by: [constraint.slow]\n"),
+      "constraints/slow.md":
+        "---\ntype: constraint\ntitle: Slow\nsummary: Slow\nseverity: warning\n---",
+    }),
+  );
+  const warningOnly = only
+    .docs()
+    .find((p) => p.path === "guides/g.md")!.content;
+  assert.ok(!warningOnly.includes("## Before you start"));
+  assert.match(warningOnly, /## Good to know/);
+});
+
+test("graph docs keep one Constraints section with spelled-out severity labels", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc(
+        "A",
+        "constrained_by: [constraint.consent, constraint.slow]\n",
+      ),
+      "constraints/consent.md":
+        "---\ntype: constraint\ntitle: Consent\nsummary: Obtain consent\nseverity: blocking\n---",
+      "constraints/slow.md":
+        "---\ntype: constraint\ntitle: Slow\nsummary: Slow\nseverity: warning\n---",
+    }),
+  );
+  const goalPage = kb
+    .docs({ layout: "graph" })
+    .find((p) => p.path === "goals/g.md")!.content;
+  assert.match(
+    goalPage,
+    /## Constraints\n\n- \*\*Blocking:\*\* \[Consent\]\([^)]+\) — Obtain consent\n- \*\*Warning:\*\* \[Slow\]/,
+  );
+});
+
+test("site guides qualify conditional blocking constraints and leave choice-only ones to the option", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc(
+        "A",
+        "preconditions: [state.ready]\n" +
+          choiceYaml("pick", [["phone", "procedure.b"]]),
+        "1. choice:pick",
+      ),
+      "procedures/b.md": proc("B", "constrained_by: [constraint.branch]\n"),
+      "procedures/fix.md": proc("Fix", "constrained_by: [constraint.fixing]\n"),
+      "states/ready.md": state("Ready", "procedure.fix"),
+      "constraints/fixing.md":
+        "---\ntype: constraint\ntitle: Fixing\nsummary: Needs admin\nseverity: blocking\n---",
+      "constraints/branch.md":
+        "---\ntype: constraint\ntitle: Branch\nsummary: Needs consent\nseverity: blocking\n---",
+    }),
+  );
+  assert.equal(kb.status.errors, 0, JSON.stringify(kb.issues));
+  for (const choices of [undefined, { pick: "phone" }]) {
+    const guide = kb
+      .docs(choices ? { choices } : {})
+      .find((p) => p.path === "guides/g.md")!.content;
+    const before = guide.slice(
+      guide.indexOf("## Before you start"),
+      guide.indexOf("## Steps"),
+    );
+    assert.match(
+      before,
+      /- \*\*\[Fixing\]\([^)]+\)\*\* — only if \[Ready\]\([^)]+\) is not satisfied\\\n {2}Needs admin/,
+      guide,
+    );
+    assert.ok(!before.includes("Branch"), guide);
+    assert.match(guide, /- Required: \[Branch\]\([^)]+\) — Needs consent/);
   }
 });

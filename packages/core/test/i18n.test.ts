@@ -234,3 +234,49 @@ test("simp-docs and simp-resolve accept --lang", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("Vietnamese site guides translate constraint group headings", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc(
+        "A",
+        "constrained_by: [constraint.consent, constraint.slow]\n",
+      ),
+      "constraints/consent.md":
+        "---\ntype: constraint\ntitle: Consent\nsummary: Obtain consent\nseverity: blocking\n---",
+      "constraints/slow.md":
+        "---\ntype: constraint\ntitle: Slow\nsummary: Slow\nseverity: warning\n---",
+    }),
+  );
+  const guide = page(kb.docs({ locale: "vi" }), "guides/g.md");
+  assert.match(guide, /^## Trước khi bắt đầu$/m);
+  assert.match(guide, /^## Lưu ý$/m);
+  assert.ok(!guide.includes("## Before you start"));
+});
+
+test("overriding one requirement label keeps the other", () => {
+  const m = resolveMessages("en", {
+    en: { docs: { requirementLabels: { blocking: "Must have" } } },
+  });
+  assert.equal(m.docs.requirementLabels.blocking, "Must have");
+  assert.equal(m.docs.requirementLabels.warning, "Good to know");
+});
+
+test("custom languages that translate severity see it in site requirement labels", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc("A", "constrained_by: [constraint.c]\n"),
+      "constraints/c.md":
+        "---\ntype: constraint\ntitle: C\nsummary: Consent\nseverity: blocking\n---",
+    }),
+  );
+  const pages = kb.docs({
+    locale: "ja",
+    messages: { severity: { blocking: "ブロック" } },
+  });
+  const reference = pages.find((p) => p.path === "reference/c.md")!.content;
+  assert.match(reference, /ブロック/);
+  assert.ok(!reference.includes("Required"), reference);
+});

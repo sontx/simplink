@@ -44,7 +44,14 @@ export interface Messages {
     deprecatedDependency: string;
     alreadySatisfied: string;
     constraints: string;
-    requirements: string;
+    /** Site heading for blocking constraints, shown before the steps. */
+    beforeYouStart: string;
+    /**
+     * Reader-facing constraint severity labels in site docs, keyed by severity.
+     * The `warning` label also heads the list of warnings after a guide's steps.
+     * Missing keys fall back to `severity`.
+     */
+    requirementLabels: Record<string, string>;
     failureHandling: string;
     ifSomethingGoesWrong: string;
     alternatives: string;

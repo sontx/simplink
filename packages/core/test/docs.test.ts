@@ -269,7 +269,7 @@ test("recommendations retain restrictions, inherited constraints, warnings, fail
   for (const text of [
     "unavailable",
     "requires plan: paid",
-    "blocking",
+    "**Blocking:**",
     "Must obtain consent",
     "Deprecated",
     "Try again.",
