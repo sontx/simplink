@@ -100,12 +100,6 @@ export class WorkspaceService {
     const sourcesText = this.sourcesText;
     source.read = (path) =>
       path === SIMP_SOURCES_FILE ? sourcesText : undefined;
-    try {
-      this.sources =
-        sourcesText === undefined ? {} : parseSimpSources(sourcesText);
-    } catch {
-      this.sources = {}; // Lint reports it (E017).
-    }
     const kb = await createKB(source, { validator });
     this.kb = kb;
     // ponytail: only declared simp-node peers over HTTP(S), without tokens; static and folder peers need a server.
@@ -148,6 +142,15 @@ export class WorkspaceService {
           (await this.store.list()).map((file) => [file.relPath, file.content]),
         );
         this.sourcesText = await this.readSources();
+        // Only reload changes the sidecar, so writes reuse this parse.
+        try {
+          this.sources =
+            this.sourcesText === undefined
+              ? {}
+              : parseSimpSources(this.sourcesText);
+        } catch {
+          this.sources = {}; // Lint reports it (E017).
+        }
         return await this.rebuild();
       } catch (error) {
         this.stale = true;

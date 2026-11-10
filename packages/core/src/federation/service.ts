@@ -1,6 +1,7 @@
 import type { KB } from "../kb.js";
 import { en } from "../i18n/en.js";
 import { simpDoc } from "../simp-doc.js";
+import { servedFields } from "../served-fields.js";
 import { localize, parseRef } from "../ids.js";
 import {
   acceptedOwners,
@@ -60,8 +61,6 @@ const COMMON_KEYS = new Set([
   "tags",
   "status",
   "availability",
-  // Authoring evidence, never served: it can name private repo paths.
-  "sources",
 ]);
 /** Converts a local node to its protocol form, or returns `undefined` when the KB has no such node. */
 export function toLookupNode(
@@ -80,9 +79,7 @@ export function toLookupNode(
     aliases: n.aliases,
     tags: n.tags,
     ...(n.availability ? { availability: n.availability } : {}),
-    fields: Object.fromEntries(
-      Object.entries(n.data).filter(([k]) => !COMMON_KEYS.has(k)),
-    ),
+    fields: servedFields(n.data, COMMON_KEYS),
     ...(body ? { body: n.body } : {}),
     out: (kb.graph.out.get(id) ?? []).map(({ kind, to }) => ({ kind, to })),
     in: (kb.graph.in.get(id) ?? []).map(({ kind, from }) => ({ kind, from })),

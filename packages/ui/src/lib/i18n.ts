@@ -262,6 +262,8 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "All nodes": "Tất cả nút",
   "View in graph": "Xem trên đồ thị",
   Frontmatter: "Siêu dữ liệu",
+  "Private: not served to agents or peers.":
+    "Riêng tư: không cung cấp cho tác tử hoặc nút ngang hàng.",
   Outgoing: "Liên kết đi",
   Incoming: "Liên kết đến",
   None: "Không có",

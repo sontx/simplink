@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type ReactNode,
 } from "react";
 import { createFileRoute, Link, useBlocker } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,7 +23,7 @@ import { kbQuery, nodeQuery } from "../../api.js";
 import { IssueCounts, IssueList } from "../../components/issue-list.js";
 import { Kbd, KbdGroup } from "../../components/ui/kbd.js";
 import type { Issue } from "@sontx/simplink-core";
-import { parseDoc } from "@sontx/simplink-core/browser";
+import { parseDoc, SIMP_SOURCES_FILE } from "@sontx/simplink-core/browser";
 import {
   clearedIssues,
   groupIssuesByFile,
@@ -445,40 +446,41 @@ function NodeContent() {
             </h2>
             <dl className="mb-7.5 border-t border-border">
               {Object.entries(node.data).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-xs max-[480px]:grid-cols-1 max-[480px]:gap-1"
-                >
-                  <dt className="text-muted-foreground">{label(key)}</dt>
-                  <dd className="m-0 wrap-anywhere">
-                    {key === "sources" && Array.isArray(value) ? (
-                      <SourceFiles
-                        sources={value.filter(
-                          (source): source is string =>
-                            typeof source === "string",
-                        )}
-                      />
-                    ) : (
-                      <FrontmatterValue value={value} />
-                    )}
-                    {["type", "status", "severity"].includes(key) &&
-                      enumDescription(String(value)) && (
-                        <span className="block text-muted-foreground">
-                          {enumDescription(String(value))}
-                        </span>
+                <FieldRow key={key} name={label(key)}>
+                  {key === "sources" && Array.isArray(value) ? (
+                    <SourceFiles
+                      sources={value.filter(
+                        (source): source is string =>
+                          typeof source === "string",
                       )}
-                  </dd>
-                </div>
+                    />
+                  ) : (
+                    <FrontmatterValue value={value} />
+                  )}
+                  {["type", "status", "severity"].includes(key) &&
+                    enumDescription(String(value)) && (
+                      <span className="block text-muted-foreground">
+                        {enumDescription(String(value))}
+                      </span>
+                    )}
+                </FieldRow>
               ))}
-              {detail.sources && (
-                <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-xs max-[480px]:grid-cols-1 max-[480px]:gap-1">
-                  <dt className="text-muted-foreground">{label("sources")}</dt>
-                  <dd className="m-0 wrap-anywhere">
-                    <SourceFiles sources={detail.sources} />
-                  </dd>
-                </div>
-              )}
             </dl>
+            {detail.sources && (
+              <>
+                <h2 className="mb-2 text-base leading-normal font-semibold">
+                  {t("Sources")}
+                </h2>
+                <dl className="mb-7.5 border-t border-border">
+                  <FieldRow name={SIMP_SOURCES_FILE}>
+                    <SourceFiles sources={detail.sources} />
+                    <span className="block text-muted-foreground">
+                      {t("Private: not served to agents or peers.")}
+                    </span>
+                  </FieldRow>
+                </dl>
+              </>
+            )}
             <Markdown content={node.body} assetBase={node.path} />
             <h2 className="mt-6 mb-2 text-base leading-normal font-semibold">
               {t("Relationships")}
@@ -797,5 +799,15 @@ function NodeContent() {
       />
       {plan && <Plan id={id} onClose={() => setPlan(false)} />}
     </Page>
+  );
+}
+
+// One label/value row of the overview's field lists.
+function FieldRow({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-xs max-[480px]:grid-cols-1 max-[480px]:gap-1">
+      <dt className="text-muted-foreground">{name}</dt>
+      <dd className="m-0 wrap-anywhere">{children}</dd>
+    </div>
   );
 }
