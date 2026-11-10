@@ -28,12 +28,31 @@ async function smoke() {
     { validator: compileValidator(schemas) },
   );
   const homepage = federation.docs().find((p) => p.path === "index.md");
+  // The simp body is the homepage as written (no generated title).
   if (
     federation.status.errors ||
-    !homepage?.content.includes("# Browser homepage") ||
-    !homepage.content.includes("https://docs.example/crm/goals/import.md#steps")
+    !homepage?.content.includes(
+      "https://docs.example/crm/goals/import.md#steps",
+    )
   )
     throw new Error("Simp homepage or remote docs link failed");
+  // A KB image reaches the page as a blob: URL the browser decodes from the File itself.
+  const png = Uint8Array.from(
+    atob(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+    ),
+    (c) => c.charCodeAt(0),
+  );
+  const pictured = await WorkspaceService.open(
+    memoryStore(files, { "assets/dot.png": new Blob([png]) }, "pictured"),
+  );
+  const asset = await pictured.asset("assets/dot.png");
+  const objectUrl = URL.createObjectURL(asset as Blob);
+  const image = new Image();
+  image.src = objectUrl;
+  await image.decode();
+  URL.revokeObjectURL(objectUrl);
+  if (image.naturalWidth !== 1) throw new Error("KB image did not load");
   const kb = await createKB(memorySource(files), {
     validator: compileValidator(schemas),
   });

@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,29 +32,65 @@ export function defaultValidator(): FrontmatterValidator {
 
 /**
  * Creates a filesystem source that recursively reads UTF-8 .md files, skipping hidden entries.
+ * Its `assets` lists the other visible files, so lint can check image paths.
  * @param root - Knowledge-base directory.
- * @returns A lazy source; filesystem errors reject its list call.
+ * @returns A lazy source; filesystem errors reject its list and assets calls.
  */
 export function fsSource(root: string): DocSource {
+  async function walk(dir: string, out: string[] = []): Promise<string[]> {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith(".")) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) await walk(full, out);
+      else if (
+        entry.isFile() ||
+        // Symlinked documents stay unread, as before; symlinked images are listed for lint.
+        (entry.isSymbolicLink() &&
+          !entry.name.endsWith(".md") &&
+          (await isInside(full)))
+      )
+        out.push(path.relative(root, full).split(path.sep).join("/"));
+    }
+    return out;
+  }
+  // A symlinked file counts only when it resolves to a file inside the KB, the same rule simp-docs copies by.
+  let realRoot: Promise<string> | undefined;
+  async function isInside(full: string): Promise<boolean> {
+    try {
+      const [target, base] = await Promise.all([
+        realpath(full),
+        (realRoot ??= realpath(root)),
+      ]);
+      const rel = path.relative(base, target);
+      return (
+        rel !== "" &&
+        !rel.startsWith("..") &&
+        !path.isAbsolute(rel) &&
+        (await stat(target)).isFile()
+      );
+    } catch {
+      return false; // Dangling links count as missing.
+    }
+  }
+  // list() hands its walk to the next assets() call, so lint reads the directory tree once.
+  let lastWalk: Promise<string[]> | undefined;
   return {
     name: root,
-    async list() {
+    async list(): Promise<SourceFile[]> {
       const files: SourceFile[] = [];
-      async function walk(dir: string): Promise<void> {
-        for (const entry of await readdir(dir, { withFileTypes: true })) {
-          if (entry.name.startsWith(".")) continue;
-          const full = path.join(dir, entry.name);
-          if (entry.isDirectory()) await walk(full);
-          else if (entry.isFile() && entry.name.endsWith(".md")) {
-            files.push({
-              relPath: path.relative(root, full).split(path.sep).join("/"),
-              content: await readFile(full, "utf8"),
-            });
-          }
-        }
-      }
-      await walk(root);
+      lastWalk = walk(root);
+      for (const relPath of await lastWalk)
+        if (relPath.endsWith(".md"))
+          files.push({
+            relPath,
+            content: await readFile(path.join(root, relPath), "utf8"),
+          });
       return files;
+    },
+    async assets() {
+      const paths = lastWalk ?? walk(root);
+      lastWalk = undefined;
+      return (await paths).filter((f) => !f.endsWith(".md"));
     },
   };
 }

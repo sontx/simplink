@@ -62,6 +62,15 @@ export * from "./kb.js";
 
 export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
 
+export {
+  bodyImages,
+  docAssets,
+  isLocalUrl,
+  planImages,
+  resolveAsset,
+  type BodyImage,
+} from "./assets.js";
+
 export { runLint } from "./cli/lint.js";
 
 export { runSearch } from "./cli/search.js";

@@ -82,6 +82,8 @@ export interface Messages {
     check: string;
     run: string;
     choose: string;
+    /** Label before an image's alt text in a plan step. */
+    screen: string;
     how: string;
     ifFalse: string;
     runStep: (step: number | string, ref: string) => string;

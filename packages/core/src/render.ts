@@ -1,4 +1,4 @@
-import type { MaybePromise } from "./types.js";
+import type { MaybePromise, NodeImage } from "./types.js";
 import { estimateTokens } from "./markdown.js";
 import {
   en,
@@ -105,8 +105,20 @@ function renderChoose(
   return [head, ...opts].join("\n");
 }
 
+/** Alt text lines for images; agents read what a screen shows instead of the image. */
+const screens = (
+  images: NodeImage[] | undefined,
+  pad: string,
+  m: Messages,
+  step?: number,
+) =>
+  (images ?? [])
+    .filter((img) => img.step === step)
+    .map((img) => `${pad}_${m.plan.screen}:_ ${img.alt.replace(/\s+/g, " ")}`);
+
 /**
  * Renders checks, procedure runs, and nested choices as a Markdown ordered list.
+ * Image alt text follows its step as a "Screen:" line.
  * @param plan - Ordered resolved steps.
  * @param pad - Indentation prefix; defaults to an empty string.
  * @param formatReference - Formats node identifiers; defaults to inline code.
@@ -133,15 +145,19 @@ export function renderPlanSteps(
         return [
           `${pad}${i + 1}. **${m.plan.check}** ${formatReference(s.state.id)} — ${s.state.title}${whenLabel(s, formatReference, m)}`,
           s.how && `${pad}   ${m.plan.how}: ${s.how}`,
+          ...screens(s.images, `${pad}   `, m),
           `${pad}   ${m.plan.ifFalse}: ${ifFalse}`,
         ]
           .filter(Boolean)
           .join("\n");
       }
       const sub = s.steps.map((t: StepItem, j) =>
-        typeof t === "string"
-          ? `${pad}   ${j + 1}. ${t}`
-          : renderChoose(t, j + 1, `${pad}   `, formatReference, m),
+        [
+          typeof t === "string"
+            ? `${pad}   ${j + 1}. ${t}`
+            : renderChoose(t, j + 1, `${pad}   `, formatReference, m),
+          ...screens(s.images, `${pad}      `, m, j + 1),
+        ].join("\n"),
       );
       const optional = (s.optional ?? []).map(
         (o) =>
@@ -149,6 +165,7 @@ export function renderPlanSteps(
       );
       return [
         `${pad}${i + 1}. **${m.plan.run}** ${formatReference(s.procedure.id)} — ${s.procedure.title}${whenLabel(s, formatReference, m)}`,
+        ...screens(s.images, `${pad}   `, m),
         ...sub,
         ...optional,
       ].join("\n");

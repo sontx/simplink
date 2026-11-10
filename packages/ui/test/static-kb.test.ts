@@ -84,6 +84,12 @@ test("static store loads a published KB read-only", async () => {
     ["goal.buy", "simp"],
   );
   await assert.rejects(service.writeFile("goals/buy.md", "x"), /read-only/);
+  // Images are linked, never fetched: an <img> needs no CORS.
+  assert.equal(
+    await service.asset("assets/a b.png"),
+    "https://kb.cors.test/kb/assets/a%20b.png",
+  );
+  assert.equal(service.store.assetPaths, undefined);
 });
 
 test("files blocked by CORS load through the proxy, then skip the direct try", async () => {
@@ -97,6 +103,27 @@ test("files blocked by CORS load through the proxy, then skip the direct try", a
   assert.equal(await store.read("goals/buy.md"), goal("Buy"));
   const direct = kb.calls.filter((call) => !call.startsWith("https://proxy"));
   assert.deepEqual(direct, ["https://kb.nocors.test/kb/simp.md"]);
+});
+
+test("image bytes for a download go through the proxy on a CORS-blocked host; display uses the plain URL", async () => {
+  for (const cors of [true, false]) {
+    const kb = host({ ...files(), "assets/a.png": "png" }, { cors });
+    const store = await staticStore(`https://kb.images-${cors}.test/kb`, {
+      fetch: kb.fetch,
+      proxy: "https://proxy.test/",
+      cache: null,
+    });
+    await store.list();
+    const url = `https://kb.images-${cors}.test/kb/assets/a.png`;
+    assert.equal(await store.asset!("assets/a.png"), url);
+    assert.equal(await (await store.assetBlob!("assets/a.png")).text(), "png");
+    const imageCalls = kb.calls.filter((call) => call.includes("a.png"));
+    assert.deepEqual(
+      imageCalls,
+      cors ? [url] : [`https://proxy.test/?url=${encodeURIComponent(url)}`],
+    );
+    await assert.rejects(store.assetBlob!("assets/gone.png"), /HTTP 404/);
+  }
 });
 
 test("without a proxy, a CORS-blocked URL is not a static KB", async () => {

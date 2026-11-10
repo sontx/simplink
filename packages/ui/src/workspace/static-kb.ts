@@ -76,25 +76,29 @@ export async function staticStore(
   const viaProxy = (target: URL, fresh: boolean) =>
     request(`${proxy}?url=${encodeURIComponent(target.href)}`, fresh);
 
+  // Direct first; a CORS refusal retries through the proxy, which then serves the rest of that host.
+  const fetchFile = async (path: string, fresh: boolean): Promise<Response> => {
+    const target = new URL(path, base);
+    if (!target.href.startsWith(base.href)) throw new Error("path outside KB");
+    if (proxy && proxiedOrigins.has(target.origin))
+      return viaProxy(target, fresh);
+    try {
+      return await request(target.href, fresh);
+    } catch (error) {
+      // Browsers report CORS refusals as a bare TypeError.
+      if (!proxy || !(error instanceof TypeError)) throw error;
+      const response = await viaProxy(target, fresh);
+      proxiedOrigins.add(target.origin);
+      return response;
+    }
+  };
+
   const budget = { bytes: 0 };
   const get = async (
     path: string,
     fresh: boolean,
   ): Promise<string | undefined> => {
-    const target = new URL(path, base);
-    if (!target.href.startsWith(base.href)) throw new Error("path outside KB");
-    let response: Response;
-    if (proxy && proxiedOrigins.has(target.origin))
-      response = await viaProxy(target, fresh);
-    else
-      try {
-        response = await request(target.href, fresh);
-      } catch (error) {
-        // Browsers report CORS refusals as a bare TypeError.
-        if (!proxy || !(error instanceof TypeError)) throw error;
-        response = await viaProxy(target, fresh);
-        proxiedOrigins.add(target.origin);
-      }
+    const response = await fetchFile(path, fresh);
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`HTTP ${response.status} for ${path}`);
     const text = await response.text();
@@ -223,6 +227,20 @@ export async function staticStore(
     async read(relPath) {
       if (!Object.hasOwn(files, relPath)) throw new Error("File not found");
       return files[relPath];
+    },
+    // The index lists Markdown only, so assetPaths stays unknown; an <img> needs no CORS, so the plain URL is enough.
+    async asset(relPath) {
+      const target = new URL(relPath, base);
+      if (!target.href.startsWith(base.href))
+        throw new Error("path outside KB");
+      return target.href;
+    },
+    // Bytes are needed only for a download; reading them needs CORS, so a blocked host goes through the proxy.
+    async assetBlob(relPath) {
+      const response = await fetchFile(relPath, false);
+      if (!response.ok)
+        throw new Error(`HTTP ${response.status} for ${relPath}`);
+      return response.blob();
     },
     write: readOnly,
     remove: readOnly,

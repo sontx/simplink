@@ -14,6 +14,7 @@ sources:
   - packages/core/src/docs.ts
   - packages/core/src/docs-layout.ts
   - packages/core/src/docs-plan.ts
+  - packages/core/src/assets.ts
   - packages/core/src/i18n/index.ts
   - README.md
 ---
@@ -39,6 +40,10 @@ Optional `docs.path` frontmatter moves a page, for example to `getting-started/c
 `graph` keeps the original source paths and graph headings, ignores `docs` metadata, and generates no landing pages.
 
 In both layouts, `[[id]]` wikilinks become relative links that follow the published paths, and code examples stay literal.
+
+## Images
+
+Images are Markdown images in node bodies, with paths relative to the node file. Exported pages rewrite those paths to follow the published location; external URLs and images in code stay as written. Goal guides show each step's images under the step, and each state's images with its check. `simp-docs` copies every referenced image beside the pages at its KB path and skips missing ones; library callers copy the paths that `docAssets(graph)` returns.
 
 ## Output language
 

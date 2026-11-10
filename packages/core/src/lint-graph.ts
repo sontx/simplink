@@ -2,6 +2,7 @@ import { parseRef } from "./ids.js";
 import { simpDoc } from "./simp-doc.js";
 import { orderedItems, section, stripCode } from "./markdown.js";
 import { choiceMarker, getChoices } from "./graph.js";
+import { bodyImages, isLocalUrl, resolveAsset } from "./assets.js";
 import { issue, type Issue, type KBGraph, type KBNode } from "./types.js";
 import type { SourceLocator } from "./source-lines.js";
 
@@ -44,11 +45,13 @@ function findRequiresCycles(g: KBGraph): string[][] {
  * Checks graph references, dependency cycles, document structure, and authoring conventions.
  * @param g - Graph with adjacency indexes, normally produced by buildGraph.
  * @param locate - Optional source locator per node; when given, diagnostics carry source lines.
+ * @param assets - KB-relative paths of the non-Markdown files; when given, missing images are reported (W110).
  * @returns Graph diagnostics; does not perform frontmatter schema validation.
  */
 export function lintGraph(
   g: KBGraph,
   locate?: (node: KBNode) => SourceLocator | undefined,
+  assets?: ReadonlySet<string>,
 ): Issue[] {
   const issues: Issue[] = [];
   const at = (n: KBNode, code: string, msg: string, line?: number) =>
@@ -168,6 +171,26 @@ export function lintGraph(
             bodyText(n, `choice:${m}`),
           );
     }
+    // W110 missing image, W111 image without alt text
+    for (const { alt, url } of bodyImages(n.body)) {
+      if (!alt.trim())
+        at(
+          n,
+          "W111",
+          `image "${url}" has no alt text; agents read only the alt text`,
+          bodyText(n, url),
+        );
+      if (!assets || !isLocalUrl(url)) continue;
+      const src = resolveAsset(n.path, url);
+      if (!src || !assets.has(src))
+        at(
+          n,
+          "W110",
+          `image "${url}" ${src ? "does not exist" : "is outside the KB"}`,
+          bodyText(n, url),
+        );
+    }
+
     if (
       n.type === "goal" &&
       (section(body, "Steps") !== null || ORDERED_ITEM.test(body))

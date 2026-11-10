@@ -1,7 +1,15 @@
 import { parseArgs } from "node:util";
-import { lstat, mkdir, realpath, stat, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  lstat,
+  mkdir,
+  realpath,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { createKB } from "../kb.js";
+import { docAssets } from "../assets.js";
 import type { CliContext } from "./context.js";
 
 /** Resolve existing aliases, including the nearest existing ancestor of a new path. */
@@ -41,6 +49,31 @@ async function existingStat(location: string) {
     if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     return undefined;
   }
+}
+
+/**
+ * Resolves a page or image destination and refuses unsafe ones before anything is written.
+ * @returns The canonical destination path.
+ */
+async function checkDestination(
+  input: string,
+  output: string,
+  rel: string,
+  kind: "page" | "image",
+): Promise<string> {
+  const destination = await canonical(path.resolve(output, rel));
+  if (
+    destination === output ||
+    !contains(output, destination) ||
+    contains(input, destination)
+  )
+    throw new Error(`Unsafe output destination: ${rel}`);
+  const info = await existingStat(destination);
+  if (info && !info.isFile())
+    throw new Error(`Output ${kind} is not a file: ${rel}`);
+  if (info && info.nlink > 1)
+    throw new Error(`Refusing to overwrite hardlinked output ${kind}: ${rel}`);
+  return destination;
 }
 
 /**
@@ -95,28 +128,45 @@ export async function runDocs(
     const pages = kb.docs({ layout: values.layout, locale: values.lang });
     const destinations: string[] = [];
     // Preflight every destination before the first write. Concurrent filesystem changes are outside scope.
-    for (const page of pages) {
-      const destination = await canonical(path.resolve(output, page.path));
+    for (const page of pages)
+      destinations.push(
+        await checkDestination(input, output, page.path, "page"),
+      );
+    const images: [string, string][] = [];
+    let missing = 0;
+    for (const rel of docAssets(kb.graph)) {
+      const source = await canonical(path.resolve(input, rel)).catch(
+        () => undefined,
+      );
+      // Like a dangling link, a link out of the KB is skipped as missing; lint reports both (W110).
       if (
-        destination === output ||
-        !contains(output, destination) ||
-        contains(input, destination)
-      )
-        throw new Error(`Unsafe output destination: ${page.path}`);
-      const info = await existingStat(destination);
-      if (info && !info.isFile())
-        throw new Error(`Output page is not a file: ${page.path}`);
-      if (info && info.nlink > 1)
-        throw new Error(
-          `Refusing to overwrite hardlinked output page: ${page.path}`,
-        );
-      destinations.push(destination);
+        !source ||
+        !contains(input, source) ||
+        !(await existingStat(source))?.isFile()
+      ) {
+        missing++;
+        continue;
+      }
+      images.push([
+        source,
+        await checkDestination(input, output, rel, "image"),
+      ]);
     }
     for (const [i, page] of pages.entries()) {
       await mkdir(path.dirname(destinations[i]), { recursive: true });
       await writeFile(destinations[i], page.content);
     }
-    stdout(`Wrote ${pages.length} page(s) to ${values.out}.`);
+    for (const [source, destination] of images) {
+      await mkdir(path.dirname(destination), { recursive: true });
+      await copyFile(source, destination);
+    }
+    stdout(
+      `Wrote ${pages.length} page(s)${images.length ? ` and ${images.length} image(s)` : ""} to ${values.out}.`,
+    );
+    if (missing)
+      stderr(
+        `Skipped ${missing} missing image(s); run simp-lint ${values.kb} to list them.`,
+      );
     return 0;
   } catch (err) {
     stderr((err as Error).message);

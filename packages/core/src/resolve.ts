@@ -1,7 +1,14 @@
 import { choiceMarker, getChoices } from "./graph.js";
+import { planImages, withoutLocalImages } from "./assets.js";
 import { en } from "./i18n/en.js";
 import { orderedItems, section } from "./markdown.js";
-import type { ChoiceDef, EdgeKind, KBGraph, KBNode } from "./types.js";
+import type {
+  ChoiceDef,
+  EdgeKind,
+  KBGraph,
+  KBNode,
+  NodeImage,
+} from "./types.js";
 
 /** Canonical English diagnostics; renderers translate them per output language. */
 const diagnostic = en.diagnostics;
@@ -91,6 +98,8 @@ export interface CheckStep {
   ifFalse: string | null;
   /** Human-readable condition for choosing this option. */
   when?: Condition[];
+  /** The state's images: what it looks like when true. */
+  images?: NodeImage[];
 }
 
 /**
@@ -178,6 +187,8 @@ export interface RunStep {
   optional?: OptionalPrecondition[];
   /** Failure-handling guidance extracted from the procedure body. */
   failureHandling?: string;
+  /** The procedure's images; `step` ties one to an item of `steps`. */
+  images?: NodeImage[];
   /** Human-readable condition for choosing this option. */
   when?: Condition[];
 }
@@ -358,10 +369,11 @@ class PlanBuilder {
       (text) => {
         const id = choiceMarker(text);
         const c = id ? choices.get(id) : undefined;
-        return c ? this.choose(p, c, depth) : text;
+        return c ? this.choose(p, c, depth) : withoutLocalImages(text, p.path);
       },
     );
     const failure = section(p.body, "Failure handling")?.trim();
+    const images = planImages(p);
 
     const step: RunStep = {
       kind: "run",
@@ -370,6 +382,7 @@ class PlanBuilder {
       steps,
       ...(optional.length ? { optional } : {}),
       ...(failure ? { failureHandling: failure } : {}),
+      ...(images.length ? { images } : {}),
       ...(when.length ? { when } : {}),
     };
     this.plan.push(step);
@@ -404,12 +417,14 @@ class PlanBuilder {
       return;
     }
     // Unknown: check, then fix conditionally.
+    const images = s ? planImages(s) : [];
     this.plan.push({
       kind: "check",
       state: s ? ref(s) : missingRef(stateId),
       how: typeof s?.data.check === "string" ? s.data.check : "",
       ifFalse: sat?.id ?? null,
       ...(when.length ? { when } : {}),
+      ...(images.length ? { images } : {}),
     });
     this.state.set(stateId, "checked");
     if (sat)

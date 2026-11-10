@@ -23,6 +23,7 @@ import { downloadBlob } from "../lib/utils.js";
 import { Input } from "../components/ui/input.js";
 import { usePreferences } from "../components/preferences.js";
 import { SimpNetwork } from "../components/simp-network.js";
+import { AssetContext } from "../components/markdown.js";
 import {
   FolderOpen,
   Globe,
@@ -368,47 +369,49 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   if (workspace)
     return (
       <Context.Provider value={workspace}>
-        <QueryClientProvider key={workspace.id} client={workspace.client}>
-          <div className="contents" inert={busy} aria-busy={busy}>
-            {children}
-          </div>
-          {(busy || message || !!error) && (
-            <div className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex flex-col items-center gap-2 px-4">
-              {busy && (
-                <p
-                  role="status"
-                  className="flex items-center gap-2 rounded-lg border bg-popover px-3.5 py-2 text-sm text-popover-foreground shadow-md"
-                >
-                  <LoaderCircle className="size-4 animate-spin text-primary motion-reduce:animate-none" />
-                  {t("Opening folder…")}
-                </p>
-              )}
-              {!busy && message && (
-                <p
-                  role="status"
-                  className="pointer-events-auto flex items-center gap-3 rounded-lg border bg-popover py-1.5 pr-1.5 pl-3.5 text-sm text-muted-foreground shadow-md"
-                >
-                  {message}
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => setMessage("")}
-                  >
-                    {t("Dismiss")}
-                  </Button>
-                </p>
-              )}
-              {!busy && error ? (
-                <div className="pointer-events-auto w-full max-w-lg rounded-lg bg-popover shadow-md">
-                  <ErrorMessage
-                    error={error}
-                    onDismiss={() => setError(undefined)}
-                  />
-                </div>
-              ) : null}
+        <AssetContext.Provider value={workspace.service}>
+          <QueryClientProvider key={workspace.id} client={workspace.client}>
+            <div className="contents" inert={busy} aria-busy={busy}>
+              {children}
             </div>
-          )}
-        </QueryClientProvider>
+            {(busy || message || !!error) && (
+              <div className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex flex-col items-center gap-2 px-4">
+                {busy && (
+                  <p
+                    role="status"
+                    className="flex items-center gap-2 rounded-lg border bg-popover px-3.5 py-2 text-sm text-popover-foreground shadow-md"
+                  >
+                    <LoaderCircle className="size-4 animate-spin text-primary motion-reduce:animate-none" />
+                    {t("Opening folder…")}
+                  </p>
+                )}
+                {!busy && message && (
+                  <p
+                    role="status"
+                    className="pointer-events-auto flex items-center gap-3 rounded-lg border bg-popover py-1.5 pr-1.5 pl-3.5 text-sm text-muted-foreground shadow-md"
+                  >
+                    {message}
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setMessage("")}
+                    >
+                      {t("Dismiss")}
+                    </Button>
+                  </p>
+                )}
+                {!busy && error ? (
+                  <div className="pointer-events-auto w-full max-w-lg rounded-lg bg-popover shadow-md">
+                    <ErrorMessage
+                      error={error}
+                      onDismiss={() => setError(undefined)}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </QueryClientProvider>
+        </AssetContext.Provider>
       </Context.Provider>
     );
   if (busy)

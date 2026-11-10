@@ -79,10 +79,13 @@ export function Plan({ id, onClose }: { id: string; onClose: () => void }) {
 export function Docs({
   title,
   body,
+  path,
   onClose,
 }: {
   title: string;
   body: string;
+  /** The node file, so relative image paths resolve. */
+  path: string;
   onClose: () => void;
 }) {
   const { t } = usePreferences();
@@ -95,7 +98,7 @@ export function Docs({
       resizeKey="simplink.docsDrawerWidth"
     >
       {body.trim() ? (
-        <Markdown content={body} />
+        <Markdown content={body} assetBase={path} />
       ) : (
         <p className="text-xs text-muted-foreground">
           {t("No documentation for this node.")}
@@ -386,6 +389,7 @@ export function Inspector({
         <Docs
           title={node.title}
           body={node.body}
+          path={node.path}
           onClose={() => setDocs(false)}
         />
       )}

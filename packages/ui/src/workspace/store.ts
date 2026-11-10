@@ -27,6 +27,15 @@ export interface KBStore {
   /** Memory stores: the current files have been downloaded. */
   markDownloaded?(): void;
   readonly assets?: Record<string, Blob>;
+  /** Paths of the non-Markdown files, refreshed by list(); undefined when the source cannot list them. Names only, nothing is read. */
+  readonly assetPaths?: readonly string[];
+  /**
+   * A non-Markdown file for display: a File the browser reads from disk only when it is drawn,
+   * or the file's URL for a remote KB. Rejects for a missing file.
+   */
+  asset?(relPath: string): Promise<Blob | string>;
+  /** Bytes of a file whose asset() is a URL, for downloads; a remote KB reads them through its CORS proxy when the host blocks the browser. */
+  assetBlob?(relPath: string): Promise<Blob>;
   /** Authoritative lint issues from the source, refreshed by list(); replaces local lint. */
   readonly issues?: Issue[];
   list(): Promise<SourceFile[]>;
@@ -77,11 +86,16 @@ export function directoryStore(handle: DirectoryHandle): KBStore {
       directory = await directory.getDirectoryHandle(part, { create });
     return { directory, name };
   }
+  let assetPaths: string[] | undefined;
   return {
     name: handle.name,
     kind: "directory",
+    get assetPaths() {
+      return assetPaths;
+    },
     async list() {
       const files: SourceFile[] = [];
+      const assets: string[] = [];
       async function walk(directory: DirectoryHandle, prefix: string) {
         for await (const entry of directory.values()) {
           if (entry.name.startsWith(".")) continue;
@@ -92,10 +106,17 @@ export function directoryStore(handle: DirectoryHandle): KBStore {
               relPath,
               content: await (await entry.getFile()).text(),
             });
+          else assets.push(relPath);
         }
       }
       await walk(handle, "");
+      assetPaths = assets;
       return files;
+    },
+    async asset(relPath) {
+      const { directory, name } = await parent(relPath);
+      // getFile() is a handle to the bytes on disk; nothing is read until the image is drawn.
+      return (await directory.getFileHandle(name)).getFile();
     },
     async read(relPath) {
       const { directory, name } = await parent(relPath);
@@ -153,6 +174,11 @@ export function memoryStore(
     name,
     kind: "memory",
     assets: { ...assets },
+    assetPaths: Object.keys(assets),
+    async asset(relPath) {
+      if (!Object.hasOwn(assets, relPath)) throw new Error("File not found");
+      return assets[relPath];
+    },
     get dirty() {
       return changed.size > 0;
     },

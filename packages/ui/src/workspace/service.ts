@@ -2,6 +2,7 @@ import {
   createFederatedKB,
   createKB,
   createKBTools,
+  docAssets,
   memorySource,
   compileValidator,
   deriveId,
@@ -14,7 +15,7 @@ import {
   type PlanStep,
 } from "@sontx/simplink-core/browser";
 import { httpPeer } from "@sontx/simplink-node/http-peer";
-import { zipSync, strToU8 } from "fflate";
+import { zipSync, strToU8, type Zippable } from "fflate";
 import { schemas } from "../lib/frontmatter.js";
 import { editEdges, edgeSchema } from "./edges.js";
 import type { KBStore, WriteOptions } from "./store.js";
@@ -32,6 +33,15 @@ function safePath(path: string): void {
       "Invalid path: expected a relative .md file under a node type folder",
     );
 }
+
+// Hidden, parent and absolute paths never reach the store or a zip.
+const assetPath = (path: string) =>
+  typeof path === "string" &&
+  !path.includes("\\") &&
+  !path.split("/").some((part) => !part || part.startsWith("."));
+
+// Concurrent image reads in a docs zip export.
+const ASSET_READS = 6;
 
 const validator = compileValidator(schemas);
 const relationships = edgeSchema();
@@ -77,12 +87,11 @@ export class WorkspaceService {
 
   // Builds from this.files, which mirrors the store; only reload re-lists the folder.
   private async rebuild() {
-    const kb = await createKB(
-      memorySource({ ...this.files }, this.store.name),
-      {
-        validator,
-      },
-    );
+    const source = memorySource({ ...this.files }, this.store.name);
+    // Lists names only, so lint can report missing images (W110) without reading them.
+    const assets = this.store.assetPaths;
+    if (assets) source.assets = () => [...assets];
+    const kb = await createKB(source, { validator });
     this.kb = kb;
     // ponytail: only declared simp-node peers over HTTP(S), without tokens; static and folder peers need a server.
     this.peers = (simpDoc(kb.graph)?.peers ?? []).flatMap((p) =>
@@ -189,15 +198,46 @@ export class WorkspaceService {
     return this.pages(layout, locale).map((page) => page.path);
   }
 
-  exportDocsZip(layout: string, locale?: string): Uint8Array {
-    return zipSync(
-      Object.fromEntries(
-        this.pages(layout, locale).map((page) => [
-          page.path,
-          strToU8(page.content),
-        ]),
-      ),
+  /** A local image for display: a lazily read File, or a remote KB's URL. */
+  asset(relPath: string): Promise<Blob | string> {
+    if (!this.store.asset || !assetPath(relPath))
+      return Promise.reject(new Error("File not found"));
+    return this.store.asset(relPath);
+  }
+
+  /** Pages plus the images they reference, stored uncompressed; missing or unreadable images are skipped, as simp-docs does. */
+  async exportDocsZip(layout: string, locale?: string): Promise<Uint8Array> {
+    const entries: Zippable = Object.fromEntries(
+      this.pages(layout, locale).map((page) => [
+        page.path,
+        strToU8(page.content),
+      ]),
     );
+    const paths = docAssets(this.kb.graph);
+    // A few reads at a time: a static KB fetches each image, often through the proxy.
+    const bytes: (Uint8Array | undefined)[] = [];
+    const read = async (i: number) => {
+      try {
+        const asset = await this.asset(paths[i]);
+        const blob =
+          typeof asset === "string"
+            ? await this.store.assetBlob?.(paths[i])
+            : asset;
+        if (blob) bytes[i] = new Uint8Array(await blob.arrayBuffer());
+      } catch {
+        /* lint reports missing images (W110) */
+      }
+    };
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(ASSET_READS, paths.length) }, async () => {
+        while (next < paths.length) await read(next++);
+      }),
+    );
+    // Added in path order, so the zip is the same whatever order the reads finish in.
+    for (const [i, path] of paths.entries())
+      if (bytes[i]) entries[path] = [bytes[i], { level: 0 }];
+    return zipSync(entries);
   }
 
   page(layout: string, path: string, locale?: string) {
@@ -390,14 +430,11 @@ export class WorkspaceService {
       if (this.store.kind !== "memory")
         throw new Error("Zip download is only needed in memory mode");
       const entries: Record<string, Uint8Array> = {};
-      const allowed = (path: string) =>
-        !path.includes("\\") &&
-        !path.split("/").some((part) => !part || part.startsWith("."));
       for (const file of await this.store.list())
-        if (allowed(file.relPath))
+        if (assetPath(file.relPath))
           entries[file.relPath] = strToU8(file.content);
       for (const [path, blob] of Object.entries(this.store.assets ?? {}))
-        if (allowed(path))
+        if (assetPath(path))
           entries[path] = new Uint8Array(await blob.arrayBuffer());
       const zip = zipSync(entries);
       // Inside the queue, so no write can land between the copy and the reset.
