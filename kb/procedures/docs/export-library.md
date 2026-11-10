@@ -12,11 +12,6 @@ uses:
   - capability.integration.extensible-facade
 constrained_by:
   - constraint.docs.publication-lifecycle
-sources:
-  - packages/core/src/docs.ts
-  - packages/core/src/kb.ts
-  - packages/core/src/assets.ts
-  - packages/core/README.md
 ---
 
 ## Steps

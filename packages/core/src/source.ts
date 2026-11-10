@@ -20,6 +20,8 @@ export interface DocSource {
   list(): MaybePromise<SourceFile[]>;
   /** Optional: relative POSIX paths of the non-Markdown files beside the documents. When given, lint reports missing images (W110). */
   assets?(): MaybePromise<string[]>;
+  /** Optional: reads a non-Markdown text file beside the documents, such as `simp-sources.yaml`; resolves `undefined` when it is missing. When given, lint checks that file. */
+  read?(relPath: string): MaybePromise<string | undefined>;
 }
 
 /**
@@ -36,5 +38,7 @@ export function memorySource(
     name,
     list: () =>
       Object.entries(files).map(([relPath, content]) => ({ relPath, content })),
+    read: (relPath) =>
+      Object.hasOwn(files, relPath) ? files[relPath] : undefined,
   };
 }

@@ -9,10 +9,6 @@ aliases:
   - install Simplink skills
 related:
   - capability.ui.local-manager
-sources:
-  - packages/ui/src/routes/skills.tsx
-  - packages/ui/src/routes/__root.tsx
-  - .agents/skills/
 ---
 
 ## Steps

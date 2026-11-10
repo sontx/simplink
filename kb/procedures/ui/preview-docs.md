@@ -12,11 +12,6 @@ uses:
   - capability.docs.markdown-export
 constrained_by:
   - constraint.docs.publication-lifecycle
-sources:
-  - packages/ui/src/routes/docs/$.tsx
-  - packages/ui/src/components/node-docs.tsx
-  - packages/ui/src/workspace/service.ts
-  - README.md
 ---
 
 ## Steps

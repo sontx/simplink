@@ -10,7 +10,6 @@ summary: TODO what this procedure does (≤ 200 chars)
 # constrained_by: []          # constraints
 # availability: { plans: [], permissions: [] }
 # choices: see references/schema.md §4
-sources: []
 ---
 
 ## Steps

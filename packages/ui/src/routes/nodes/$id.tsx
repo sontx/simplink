@@ -470,6 +470,14 @@ function NodeContent() {
                   </dd>
                 </div>
               ))}
+              {detail.sources && (
+                <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-border py-2.75 text-xs max-[480px]:grid-cols-1 max-[480px]:gap-1">
+                  <dt className="text-muted-foreground">{label("sources")}</dt>
+                  <dd className="m-0 wrap-anywhere">
+                    <SourceFiles sources={detail.sources} />
+                  </dd>
+                </div>
+              )}
             </dl>
             <Markdown content={node.body} assetBase={node.path} />
             <h2 className="mt-6 mb-2 text-base leading-normal font-semibold">

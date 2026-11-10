@@ -10,11 +10,6 @@ produces:
 constrained_by:
   - constraint.authoring.document-format
   - constraint.authoring.graph-rules
-sources:
-  - packages/core/src/loader.ts
-  - packages/core/src/graph.ts
-  - packages/core/schemas/
-  - test/fixtures/kb/
 ---
 
 ## Steps

@@ -11,8 +11,6 @@ uses:
   - capability.planning.plan-resolution
 constrained_by:
   - constraint.planning.availability-context
-sources:
-  - packages/core/src/tools/core.ts
 ---
 
 ## Steps

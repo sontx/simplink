@@ -4,13 +4,6 @@ title: Explore and resolve guidance across product knowledge bases
 summary: Each named simp exposes its product manifest and local nodes, optionally forwards searches and lookups to declared peers, and can delegate remote planning.
 aliases: [API liên kết cơ sở tri thức, federation peer API]
 constrained_by: [constraint.federation.mesh-limits]
-sources:
-  - packages/core/src/federation/protocol.ts
-  - packages/core/src/federation/service.ts
-  - packages/core/src/federation/kb.ts
-  - packages/node/src/http.ts
-  - packages/node/src/open-peer.ts
-  - packages/node/src/server.ts
 ---
 
 The peer API provides `GET /simp/v1/manifest` (product identity, peers, serving modes, the lint error count, and `issues`, the KB's lint findings with source lines; older nodes omit `issues`), `GET /simp/v1/nodes` (every local node without bodies, never forwarded), and `POST /simp/v1/explore`, `/simp/v1/lookup`, and, when delegate is served, `/simp/v1/resolve`. Its protocol version is 1. `GET /healthz` is public and reports KB status; it probes and lists peers only for requests with the bearer token. The base path can be configured. Browser apps need their origin in the node's allowed origins, or the `*` entry that allows any origin; only those origins get CORS headers, and preflights are answered without the token.

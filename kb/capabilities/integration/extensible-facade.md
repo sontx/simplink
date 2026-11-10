@@ -12,12 +12,6 @@ requires:
 constrained_by:
   - constraint.integration.snapshot-lifecycle
   - constraint.integration.source-contract
-sources:
-  - packages/core/src/kb.ts
-  - packages/core/src/source.ts
-  - packages/core/src/tools/core.ts
-  - packages/core/src/index.ts
-  - packages/core/README.md
 ---
 
 `@sontx/simplink-core` is an ESM package for Node.js 22 or newer, with TypeScript declarations and the bundled schemas.

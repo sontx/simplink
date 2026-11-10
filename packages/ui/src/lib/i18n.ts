@@ -355,6 +355,12 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "This choice has only one option.": "Lựa chọn này chỉ có một phương án.",
   "A peer was unreachable, so remote references were not checked.":
     "Không kết nối được một peer nên chưa kiểm tra các tham chiếu từ xa.",
+  "simp-sources.yaml is not a valid map of node IDs to source lists.":
+    "simp-sources.yaml không phải là bảng hợp lệ ánh xạ ID nút tới danh sách nguồn.",
+  "Inline sources are deprecated; move them to simp-sources.yaml so they are not published.":
+    "Khai báo sources trong nút đã ngừng dùng; hãy chuyển sang simp-sources.yaml để không bị công khai.",
+  "simp-sources.yaml lists a node that does not exist.":
+    "simp-sources.yaml liệt kê một nút không tồn tại.",
   "Saved in memory": "Đã lưu trong bộ nhớ",
   "Next issue ({position} of {total})": "Vấn đề tiếp theo ({position}/{total})",
   "Cleared 1 issue:": "Đã xử lý 1 vấn đề:",

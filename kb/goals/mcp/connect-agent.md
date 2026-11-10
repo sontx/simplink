@@ -15,10 +15,6 @@ when_to_use:
 procedures:
   - procedure.mcp.start-stdio
   - procedure.mcp.start-http
-sources:
-  - packages/mcp/README.md
-  - packages/mcp/src/bin.ts
-  - packages/mcp/src/http-bin.ts
 ---
 
 The user wants an AI agent to use the KB through the Model Context Protocol. A local client usually launches the stdio server; shared or remote use needs the HTTP server.

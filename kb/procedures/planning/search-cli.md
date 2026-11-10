@@ -12,10 +12,6 @@ uses:
   - capability.planning.intent-search
 constrained_by:
   - constraint.planning.cli-validation
-sources:
-  - packages/core/src/cli/search.ts
-  - packages/core/src/cli/simp.ts
-  - packages/core/README.md
 ---
 
 ## Steps

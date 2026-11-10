@@ -278,6 +278,8 @@ const COMMON_KEYS = new Set([
   "tags",
   "status",
   "availability",
+  // Authoring evidence, never served: it can name private repo paths.
+  "sources",
   ...EDGE_KINDS,
 ]);
 

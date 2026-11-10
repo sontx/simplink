@@ -8,10 +8,6 @@ aliases:
 constrained_by:
   - constraint.authoring.graph-rules
   - constraint.planning.availability-context
-sources:
-  - packages/core/src/resolve.ts
-  - packages/core/src/render.ts
-  - packages/core/src/assets.ts
 ---
 
 Resolution turns each of a goal's procedures into a full plan:

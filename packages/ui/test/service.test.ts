@@ -70,6 +70,28 @@ test("chosen UI language drives generated docs, plans, and playground plans", as
   service.close();
 });
 
+test("workspace shows node sources from simp-sources.yaml and lints it", async () => {
+  const service = await WorkspaceService.open(
+    memoryStore(await fixture(), {
+      "simp-sources.yaml": new Blob([
+        "procedure.zalo.send-message:\n  - src/zalo.ts\nprocedure.gone:\n  - src/gone.ts\n",
+      ]),
+    }),
+  );
+  assert.deepEqual(service.nodeDetail("procedure.zalo.send-message").sources, [
+    "src/zalo.ts",
+  ]);
+  assert.equal(service.nodeDetail("goal.send-zalo-message").sources, undefined);
+  assert.deepEqual(
+    service
+      .snapshot()
+      .issues.filter((i) => i.path === "simp-sources.yaml")
+      .map((i) => [i.code, i.line]),
+    [["W113", 3]],
+  );
+  service.close();
+});
+
 test("workspace reads, edits, validates, resolves and repairs fixture documents", async () => {
   const files = await fixture();
   const service = await WorkspaceService.open(

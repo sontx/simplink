@@ -8,11 +8,6 @@ aliases:
   - lỗi simp-docs
   - docs output directory
   - unsafe output destination
-sources:
-  - packages/core/src/cli/docs.ts
-  - packages/core/src/docs-layout.ts
-  - packages/core/schemas/defs.schema.json
-  - README.md
 ---
 
 ## Before writing

@@ -13,10 +13,6 @@ uses:
 constrained_by:
   - constraint.planning.cli-validation
   - constraint.planning.availability-context
-sources:
-  - packages/core/src/cli/resolve.ts
-  - packages/core/src/cli/simp.ts
-  - packages/core/src/render.ts
 ---
 
 ## Steps

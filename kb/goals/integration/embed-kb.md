@@ -14,9 +14,6 @@ when_to_use:
   - Developer wants to pass KB tools to a model provider directly instead of through MCP.
 procedures:
   - procedure.integration.embed-kb
-sources:
-  - packages/core/README.md
-  - packages/core/src/index.ts
 ---
 
 The user is a developer who wants Simplink's search, plans, and tools inside their own application code.

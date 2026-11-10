@@ -12,9 +12,6 @@ when_to_use:
   - User wants to check where a node's page appears after changing docs.path or docs.order.
 procedures:
   - procedure.ui.preview-docs
-sources:
-  - packages/ui/src/routes/docs/$.tsx
-  - packages/ui/src/workspace/service.ts
 ---
 
 The user wants to review the generated docs in the browser. Download the current page as Markdown or the selected layout's full set as a ZIP from Docs.

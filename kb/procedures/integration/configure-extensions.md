@@ -10,11 +10,6 @@ uses:
 constrained_by:
   - constraint.integration.source-contract
   - constraint.integration.snapshot-lifecycle
-sources:
-  - packages/core/README.md
-  - packages/core/src/kb.ts
-  - packages/core/src/tools/core.ts
-  - packages/core/src/cli/context.ts
 ---
 
 ## Steps

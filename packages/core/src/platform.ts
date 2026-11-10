@@ -32,7 +32,8 @@ export function defaultValidator(): FrontmatterValidator {
 
 /**
  * Creates a filesystem source that recursively reads UTF-8 .md files, skipping hidden entries.
- * Its `assets` lists the other visible files, so lint can check image paths.
+ * Its `assets` lists the other visible files, so lint can check image paths, and
+ * `read` reads one of them as text, resolving `undefined` when it is missing.
  * @param root - Knowledge-base directory.
  * @returns A lazy source; filesystem errors reject its list and assets calls.
  */
@@ -91,6 +92,23 @@ export function fsSource(root: string): DocSource {
       const paths = lastWalk ?? walk(root);
       lastWalk = undefined;
       return (await paths).filter((f) => !f.endsWith(".md"));
+    },
+    async read(relPath) {
+      if (
+        !relPath ||
+        relPath.includes("\\") ||
+        path.isAbsolute(relPath) ||
+        /^[A-Za-z]:/.test(relPath) ||
+        relPath.split("/").some((s) => !s || s === "." || s === "..")
+      )
+        throw new Error(`Invalid source path "${relPath}"`);
+      try {
+        return await readFile(path.join(root, relPath), "utf8");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT")
+          return undefined;
+        throw error;
+      }
     },
   };
 }

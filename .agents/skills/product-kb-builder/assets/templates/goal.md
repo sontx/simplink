@@ -8,7 +8,6 @@ aliases:
 when_to_use:
   - TODO user situation, e.g. "User wants to …"
 procedures: []
-sources: []
 ---
 
 TODO 1–3 sentences on the intent. No steps here; steps belong in procedures.

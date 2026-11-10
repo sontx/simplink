@@ -126,7 +126,7 @@
         },
         "sources": {
           "$ref": "#/$defs/stringList",
-          "description": "Repo paths or doc URLs this node was derived from. Not indexed for search."
+          "description": "Deprecated: list a node's evidence in simp-sources.yaml at the KB root instead. Repo paths or doc URLs this node was derived from; never served or indexed."
         },
         "docs": {
           "type": "object",

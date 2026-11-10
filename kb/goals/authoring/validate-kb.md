@@ -16,9 +16,6 @@ when_to_use:
 procedures:
   - procedure.authoring.lint-kb
   - procedure.ui.repair-issues
-sources:
-  - packages/core/src/cli/lint.ts
-  - packages/core/src/lint-graph.ts
 ---
 
 The user wants to know what is wrong with their KB and how to fix it. Search, resolution, and documentation export do not accept a KB that has errors.

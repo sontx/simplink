@@ -8,6 +8,11 @@ import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
 import { locateSource, type SourceLocator } from "./source-lines.js";
 import {
+  parseSimpSources,
+  SIMP_SOURCES_FILE,
+  simpSourcesLine,
+} from "./simp-sources.js";
+import {
   FOLDER_TO_TYPE,
   issue,
   type Issue,
@@ -144,6 +149,12 @@ export async function lintKB(
       );
     for (const f of await validate(doc.folderType, doc.data))
       add(f.code, f.message, f.field && source.field(f.field));
+    if (doc.data.sources !== undefined)
+      add(
+        "W112",
+        `inline "sources" is deprecated and served to agents and peers; move it to ${SIMP_SOURCES_FILE}`,
+        source.field(["sources"]),
+      );
 
     const existing = nodes.get(doc.derivedId);
     if (existing) {
@@ -160,6 +171,23 @@ export async function lintKB(
   const graph = buildGraph(nodes);
   const assets = source.assets && new Set(await source.assets());
   issues.push(...lintGraph(graph, (node) => locators.get(node.path), assets));
+  const sidecar = source.read && (await source.read(SIMP_SOURCES_FILE));
+  if (sidecar !== undefined) {
+    try {
+      for (const id of Object.keys(parseSimpSources(sidecar)))
+        if (!graph.nodes.has(id))
+          issues.push(
+            issue(
+              "W113",
+              SIMP_SOURCES_FILE,
+              `sources for unknown node "${id}"`,
+              simpSourcesLine(sidecar, id),
+            ),
+          );
+    } catch (error) {
+      issues.push(issue("E017", SIMP_SOURCES_FILE, (error as Error).message));
+    }
+  }
   for (const rule of opts.rules ?? []) issues.push(...(await rule(graph)));
   const disabled = new Set(opts.disable);
   for (let i = issues.length - 1; i >= 0; i--)

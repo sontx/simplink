@@ -12,19 +12,6 @@ requires:
   - capability.docs.markdown-export
 constrained_by:
   - constraint.ui.browser-folder-access
-sources:
-  - packages/ui/src/workspace/service.ts
-  - packages/ui/src/routes/__root.tsx
-  - packages/ui/src/routes/graph.tsx
-  - packages/ui/src/routes/nodes/index.tsx
-  - packages/ui/src/routes/playground.tsx
-  - packages/ui/src/routes/issues.tsx
-  - packages/ui/src/routes/docs/$.tsx
-  - packages/ui/src/routes/skills.tsx
-  - packages/ui/src/lib/i18n.ts
-  - packages/ui/src/workspace/static-kb.ts
-  - packages/ui/src/components/markdown.tsx
-  - README.md
 ---
 
 `@sontx/simplink-ui` ships a static browser app. Open a KB folder from the open screen; Chromium saves directly to it, while other browsers use memory and zip downloads. The main views are:

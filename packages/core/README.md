@@ -204,7 +204,27 @@ Each node declares a `type`, which must match its top-level folder.
 
 Every node needs `title` and `summary`. Optional fields include `aliases` and
 `tags` (indexed for search), `related`, `status: deprecated`, `availability`,
-`sources`, and `docs`.
+and `docs`.
+
+### Source evidence
+
+Record the repo paths or doc URLs each node was derived from in
+`simp-sources.yaml` at the KB root, keyed by node ID. Update passes use it to
+find the nodes a change affects:
+
+```yaml
+goal.mcp.connect-agent:
+  - packages/mcp/src/bin.ts
+simp:
+  - README.md
+```
+
+The file is authoring metadata and is never served: `get_node`, simp-node
+lookups, static peers, the KB proxy, `simp-index`, and docs export all leave it
+out. Don't upload it when you host a KB folder as static files. Lint reports a
+malformed file (E017) and entries for missing nodes (W113). An inline `sources`
+frontmatter field is still accepted but deprecated (W112), and served output
+strips it.
 
 ### Images
 
@@ -512,7 +532,10 @@ Custom sources implement `{ list(): SourceFile[] | Promise<SourceFile[]> }`.
 Each file has a relative `/`-separated `relPath` and a `content` string. An
 optional `assets(): string[] | Promise<string[]>` lists the relative paths of the
 non-Markdown files, so lint can report missing images (W110). `fsSource` has it;
-`memorySource` and `gitSource` don't, so those skip the check.
+`memorySource` and `gitSource` don't, so those skip the check. An optional
+`read(relPath): string | undefined` returns a non-Markdown text file, so lint
+can check `simp-sources.yaml`. `fsSource` and `memorySource` have it;
+`gitSource` doesn't.
 
 ## Related packages
 

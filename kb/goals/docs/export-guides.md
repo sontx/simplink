@@ -15,9 +15,6 @@ when_to_use:
 procedures:
   - procedure.docs.export-cli
   - procedure.docs.export-library
-sources:
-  - README.md
-  - packages/core/src/cli/docs.ts
 ---
 
 The user wants people, not only agents, to read the KB. The result is a set of Markdown files; hosting and site configuration are separate.

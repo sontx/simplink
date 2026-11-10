@@ -8,11 +8,6 @@ aliases:
   - lỗi tham chiếu node
   - graph lint rules
   - dangling reference
-sources:
-  - packages/core/src/lint-graph.ts
-  - packages/core/src/graph.ts
-  - packages/core/src/markdown.ts
-  - packages/core/src/assets.ts
 ---
 
 ## Errors (block search, resolution, and export)
@@ -26,6 +21,7 @@ sources:
 | `E011` | Goal bodies must not contain a `## Steps` section or an ordered list; steps belong in procedures.                                |
 | `E014` | Each choice must be referenced exactly once in `## Steps` as its own item `choice:<id>`, and no step may name an unknown choice. |
 | `E015` | Choice IDs must be unique within a procedure, and option keys unique within a choice.                                            |
+| `E017` | `simp-sources.yaml`, when present, must map local node IDs to non-empty lists of source strings.                                 |
 
 Code in backticks or fenced blocks is ignored when finding links and steps.
 
@@ -44,6 +40,8 @@ Code in backticks or fenced blocks is ignored when finding links and steps.
 | `W108` | A choice has only one option.                                                       |
 | `W110` | A body image's file is missing or outside the KB (filesystem sources only).         |
 | `W111` | An image has no alt text; agents read only the alt text.                            |
+| `W112` | Inline `sources` is deprecated; list it in `simp-sources.yaml`.                     |
+| `W113` | `simp-sources.yaml` lists a node that does not exist.                               |
 
 `simp-lint` exits with code 1 on any error. Warnings affect the exit code only when `--max-warnings` is exceeded.
 

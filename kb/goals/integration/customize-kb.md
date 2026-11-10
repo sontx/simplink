@@ -15,9 +15,6 @@ when_to_use:
   - Developer wants to add, override, or remove KB tools exposed to a model.
 procedures:
   - procedure.integration.configure-extensions
-sources:
-  - packages/core/README.md
-  - packages/core/src/kb.ts
 ---
 
 The user is a developer who wants Simplink's default behavior changed in their application. All extension points are configured in code when the KB is created.

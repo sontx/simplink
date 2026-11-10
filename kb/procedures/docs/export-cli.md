@@ -13,11 +13,6 @@ uses:
 constrained_by:
   - constraint.docs.output-safety
   - constraint.docs.publication-lifecycle
-sources:
-  - packages/core/src/cli/docs.ts
-  - packages/core/src/cli/simp.ts
-  - packages/core/src/assets.ts
-  - README.md
 ---
 
 ## Steps

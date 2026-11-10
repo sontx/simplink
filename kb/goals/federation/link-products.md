@@ -16,10 +16,6 @@ procedures:
   - procedure.federation.run-simp-node
   - procedure.federation.publish-static-simp
   - procedure.mcp.connect-to-simp-node
-sources:
-  - packages/core/src/federation/kb.ts
-  - packages/node/src/open-peer.ts
-  - packages/mcp/src/kb-source.ts
 ---
 
 Give each product a named simp and declare relationships to other products. Choose linked authoring, a running peer API, static publishing, or an MCP connection according to how the products share guidance.

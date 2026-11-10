@@ -15,9 +15,6 @@ when_to_use:
 procedures:
   - procedure.planning.search-cli
   - procedure.planning.search-tools
-sources:
-  - packages/core/src/cli/search.ts
-  - packages/core/src/tools/core.ts
 ---
 
 The user or agent has a request in natural language and wants the KB entry points that answer it. The search can run from the command line or through the KB tools.

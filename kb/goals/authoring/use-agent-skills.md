@@ -15,9 +15,6 @@ when_to_use:
   - User asks what the Skills page is or how to install the skills bundle.
 procedures:
   - procedure.ui.install-skills
-sources:
-  - packages/ui/src/routes/skills.tsx
-  - .agents/skills/
 ---
 
 The user wants an agent to do the authoring. Simplink ships agent skills that teach a coding agent how to build, update, and use a KB; the agent's output still goes through `simp-lint` and can be reviewed in the UI.

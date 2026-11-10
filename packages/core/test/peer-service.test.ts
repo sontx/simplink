@@ -43,6 +43,20 @@ test("explore returns local hits with sources", async () => {
   assert.equal(result.sources[0].ok, true);
 });
 
+test("lookup never serves a node's inline sources", async () => {
+  const service = createPeerService({
+    kb: await product("x", [], {
+      "procedures/a.md": proc("A", "sources: [src/private/a.ts]\n"),
+    }),
+  });
+  const result = await service.lookup({
+    ids: ["procedure.a"],
+    trace: newTrace(),
+  });
+  assert.equal(result.nodes.length, 1);
+  assert.equal("sources" in result.nodes[0].fields, false);
+});
+
 test("lookup returns nodes with fields and edges and reports missing ids", async () => {
   const service = createPeerService({
     kb: await product("x", [], {

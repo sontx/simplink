@@ -8,11 +8,6 @@ aliases:
   - gói dịch vụ và quyền
   - availability is not access control
   - token budget
-sources:
-  - packages/core/src/resolve.ts
-  - packages/core/src/render.ts
-  - packages/core/src/tools/core.ts
-  - README.md
 ---
 
 ## Availability

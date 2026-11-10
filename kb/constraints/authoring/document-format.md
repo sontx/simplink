@@ -8,17 +8,6 @@ aliases:
   - quy tắc đặt tên đường dẫn
   - node file format
   - frontmatter schema
-sources:
-  - packages/core/src/loader.ts
-  - packages/core/src/lint.ts
-  - packages/core/src/schema.ts
-  - packages/core/src/types.ts
-  - packages/core/schemas/defs.schema.json
-  - packages/core/schemas/goal.schema.json
-  - packages/core/schemas/procedure.schema.json
-  - packages/core/schemas/state.schema.json
-  - packages/core/schemas/constraint.schema.json
-  - packages/core/schemas/capability.schema.json
 ---
 
 ## Paths and IDs
@@ -36,7 +25,8 @@ sources:
 - `type` must match the folder (`E003`).
 - Every node needs `type`, `title`, and `summary` (`E006`).
 - Goals need `when_to_use` and `procedures`, each with at least one item. States need `check` and at least one `satisfied_by` procedure. Constraints need `severity: blocking` or `severity: warning`.
-- Unknown keys are errors (`E005`). Optional common keys are `aliases`, `tags`, `related`, `status` (`active` or `deprecated`), `availability` (`plans`, `permissions`), `sources`, and `docs` (`path`, `order`).
+- Unknown keys are errors (`E005`). Optional common keys are `aliases`, `tags`, `related`, `status` (`active` or `deprecated`), `availability` (`plans`, `permissions`), and `docs` (`path`, `order`). `sources` is still accepted but deprecated (`W112`).
+- Record each node's evidence (repo paths or doc URLs) in `simp-sources.yaml` at the KB root, keyed by node ID. Frontmatter is served to agents and peers; the sidecar never is.
 - Relationship fields accept only IDs of the expected type; for example, `uses` accepts only `capability.*` IDs (`E008`). Other type or enum violations produce `E012`.
 
 ## When violated

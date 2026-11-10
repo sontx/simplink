@@ -10,13 +10,6 @@ requires:
 constrained_by:
   - constraint.docs.output-safety
   - constraint.docs.publication-lifecycle
-sources:
-  - packages/core/src/docs.ts
-  - packages/core/src/docs-layout.ts
-  - packages/core/src/docs-plan.ts
-  - packages/core/src/assets.ts
-  - packages/core/src/i18n/index.ts
-  - README.md
 ---
 
 ## Site layout (default)

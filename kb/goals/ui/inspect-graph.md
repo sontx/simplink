@@ -14,10 +14,6 @@ when_to_use:
   - User wants to see what plan an agent receives for a goal.
 procedures:
   - procedure.ui.inspect-relationships
-sources:
-  - packages/ui/src/workspace/service.ts
-  - packages/ui/src/components/kb-graph.tsx
-  - packages/ui/src/components/inspector.tsx
 ---
 
 The user wants to see and change the structure of the KB: which nodes depend on which, and how that shapes the resolved plan.

@@ -8,7 +8,10 @@ import {
   deriveId,
   FOLDER_TO_TYPE,
   parseDoc,
+  parseSimpSources,
   simpDoc,
+  SIMP_SOURCES_FILE,
+  type SimpSources,
   type KB,
   type KBNode,
   type Peer,
@@ -50,6 +53,9 @@ export class WorkspaceService {
   private kb!: KB;
   private peers: Peer[] = [];
   private files: Record<string, string> = {};
+  // The authoring sidecar's text, when the store has one, and its parsed map when it is valid.
+  private sourcesText?: string;
+  private sources: SimpSources = {};
   // The node file this session last wrote, so the graph can reopen where the author worked.
   private lastEdited?: string;
   // The last deleted file, kept so the author can undo the delete.
@@ -91,6 +97,15 @@ export class WorkspaceService {
     // Lists names only, so lint can report missing images (W110) without reading them.
     const assets = this.store.assetPaths;
     if (assets) source.assets = () => [...assets];
+    const sourcesText = this.sourcesText;
+    source.read = (path) =>
+      path === SIMP_SOURCES_FILE ? sourcesText : undefined;
+    try {
+      this.sources =
+        sourcesText === undefined ? {} : parseSimpSources(sourcesText);
+    } catch {
+      this.sources = {}; // Lint reports it (E017).
+    }
     const kb = await createKB(source, { validator });
     this.kb = kb;
     // ponytail: only declared simp-node peers over HTTP(S), without tokens; static and folder peers need a server.
@@ -132,12 +147,24 @@ export class WorkspaceService {
         this.files = Object.fromEntries(
           (await this.store.list()).map((file) => [file.relPath, file.content]),
         );
+        this.sourcesText = await this.readSources();
         return await this.rebuild();
       } catch (error) {
         this.stale = true;
         throw error;
       }
     });
+  }
+
+  // Only local folders and uploads have the sidecar; remote KBs never publish it.
+  private async readSources(): Promise<string | undefined> {
+    if (!this.store.assetPaths?.includes(SIMP_SOURCES_FILE)) return undefined;
+    try {
+      const file = await this.store.asset?.(SIMP_SOURCES_FILE);
+      return file instanceof Blob ? await file.text() : undefined;
+    } catch {
+      return undefined; // Removed since the listing.
+    }
   }
 
   snapshot(): Snapshot {
@@ -254,6 +281,9 @@ export class WorkspaceService {
         out: this.kb.graph.out.get(id) ?? [],
         in: this.kb.graph.in.get(id) ?? [],
         raw: this.files[node.path],
+        ...(Object.hasOwn(this.sources, id)
+          ? { sources: this.sources[id] }
+          : {}),
       };
     const [type, ...segments] = id.split(".");
     const folder = Object.keys(FOLDER_TO_TYPE).find(

@@ -7,12 +7,6 @@ aliases:
   - MCP không nạp lại KB
   - restart MCP server to reload
   - MCP serving anyway
-sources:
-  - packages/mcp/src/kb-source.ts
-  - packages/mcp/src/bin.ts
-  - packages/mcp/src/http-bin.ts
-  - packages/core/src/tools/core.ts
-  - README.md
 ---
 
 - Both servers load the KB once at startup. With lint errors they log `Serving anyway.` (stdio, on stderr) or `kb has lint errors; serving anyway` (HTTP, as a JSON line on stdout) and keep running.

@@ -13,12 +13,6 @@ uses:
 constrained_by:
   - constraint.authoring.graph-rules
   - constraint.planning.cli-validation
-sources:
-  - packages/core/README.md
-  - packages/core/src/cli/lint.ts
-  - packages/core/src/cli/context.ts
-  - packages/core/src/index.ts
-  - packages/core/src/cli/simp.ts
 ---
 
 ## Steps

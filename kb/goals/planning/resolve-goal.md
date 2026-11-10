@@ -15,10 +15,6 @@ when_to_use:
 procedures:
   - procedure.planning.resolve-cli
   - procedure.planning.resolve-tools
-sources:
-  - packages/core/src/cli/resolve.ts
-  - packages/core/src/tools/core.ts
-  - packages/core/src/resolve.ts
 ---
 
 The user or agent has a goal ID and wants the full plan: what to check first, what to run when a check fails, which decisions to make, and which rules apply.

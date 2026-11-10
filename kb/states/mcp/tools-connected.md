@@ -6,9 +6,6 @@ check: In the MCP client, list the server's tools and confirm that `search_kb`, 
 satisfied_by:
   - procedure.mcp.start-stdio
   - procedure.mcp.start-http
-sources:
-  - packages/mcp/src/server.ts
-  - packages/core/src/tools/core.ts
 ---
 
 If results start with `[KB has N lint error(s); results may be incomplete]`, the connection works but the KB needs fixing.

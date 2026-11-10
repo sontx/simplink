@@ -12,12 +12,6 @@ uses:
 constrained_by:
   - constraint.ui.browser-folder-access
   - constraint.authoring.document-format
-sources:
-  - packages/ui/src/workspace/service.ts
-  - packages/ui/src/components/node-dialog.tsx
-  - packages/ui/src/routes/nodes/index.tsx
-  - packages/ui/src/routes/nodes/$id.tsx
-  - packages/ui/src/components/kb-graph.tsx
 ---
 
 ## Steps

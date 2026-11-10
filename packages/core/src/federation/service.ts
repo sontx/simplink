@@ -60,6 +60,8 @@ const COMMON_KEYS = new Set([
   "tags",
   "status",
   "availability",
+  // Authoring evidence, never served: it can name private repo paths.
+  "sources",
 ]);
 /** Converts a local node to its protocol form, or returns `undefined` when the KB has no such node. */
 export function toLookupNode(

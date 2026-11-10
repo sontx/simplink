@@ -12,12 +12,6 @@ produces:
   - state.ui.workspace-running
 uses:
   - capability.ui.local-manager
-sources:
-  - packages/ui/src/workspace/static-kb.ts
-  - packages/ui/src/workspace/store.ts
-  - packages/ui/src/workspace/context.tsx
-  - packages/kb-proxy/src/index.ts
-  - packages/kb-proxy/wrangler.jsonc
 ---
 
 ## Steps

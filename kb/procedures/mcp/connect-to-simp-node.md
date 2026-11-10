@@ -5,11 +5,6 @@ summary: Serve federated KB tools through MCP by loading a local KB and its peer
 aliases: [kết nối MCP với simp, connect MCP to simp]
 uses: [capability.mcp.tool-transports, capability.federation.peer-api]
 constrained_by: [constraint.federation.mesh-limits]
-sources:
-  - packages/mcp/src/kb-source.ts
-  - packages/mcp/src/bin.ts
-  - packages/mcp/src/http-bin.ts
-  - packages/mcp/src/server.ts
 ---
 
 ## Steps

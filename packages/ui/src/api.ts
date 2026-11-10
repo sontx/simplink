@@ -25,6 +25,8 @@ export interface NodeDetail {
   out: KBEdge[];
   in: KBEdge[];
   raw: string;
+  /** The node's entry in `simp-sources.yaml`, when the workspace has one. */
+  sources?: string[];
 }
 
 export type Schema = Record<string, Record<string, string>>;

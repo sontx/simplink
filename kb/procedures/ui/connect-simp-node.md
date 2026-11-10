@@ -11,10 +11,6 @@ produces:
 uses:
   - capability.ui.local-manager
   - capability.federation.peer-api
-sources:
-  - packages/ui/src/workspace/context.tsx
-  - packages/ui/src/workspace/store.ts
-  - packages/node/src/http.ts
 ---
 
 ## Steps

@@ -8,11 +8,6 @@ aliases:
   - lỗi clone git
   - custom document source
   - git source requirements
-sources:
-  - packages/core/src/source.ts
-  - packages/core/src/loader.ts
-  - packages/core/src/git-source.ts
-  - packages/core/README.md
 ---
 
 ## All sources

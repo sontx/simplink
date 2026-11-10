@@ -7,11 +7,6 @@ aliases:
   - lỗi tham số CLI
   - CLI exit code 2
   - invalid CLI option
-sources:
-  - packages/core/src/cli/search.ts
-  - packages/core/src/cli/resolve.ts
-  - packages/core/src/cli/context.ts
-  - packages/core/src/cli/simp.ts
 ---
 
 ## KB health

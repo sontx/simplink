@@ -5,10 +5,6 @@ summary: Ranks nodes for a free-text query and surfaces the goals connected to m
 aliases:
   - tìm kiếm theo ý định
   - intent search
-sources:
-  - packages/core/src/search.ts
-  - packages/core/src/graph.ts
-  - packages/core/README.md
 ---
 
 Search uses keyword ranking (BM25), not semantic understanding. Results depend on the words in each node.
