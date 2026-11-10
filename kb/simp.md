@@ -7,8 +7,8 @@ aliases: [Simplink knowledge base, cơ sở tri thức Simplink]
 tags: [knowledge-base, agents]
 peers: []
 checkpoint:
-  updated_at: "2026-11-10T14:27:21Z"
-  commit: "c363c3fc055a46e4ef04dbfd0a06e401a34d095b"
+  updated_at: "2026-11-10T14:34:20Z"
+  commit: "9ee741c3ff45980b778187613fba72bc0fc87675"
 sources:
   - packages/core/src/simp-doc.ts
   - packages/core/src/docs.ts
@@ -19,6 +19,7 @@ Simplink keeps product guidance in Markdown and helps agents find goals and reso
 ## Start here
 
 - [Create a knowledge base](simp:///goal.authoring.create-kb)
+- [Let an agent build your KB](simp:///goal.authoring.use-agent-skills)
 - [Find guidance](simp:///goal.planning.find-guidance)
 - [Connect an agent](simp:///goal.mcp.connect-agent)
 - [Open the browser workspace](simp:///goal.ui.open-workspace)

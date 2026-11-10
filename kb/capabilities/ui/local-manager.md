@@ -20,6 +20,7 @@ sources:
   - packages/ui/src/routes/playground.tsx
   - packages/ui/src/routes/issues.tsx
   - packages/ui/src/routes/docs/$.tsx
+  - packages/ui/src/routes/skills.tsx
   - packages/ui/src/lib/i18n.ts
   - packages/ui/src/workspace/static-kb.ts
   - packages/ui/src/components/markdown.tsx
@@ -33,6 +34,7 @@ sources:
 - **Playground**: friendly forms for **Find answers**, **Plan a goal**, **Plan a procedure**, **View details**, and **Explore connections**, using the same validated tools as MCP against the current workspace. Plans accept known conditions, choices, account plan, and permissions. These actions read data and provide guidance; they do not execute procedures or change files.
 - **Issues**: lint findings grouped by file, files with the most errors first, filterable by **Severity**. Each file has **Graph** and **Fix in source**; selecting a finding's **Line** opens the Source tab at that line. On the Source tab, the file's findings sit above the editor, which marks their lines; **Next file** moves to the next file with issues, and **Ctrl+S** (**⌘S** on macOS) saves.
 - **Docs**: an in-memory preview of the exported docs in **Site** or **Graph** layout, with current-page Markdown and full-layout ZIP downloads.
+- **Skills**: the Simplink agent skills (`product-kb-builder`, `docs-kb-builder`, `simplink-usage`) with **Download skills (.zip)** and setup steps for Claude Code, Codex, and other agents (see `procedure.ui.install-skills`).
 
 The header shows the error and warning counts, **Search nodes…**, **Reload**, a language button showing **en** or **vi** with a dropdown listing **en English** and **vi Tiếng Việt**, and a separate theme toggle showing a sun for light mode and a moon for dark mode. The default theme is light; saved theme choices are preserved. Goal and procedure pages show the resolved **Agent plan**. Node pages and the Docs preview show the images that node bodies link: folder and memory workspaces read them from the KB files, and static KBs load them from the KB's URL. A simp-node workspace cannot fetch images and shows their alt text, as it does for a missing image.
 

@@ -1,6 +1,9 @@
 {
   "baseUrl": "http://localhost:4173",
-  "viewport": { "width": 1280, "height": 800 },
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
   "locale": "en-US",
   "colorScheme": "light",
   "highlightColor": "#2563eb",
@@ -31,7 +34,10 @@
           "selector": "role=textbox[name='Simp node or static KB URL']",
           "label": 2
         },
-        { "selector": "role=button[name='Connect']", "label": 3 }
+        {
+          "selector": "role=button[name='Connect']",
+          "label": 3
+        }
       ],
       "clip": "section:has(h1:text-is('Open a knowledge base'))"
     },
@@ -45,13 +51,25 @@
           "fill": "role=textbox[name='Simp node or static KB URL']",
           "value": "http://localhost:3393"
         },
-        { "click": "role=button[name='Connect']" },
-        { "waitFor": "role=button[name='Plan']" },
-        { "wait": 800 }
+        {
+          "click": "role=button[name='Connect']"
+        },
+        {
+          "waitFor": "role=button[name='Plan']"
+        },
+        {
+          "wait": 800
+        }
       ],
       "highlight": [
-        { "selector": "role=radiogroup[name='Graph depth']", "label": 1 },
-        { "selector": "role=button[name='Plan']", "label": 5 }
+        {
+          "selector": "role=radiogroup[name='Graph depth']",
+          "label": 1
+        },
+        {
+          "selector": "role=button[name='Plan']",
+          "label": 5
+        }
       ]
     },
     {
@@ -59,12 +77,49 @@
       "node": "procedure.ui.preview-docs",
       "steps": [2, 3, 6, 7],
       "url": "/docs",
-      "actions": [{ "waitFor": "role=button[name='Download docs (.zip)']" }],
+      "actions": [
+        {
+          "waitFor": "role=button[name='Download docs (.zip)']"
+        }
+      ],
       "highlight": [
-        { "selector": "role=tablist[name='Docs layout']", "label": 2 },
-        { "selector": "role=button[name='Language']", "label": 3 },
-        { "selector": "role=button[name='Markdown']", "label": 6 },
-        { "selector": "role=button[name='Download docs (.zip)']", "label": 7 }
+        {
+          "selector": "role=tablist[name='Docs layout']",
+          "label": 2
+        },
+        {
+          "selector": "role=button[name='Language']",
+          "label": 3
+        },
+        {
+          "selector": "role=button[name='Markdown']",
+          "label": 6
+        },
+        {
+          "selector": "role=button[name='Download docs (.zip)']",
+          "label": 7
+        }
+      ]
+    },
+    {
+      "out": "assets/ui/skills-page.webp",
+      "node": "procedure.ui.install-skills",
+      "steps": [1, 2],
+      "url": "/skills",
+      "actions": [
+        {
+          "waitFor": "role=button[name='Download skills (.zip)']"
+        }
+      ],
+      "highlight": [
+        {
+          "selector": "role=navigation[name='Workspace'] >> role=link[name='Skills']",
+          "label": 1
+        },
+        {
+          "selector": "role=button[name='Download skills (.zip)']",
+          "label": 2
+        }
       ]
     }
   ]
