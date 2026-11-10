@@ -8,6 +8,12 @@ import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
 import { locateSource, type SourceLocator } from "./source-lines.js";
 import {
+  parseSimpSources,
+  SIMP_SOURCES_FILE,
+  SimpSourcesError,
+  simpSourcesLine,
+} from "./simp-sources.js";
+import {
   FOLDER_TO_TYPE,
   issue,
   type Issue,
@@ -82,6 +88,42 @@ function toNode(doc: RawDoc, id: string): KBNode {
   };
 }
 
+// Checks simp-sources.yaml. Read failures become E017 so one bad file can't
+// stop the KB from loading.
+async function lintSidecar(
+  source: DocSource,
+  ids: ReadonlySet<string>,
+): Promise<Issue[]> {
+  if (!source.read) return [];
+  try {
+    const text = await source.read(SIMP_SOURCES_FILE);
+    if (text === undefined) return [];
+    return Object.keys(parseSimpSources(text))
+      .filter((id) => !ids.has(id))
+      .map((id) =>
+        issue(
+          "W113",
+          SIMP_SOURCES_FILE,
+          `sources for unknown node "${id}"`,
+          simpSourcesLine(text, id),
+        ),
+      );
+  } catch (error) {
+    const message =
+      error instanceof SimpSourcesError
+        ? error.message
+        : `invalid sources: cannot read ${SIMP_SOURCES_FILE}: ${(error as Error).message}`;
+    return [
+      issue(
+        "E017",
+        SIMP_SOURCES_FILE,
+        message,
+        error instanceof SimpSourcesError ? error.line : undefined,
+      ),
+    ];
+  }
+}
+
 /**
  * Loads the KB, validates every file, builds the graph, and runs graph lint.
  * Files that fail path or YAML checks are excluded from the graph; files with
@@ -105,6 +147,9 @@ export async function lintKB(
   const issues: Issue[] = [];
   const nodes = new Map<string, KBNode>();
   const locators = new Map<string, SourceLocator>();
+  // Every path-derived ID, including files left out of the graph for broken
+  // frontmatter, so their sidecar entries aren't reported as unknown (W113).
+  const derivedIds = new Set<string>();
 
   const source = typeof root === "string" ? fsSource(root) : root;
   for (const doc of await loadDocs(source)) {
@@ -126,6 +171,7 @@ export async function lintKB(
       );
       continue;
     }
+    derivedIds.add(doc.derivedId);
     if (doc.parseError) {
       add("E013", `frontmatter: ${doc.parseError}`, yamlErrorLine(doc));
       continue;
@@ -144,6 +190,12 @@ export async function lintKB(
       );
     for (const f of await validate(doc.folderType, doc.data))
       add(f.code, f.message, f.field && source.field(f.field));
+    if (doc.data.sources !== undefined)
+      add(
+        "W112",
+        `inline "sources" is deprecated and served to agents and peers; move it to ${SIMP_SOURCES_FILE}`,
+        source.field(["sources"]),
+      );
 
     const existing = nodes.get(doc.derivedId);
     if (existing) {
@@ -160,6 +212,7 @@ export async function lintKB(
   const graph = buildGraph(nodes);
   const assets = source.assets && new Set(await source.assets());
   issues.push(...lintGraph(graph, (node) => locators.get(node.path), assets));
+  issues.push(...(await lintSidecar(source, derivedIds)));
   for (const rule of opts.rules ?? []) issues.push(...(await rule(graph)));
   const disabled = new Set(opts.disable);
   for (let i = issues.length - 1; i >= 0; i--)

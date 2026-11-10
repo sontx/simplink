@@ -101,4 +101,6 @@ export * from "./federation/kb.js";
 
 export * from "./simp-index.js";
 
+export * from "./simp-sources.js";
+
 export { runIndex } from "./cli/index-file.js";

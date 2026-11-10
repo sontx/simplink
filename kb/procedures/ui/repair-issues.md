@@ -16,11 +16,6 @@ constrained_by:
   - constraint.ui.browser-folder-access
   - constraint.authoring.document-format
   - constraint.authoring.graph-rules
-sources:
-  - packages/ui/src/routes/issues.tsx
-  - packages/ui/src/routes/__root.tsx
-  - packages/ui/src/routes/nodes/$id.tsx
-  - packages/ui/src/workspace/service.ts
 ---
 
 ## Steps

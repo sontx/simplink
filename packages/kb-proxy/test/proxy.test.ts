@@ -89,6 +89,16 @@ test("refuses anything that is not a GET for an http(s) KB file", async () => {
   assert.deepEqual(origin.calls, []);
 });
 
+test("never proxies the private simp-sources.yaml sidecar", async () => {
+  const origin = upstream("goal.a: [src/private.ts]\n");
+  for (const url of [
+    "https://kb.example/simp-sources.yaml",
+    "https://kb.example/kb/simp-sources.yaml",
+  ])
+    assert.equal((await handle(proxy(url), {}, origin.fetch)).status, 400, url);
+  assert.deepEqual(origin.calls, []);
+});
+
 test("reports SPA fallbacks and redirects away from KB files as missing", async () => {
   const html = await handle(
     proxy("https://kb.example/goals/missing.md"),

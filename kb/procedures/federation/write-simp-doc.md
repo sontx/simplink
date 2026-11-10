@@ -5,10 +5,6 @@ summary: Add root simp.md with a stable product name, homepage, optional peer de
 aliases: [viết tài liệu simp, write simp manifest]
 constrained_by:
   [constraint.authoring.document-format, constraint.federation.mesh-limits]
-sources:
-  - packages/core/schemas/simp.schema.json
-  - packages/core/src/loader.ts
-  - packages/core/src/lint-graph.ts
 ---
 
 ## Steps

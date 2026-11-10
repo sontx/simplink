@@ -13,9 +13,6 @@ when_to_use:
   - User wants a container image that serves the KB tools over HTTP with a health check.
 procedures:
   - procedure.mcp.deploy-docker
-sources:
-  - Dockerfile
-  - README.md
 ---
 
 The user wants to deploy the KB tools as a container instead of running `simp-mcp-http` directly on a host.

@@ -8,12 +8,6 @@ aliases:
   - xác thực MCP server
   - MCP HTTP authentication
   - allowed hosts and origins
-sources:
-  - packages/core/src/federation/kb.ts
-  - packages/mcp/src/http.ts
-  - packages/mcp/src/http-bin.ts
-  - packages/mcp/README.md
-  - Dockerfile
 ---
 
 ## Access

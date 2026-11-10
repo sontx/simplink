@@ -15,10 +15,6 @@ uses:
 constrained_by:
   - constraint.authoring.document-format
   - constraint.authoring.graph-rules
-sources:
-  - packages/core/src/cli/lint.ts
-  - packages/core/src/cli/simp.ts
-  - packages/core/README.md
 ---
 
 ## Steps

@@ -11,9 +11,6 @@ uses:
   - capability.planning.intent-search
 constrained_by:
   - constraint.planning.availability-context
-sources:
-  - packages/core/src/tools/core.ts
-  - packages/core/README.md
 ---
 
 ## Steps

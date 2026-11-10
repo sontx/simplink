@@ -8,11 +8,6 @@ aliases:
   - lỗi clone git
   - custom document source
   - git source requirements
-sources:
-  - packages/core/src/source.ts
-  - packages/core/src/loader.ts
-  - packages/core/src/git-source.ts
-  - packages/core/README.md
 ---
 
 ## All sources
@@ -21,6 +16,7 @@ sources:
 - Each `relPath` must be relative and `/`-separated, with no backslashes, empty, `.` or `..` segments, or drive prefixes, and must be unique. Otherwise loading fails with `Invalid source path` or `Duplicate source path`.
 - Non-Markdown files, paths with a segment starting with `.`, and files in the root folder are ignored.
 - An optional `assets()` method returns the relative paths of non-Markdown files, directly or as a promise, so lint can report missing images (`W110`). `fsSource` implements it, including symlinked images that stay inside the KB; `memorySource` and `gitSource` do not, so they skip that check.
+- An optional `read(relPath)` method returns a non-Markdown text file, or `undefined` when it is missing, so lint can check `simp-sources.yaml` (`E017`, `W113`). `fsSource` and `memorySource` implement it. `gitSource` returns only the `simp-sources.yaml` captured by its latest `list()`, because its temporary clone is deleted afterwards. A read failure, such as the path being a folder, is reported as `E017` instead of failing the load.
 
 ## Git sources
 

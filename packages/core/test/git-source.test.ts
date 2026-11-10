@@ -96,3 +96,31 @@ test("Git sources propagate clone failures", async () => {
     core.gitSource(path.join(tmpdir(), "simp-missing-repository.git")).list(),
   );
 });
+
+test("Git sources let lint check simp-sources.yaml after the clone is removed", async (t) => {
+  const repo = await mkdtemp(path.join(tmpdir(), "simp-git-test-"));
+  t.after(() => rm(repo, { recursive: true, force: true }));
+  const git = (...args: string[]) => exec("git", ["-C", repo, ...args]);
+  await git("init", "--initial-branch=main");
+  await mkdir(path.join(repo, "procedures"), { recursive: true });
+  await writeFile(path.join(repo, "procedures/a.md"), proc("A"));
+  await writeFile(
+    path.join(repo, core.SIMP_SOURCES_FILE),
+    "procedure.gone: [src/gone.ts]\n",
+  );
+  await git("add", ".");
+  await git(
+    "-c",
+    "user.name=Test",
+    "-c",
+    "user.email=test@example.com",
+    "commit",
+    "-m",
+    "fixture",
+  );
+  const r = await core.lintKB(core.gitSource(repo));
+  assert.deepEqual(
+    r.issues.filter((i) => i.code === "W113").map((i) => i.line),
+    [1],
+  );
+});

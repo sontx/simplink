@@ -47,7 +47,8 @@ sibling `product-kb-builder` skill directory; reuse its references, templates, a
 Follow `<pkb>/SKILL.md` Phases 2–4 unchanged (node order, `new_node.mjs`, lint after each area,
 `inventory_check.mjs`, retrieval and plan checks, report), with these rules:
 
-- `sources:` lists page URLs (with anchors), never "docs" in general — update mode depends on them.
+- `kb/simp-sources.yaml` lists each node's page URLs (with anchors), never "docs" in general — update
+  mode depends on them. Never put them in frontmatter (W112).
 - **Docs describe, they rarely prove.** Docs omit preconditions and limits that code enforces. Only
   write what a page states. A prerequisite you can infer but no page states → `needs-review` tag plus
   `Unverified: <what and why>` in the body.
@@ -57,7 +58,7 @@ Follow `<pkb>/SKILL.md` Phases 2–4 unchanged (node order, `new_node.mjs`, lint
 - Screenshots/videos carry steps you cannot read: note `Unverified: steps shown only in image` rather
   than guessing.
 - Never copy example API keys, tokens, customer names, or internal URLs that appear in docs.
-- Write root `simp.md` as in `<pkb>` "Last step of Phase 2", with the docs home page in `sources:`.
+- Write root `simp.md` as in `<pkb>` "Last step of Phase 2", with the docs home page under `simp:` in `kb/simp-sources.yaml`.
   Do **not** set `docs_url` to the crawled docs site: `docs_url` must be the root of this KB's own
   graph-layout export (`simp-docs --layout graph`), because peers build ID-derived links from it.
 - After the final lint passes, set `checkpoint.updated_at` in `simp.md` to the crawl time (quoted ISO
@@ -72,7 +73,7 @@ Follow `<pkb>/SKILL.md` Phases 2–4 unchanged (node order, `new_node.mjs`, lint
    - `/sitemap.xml` `<lastmod>` → re-fetch only pages modified after `checkpoint.updated_at`, plus pages
      new to the sitemap; pages missing from it are removal candidates.
    - Changelog / "What's new" entries dated after `checkpoint.updated_at`.
-   - Otherwise ask the user, or re-fetch every URL in `sources:` (`grep -rhoE "https?://[^ \"']+" kb/ | sort -u`)
+   - Otherwise ask the user, or re-fetch every URL in `kb/simp-sources.yaml` (`grep -hoE "https?://[^ \"']+" kb/simp-sources.yaml | sort -u`)
      and compare with what the nodes say.
 2. Update affected nodes; add nodes for new pages; for pages that 404 or were removed, set
    `status: deprecated` instead of deleting (lint W104 shows who still references them).

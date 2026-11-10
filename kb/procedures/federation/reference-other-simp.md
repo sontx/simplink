@@ -7,11 +7,6 @@ requires: [procedure.federation.write-simp-doc]
 uses: [capability.federation.peer-api]
 constrained_by:
   [constraint.authoring.graph-rules, constraint.federation.mesh-limits]
-sources:
-  - packages/core/src/ids.ts
-  - packages/core/src/links.ts
-  - packages/core/src/lint-graph.ts
-  - packages/node/src/lint-peers.ts
 ---
 
 ## Steps

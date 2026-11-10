@@ -7,12 +7,6 @@ aliases:
   - quyền truy cập thư mục trình duyệt
   - browser folder permission
   - download memory edits
-sources:
-  - packages/ui/src/workspace/store.ts
-  - packages/ui/src/workspace/persist.ts
-  - packages/ui/src/workspace/context.tsx
-  - packages/ui/src/workspace/service.ts
-  - README.md
 ---
 
 - Use Chromium for direct read/write access to the chosen folder. Folder access requires HTTPS or localhost.

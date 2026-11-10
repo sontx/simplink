@@ -11,11 +11,6 @@ uses:
   - capability.ui.local-manager
 constrained_by:
   - constraint.ui.browser-folder-access
-sources:
-  - packages/ui/src/workspace/context.tsx
-  - packages/ui/src/workspace/service.ts
-  - package.json
-  - README.md
 ---
 
 ## Steps

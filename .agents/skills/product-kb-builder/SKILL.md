@@ -70,7 +70,9 @@ For each node:
 
 - Create the file with `node <skill>/scripts/new_node.mjs <id> --kb kb`. It derives the correct path
   from the id and fills the right template; hand-made paths are the most common lint failure (E002/E004).
-- Fill it from evidence only. Put the evidence paths in `sources:` — update mode depends on them.
+- Fill it from evidence only. List the evidence paths under the node's ID in `kb/simp-sources.yaml`
+  (see `references/schema.md` §2), never in frontmatter — update mode depends on them, and frontmatter
+  is served to agents and peers while the sidecar is not.
 - Prefer `simp://` Markdown body links; use `simp:///goal.area.task` locally and `simp://peer/goal.area.task` remotely. Wikilinks remain supported.
 - Write steps as the **user** experiences them (UI labels from the i18n files, or public API calls),
   never internal function names.
@@ -102,7 +104,7 @@ links to them (see "Product manifest and federation" in `references/schema.md`):
 4. Declare `peers` only for products the user confirmed. Leave `docs_url` out until this KB's own
    graph-layout docs export (`simp-docs --layout graph`) is published; never point it at a regular docs site.
 5. Keep `serves: [pull]` unless the user asks for remote plan resolution. No credentials or tokens.
-6. Put the evidence (README, package manifest, landing page) in `sources:`, run `simp-lint`, and mark
+6. Put the evidence (README, package manifest, landing page) under `simp:` in `kb/simp-sources.yaml`, run `simp-lint`, and mark
    the `simp` inventory row `drafted`.
 
 ### Finish every pass — write the checkpoint
@@ -120,6 +122,10 @@ Use the commit you actually read, not one made later. Omit `commit` when the sou
 If the working tree had uncommitted changes you documented, say so in the report — the next diff from
 `commit` will show them again, which is safe. Never advance the checkpoint after a partial or failing
 pass; the next update would silently skip what this one missed.
+
+`kb/simp-sources.yaml`, `kb/INVENTORY.md`, and the checkpoint commit are authoring metadata. Simplink's
+tools never serve the first two; when someone hosts the KB folder as static files, tell them to leave
+those two out.
 
 ## Phase 3 — Screenshots (UI products, when the user agreed)
 
@@ -187,8 +193,11 @@ Give the user a short report:
    - Only `checkpoint.updated_at` → `git log --since=<updated_at> --name-status --format=` .
    - No checkpoint → ask the user for a base (`git diff --name-only <base>...HEAD`), or do a full pass.
    Ignore paths outside the documented scope (tests, lockfiles, CI) unless they change behavior.
-   Renamed paths (`R` status) need their `sources:` entries rewritten.
-2. Find affected nodes: `grep -rl "<changed path>" kb/` (this is what `sources:` is for).
+   Renamed paths (`R` status) need their entries in `kb/simp-sources.yaml` rewritten.
+2. Find affected nodes from `kb/simp-sources.yaml` (this is what it is for):
+   `awk '/^[^ ]/{id=$0; sub(/:$/, "", id)} index($0, "<changed path>"){print id}' kb/simp-sources.yaml | sort -u`.
+   If lint reports W112, the KB predates the sidecar: move each node's inline `sources:` into
+   `kb/simp-sources.yaml` first. W113 means an entry outlived its node; rename or drop the key.
 3. Re-read the changed code and update those nodes; add new nodes for new surface; set
    `status: deprecated` on removed features rather than deleting them immediately, so agents and links
    degrade gracefully (lint W104 then shows who still references them).

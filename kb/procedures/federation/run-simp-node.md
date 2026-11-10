@@ -6,11 +6,6 @@ aliases: [chạy máy chủ simp, run simp node]
 requires: [procedure.federation.write-simp-doc]
 uses: [capability.federation.peer-api]
 constrained_by: [constraint.federation.mesh-limits]
-sources:
-  - packages/node/src/bin.ts
-  - packages/node/src/server.ts
-  - packages/node/src/config.ts
-  - packages/node/src/http.ts
 ---
 
 ## Steps

@@ -45,10 +45,26 @@ kb/procedures/sms/send-message.md  →  procedure.sms.send-message
 | `related`      |          | id[]                                           | Soft link, any type                                  |
 | `status`       |          | `active` \| `deprecated`                       | Default `active`                                     |
 | `availability` |          | `{ plans?: string[], permissions?: string[] }` | Tenant gating                                        |
-| `sources`      |          | string[]                                       | Repo paths / doc URLs used as evidence. Not searched |
+| `sources`      |          | string[]                                       | Deprecated (W112): use `simp-sources.yaml` below     |
 | `docs`         |          | `{ path?: string, order?: integer }`           | Docs export placement; see below                     |
 
 Unknown keys are errors (E005), so do not invent fields.
+
+**Evidence lives in `kb/simp-sources.yaml`, not in frontmatter.** Frontmatter is returned by `get_node`
+and simp-node lookups and is visible on static hosts; the sidecar is never served. It maps each node ID
+(including `simp`) to the repo paths or doc URLs the node was derived from, one path per line, keys
+sorted:
+
+```yaml
+goal.billing.update-card:
+  - src/billing/CardForm.tsx
+  - https://docs.example/billing#update-card
+simp:
+  - README.md
+```
+
+Keys must be local node IDs and values non-empty string lists (E017). An entry for a node that no
+longer exists is W113. Not searched.
 
 `docs` affects only the site layout of `simp-docs` / `kb.docs()`, never the node id or source path:
 
@@ -177,6 +193,7 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | E013 | Missing or invalid YAML frontmatter                    | File must start with `---`; quote strings containing `: ` |
 | E014 | Choice not referenced exactly once in steps            | Add or dedupe the `choice:<id>` step                      |
 | E016 | Unknown simp prefix | Declare the peer in root `simp.md` or correct the prefix |
+| E017 | Malformed `simp-sources.yaml` | Map node IDs to non-empty lists of path/URL strings |
 | E015 | Duplicate choice id or option key                      | Rename                                                    |
 | W101 | Orphan node                                            | Link it from a procedure/goal, or delete it               |
 | W102 | Goal without aliases                                   | Add VI + EN aliases                                       |
@@ -189,6 +206,8 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | W108 | Choice with one option                                 | Remove the choice or add options                          |
 | W110 | Image file not found, or outside the KB                | Add the file or fix the path (relative to the node file)  |
 | W111 | Image without alt text                                 | Describe what the screen shows                            |
+| W112 | Inline `sources:` in frontmatter | Move the list under the node's ID in `simp-sources.yaml` |
+| W113 | `simp-sources.yaml` entry for a missing node | Rename the key after a node rename, or delete it |
 
 YAML gotchas: quote values containing `: `, `#`, or starting with `[`, `{`, `*`, `&`, `!`, `@`.
 Permissions like `broadcast:api` need quotes inside flow lists: `["broadcast:api"]`.

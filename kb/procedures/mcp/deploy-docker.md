@@ -16,11 +16,6 @@ uses:
 constrained_by:
   - constraint.mcp.http-boundary
   - constraint.mcp.loaded-snapshot
-sources:
-  - Dockerfile
-  - .dockerignore
-  - packages/mcp/src/http-bin.ts
-  - README.md
 ---
 
 ## Steps

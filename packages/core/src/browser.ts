@@ -66,6 +66,8 @@ export {
   type SimpIndex,
 } from "./simp-index.js";
 
+export * from "./simp-sources.js";
+
 export * from "./ids.js";
 
 export * from "./links.js";

@@ -11,9 +11,6 @@ when_to_use:
   - User wants to remove an obsolete goal, procedure, or state and keep the KB valid.
 procedures:
   - procedure.ui.delete-node
-sources:
-  - packages/ui/src/routes/nodes/$id.tsx
-  - packages/ui/src/workspace/service.ts
 ---
 
 The user wants a node gone from the KB. Deletion is permanent, and nodes that still reference it become invalid until they are updated.

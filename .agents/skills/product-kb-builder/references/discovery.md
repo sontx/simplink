@@ -59,7 +59,7 @@ Read each hit in context: one guard line often yields a state (the status check)
 - Help-center titles phrased "How to …" or "Cách …" are goal candidates; their wording feeds aliases.
 - Docs can be outdated. When docs and code disagree, follow the code and note the conflict in the
   inventory's open questions.
-- Docs may be a URL rather than files; record the URL in `sources`.
+- Docs may be a URL rather than files; record the URL in `kb/simp-sources.yaml`.
 
 ## 4. What to ignore
 
@@ -71,4 +71,4 @@ Read each hit in context: one guard line often yields a state (the status check)
 ## 5. Recording evidence
 
 For every inventory row, record at least one source: `path:line` or a doc URL. These become the
-node's `sources:` field, which update mode uses to find nodes affected by a code change.
+node's entry in `kb/simp-sources.yaml`, which update mode uses to find nodes affected by a code change.

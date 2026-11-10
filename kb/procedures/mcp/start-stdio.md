@@ -15,11 +15,6 @@ uses:
   - capability.mcp.tool-transports
 constrained_by:
   - constraint.mcp.loaded-snapshot
-sources:
-  - packages/mcp/src/kb-source.ts
-  - packages/mcp/src/bin.ts
-  - packages/mcp/README.md
-  - README.md
 ---
 
 ## Steps

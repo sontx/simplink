@@ -12,9 +12,6 @@ when_to_use:
   - Developer wants to load a specific branch, tag, or subfolder of a repository as the KB.
 procedures:
   - procedure.integration.load-git-kb
-sources:
-  - packages/core/README.md
-  - packages/core/src/git-source.ts
 ---
 
 The user keeps the KB in a Git repository and wants application code to load it without copying files by hand.

@@ -15,13 +15,6 @@ uses:
 constrained_by:
   - constraint.authoring.document-format
   - constraint.authoring.graph-rules
-sources:
-  - packages/core/src/assets.ts
-  - packages/core/src/resolve.ts
-  - packages/core/src/render.ts
-  - packages/core/src/lint-graph.ts
-  - packages/core/src/platform.ts
-  - packages/core/README.md
 ---
 
 ## Steps

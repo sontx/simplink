@@ -117,6 +117,21 @@ test("get_node → fields, edges both ways, truncated body", async () => {
   );
 });
 
+test("get_node never returns a node's inline sources", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "simp-"));
+  await mkdir(path.join(dir, "procedures"), { recursive: true });
+  await writeFile(
+    path.join(dir, "procedures/a.md"),
+    "---\ntype: procedure\ntitle: A\nsummary: a\nsources: [src/private/a.ts]\n---\n## Steps\n1. do\n",
+  );
+  const j = JSON.parse(
+    (await (await createKBTools(dir)).call("get_node", { id: "procedure.a" }))
+      .content,
+  );
+  assert.equal(j.id, "procedure.a");
+  assert.equal(j.fields?.sources, undefined);
+});
+
 test("get_related → BFS with direction, kinds, and limit", async () => {
   const inbound = parse(
     await call("get_related", {

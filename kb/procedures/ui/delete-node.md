@@ -12,10 +12,6 @@ uses:
 constrained_by:
   - constraint.ui.browser-folder-access
   - constraint.authoring.graph-rules
-sources:
-  - packages/ui/src/routes/nodes/$id.tsx
-  - packages/ui/src/components/inspector.tsx
-  - packages/ui/src/workspace/service.ts
 ---
 
 ## Steps

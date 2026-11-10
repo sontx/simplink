@@ -7,10 +7,6 @@ aliases:
   - trang tài liệu cũ
   - stale exported pages
   - partial export
-sources:
-  - README.md
-  - packages/core/src/cli/docs.ts
-  - packages/core/README.md
 ---
 
 - Existing files at generated paths are overwritten. Unrelated files in the output directory are kept.

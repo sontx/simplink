@@ -1,15 +1,7 @@
-import matter from "gray-matter";
 import { loadDocs, deriveId } from "./loader.js";
 import { idToPath } from "./ids.js";
 import type { DocSource } from "./source.js";
-// gray-matter exposes its bundled YAML engine at runtime but omits it from declarations.
-const yaml = (
-  matter as typeof matter & {
-    engines: {
-      yaml: { parse(text: string): unknown; stringify(value: unknown): string };
-    };
-  }
-).engines.yaml;
+import { yaml } from "./yaml.js";
 /** File name of the optional static publishing index at the KB root. */
 export const SIMP_INDEX_FILE = "simp-index.yaml";
 

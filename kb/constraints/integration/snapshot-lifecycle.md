@@ -8,10 +8,6 @@ aliases:
   - làm mới snapshot
   - reload KB in code
   - stale snapshot
-sources:
-  - packages/core/README.md
-  - packages/core/src/kb.ts
-  - packages/core/src/git-source.ts
 ---
 
 - `createKB` reads, validates, and indexes the documents once. Its `graph`, `issues`, `status`, and search index never change afterwards.

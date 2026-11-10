@@ -15,9 +15,6 @@ when_to_use:
 procedures:
   - procedure.authoring.lint-in-ci
   - procedure.integration.run-cli-runners
-sources:
-  - packages/core/src/cli/lint.ts
-  - packages/core/README.md
 ---
 
 The user wants KB quality checked on every change, not only when someone remembers to run the linter.

@@ -15,10 +15,6 @@ procedures:
   - procedure.ui.launch-workspace
   - procedure.ui.connect-simp-node
   - procedure.ui.open-static-kb
-sources:
-  - README.md
-  - packages/ui/src/workspace/context.tsx
-  - packages/ui/src/workspace/service.ts
 ---
 
 The user wants a visual workspace for a KB on their own machine, from a local folder. Clone Git repositories yourself before opening their folders. To browse a product served by a running simp node, connect to the node instead; for a KB published as static files, open its URL.

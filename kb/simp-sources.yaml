@@ -1,0 +1,359 @@
+capability.authoring.graph-validation:
+  - packages/core/src/lint.ts
+  - packages/core/src/lint-graph.ts
+  - packages/core/src/schema.ts
+  - packages/core/src/kb.ts
+  - packages/core/src/simp-sources.ts
+capability.docs.markdown-export:
+  - packages/core/src/docs.ts
+  - packages/core/src/docs-layout.ts
+  - packages/core/src/docs-plan.ts
+  - packages/core/src/assets.ts
+  - packages/core/src/i18n/index.ts
+  - README.md
+capability.federation.peer-api:
+  - packages/core/src/federation/protocol.ts
+  - packages/core/src/federation/service.ts
+  - packages/core/src/federation/kb.ts
+  - packages/node/src/http.ts
+  - packages/node/src/open-peer.ts
+  - packages/node/src/server.ts
+capability.integration.extensible-facade:
+  - packages/core/src/kb.ts
+  - packages/core/src/source.ts
+  - packages/core/src/tools/core.ts
+  - packages/core/src/index.ts
+  - packages/core/README.md
+capability.mcp.tool-transports:
+  - packages/mcp/src/server.ts
+  - packages/mcp/src/http.ts
+  - packages/mcp/src/bin.ts
+  - packages/mcp/src/http-bin.ts
+  - packages/mcp/README.md
+capability.planning.intent-search:
+  - packages/core/src/search.ts
+  - packages/core/src/graph.ts
+  - packages/core/README.md
+capability.planning.plan-resolution:
+  - packages/core/src/resolve.ts
+  - packages/core/src/render.ts
+  - packages/core/src/assets.ts
+capability.ui.local-manager:
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/routes/__root.tsx
+  - packages/ui/src/routes/graph.tsx
+  - packages/ui/src/routes/nodes/index.tsx
+  - packages/ui/src/routes/playground.tsx
+  - packages/ui/src/routes/issues.tsx
+  - packages/ui/src/routes/docs/$.tsx
+  - packages/ui/src/routes/skills.tsx
+  - packages/ui/src/lib/i18n.ts
+  - packages/ui/src/workspace/static-kb.ts
+  - packages/ui/src/components/markdown.tsx
+  - README.md
+constraint.authoring.document-format:
+  - packages/core/src/loader.ts
+  - packages/core/src/lint.ts
+  - packages/core/src/schema.ts
+  - packages/core/src/types.ts
+  - packages/core/schemas/defs.schema.json
+  - packages/core/schemas/goal.schema.json
+  - packages/core/schemas/procedure.schema.json
+  - packages/core/schemas/state.schema.json
+  - packages/core/schemas/constraint.schema.json
+  - packages/core/schemas/capability.schema.json
+  - packages/core/src/simp-sources.ts
+constraint.authoring.graph-rules:
+  - packages/core/src/lint-graph.ts
+  - packages/core/src/graph.ts
+  - packages/core/src/markdown.ts
+  - packages/core/src/assets.ts
+  - packages/core/src/simp-sources.ts
+constraint.docs.output-safety:
+  - packages/core/src/cli/docs.ts
+  - packages/core/src/docs-layout.ts
+  - packages/core/schemas/defs.schema.json
+  - README.md
+constraint.docs.publication-lifecycle:
+  - README.md
+  - packages/core/src/cli/docs.ts
+  - packages/core/README.md
+constraint.federation.mesh-limits:
+  - packages/core/src/federation/service.ts
+  - packages/core/src/federation/prefetch.ts
+  - packages/node/src/http-peer.ts
+  - packages/node/src/http.ts
+  - packages/node/src/static-peer.ts
+constraint.integration.snapshot-lifecycle:
+  - packages/core/README.md
+  - packages/core/src/kb.ts
+  - packages/core/src/git-source.ts
+constraint.integration.source-contract:
+  - packages/core/src/source.ts
+  - packages/core/src/loader.ts
+  - packages/core/src/git-source.ts
+  - packages/core/README.md
+constraint.mcp.http-boundary:
+  - packages/core/src/federation/kb.ts
+  - packages/mcp/src/http.ts
+  - packages/mcp/src/http-bin.ts
+  - packages/mcp/README.md
+  - Dockerfile
+constraint.mcp.loaded-snapshot:
+  - packages/mcp/src/kb-source.ts
+  - packages/mcp/src/bin.ts
+  - packages/mcp/src/http-bin.ts
+  - packages/core/src/tools/core.ts
+  - README.md
+constraint.planning.availability-context:
+  - packages/core/src/resolve.ts
+  - packages/core/src/render.ts
+  - packages/core/src/tools/core.ts
+  - README.md
+constraint.planning.cli-validation:
+  - packages/core/src/cli/search.ts
+  - packages/core/src/cli/resolve.ts
+  - packages/core/src/cli/context.ts
+  - packages/core/src/cli/simp.ts
+constraint.ui.browser-folder-access:
+  - packages/ui/src/workspace/store.ts
+  - packages/ui/src/workspace/persist.ts
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
+  - README.md
+goal.authoring.add-images:
+  - packages/core/src/assets.ts
+  - packages/core/README.md
+goal.authoring.check-in-ci:
+  - packages/core/src/cli/lint.ts
+  - packages/core/README.md
+goal.authoring.create-kb:
+  - packages/core/src/loader.ts
+  - packages/core/schemas/goal.schema.json
+  - README.md
+goal.authoring.use-agent-skills:
+  - packages/ui/src/routes/skills.tsx
+  - .agents/skills/
+goal.authoring.validate-kb:
+  - packages/core/src/cli/lint.ts
+  - packages/core/src/lint-graph.ts
+goal.docs.export-guides:
+  - README.md
+  - packages/core/src/cli/docs.ts
+goal.federation.link-products:
+  - packages/core/src/federation/kb.ts
+  - packages/node/src/open-peer.ts
+  - packages/mcp/src/kb-source.ts
+goal.integration.customize-kb:
+  - packages/core/README.md
+  - packages/core/src/kb.ts
+goal.integration.embed-kb:
+  - packages/core/README.md
+  - packages/core/src/index.ts
+goal.integration.load-git-kb:
+  - packages/core/README.md
+  - packages/core/src/git-source.ts
+goal.mcp.connect-agent:
+  - packages/mcp/README.md
+  - packages/mcp/src/bin.ts
+  - packages/mcp/src/http-bin.ts
+goal.mcp.deploy-docker:
+  - Dockerfile
+  - README.md
+goal.planning.find-guidance:
+  - packages/core/src/cli/search.ts
+  - packages/core/src/tools/core.ts
+goal.planning.resolve-goal:
+  - packages/core/src/cli/resolve.ts
+  - packages/core/src/tools/core.ts
+  - packages/core/src/resolve.ts
+goal.ui.delete-node:
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/workspace/service.ts
+goal.ui.fix-issues:
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/routes/issues.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
+goal.ui.inspect-graph:
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/components/kb-graph.tsx
+  - packages/ui/src/components/inspector.tsx
+goal.ui.maintain-nodes:
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/components/node-dialog.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
+goal.ui.open-workspace:
+  - README.md
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
+goal.ui.preview-docs:
+  - packages/ui/src/routes/docs/$.tsx
+  - packages/ui/src/workspace/service.ts
+procedure.authoring.add-images:
+  - packages/core/src/assets.ts
+  - packages/core/src/resolve.ts
+  - packages/core/src/render.ts
+  - packages/core/src/lint-graph.ts
+  - packages/core/src/platform.ts
+  - packages/core/README.md
+procedure.authoring.create-kb:
+  - packages/core/src/loader.ts
+  - packages/core/src/graph.ts
+  - packages/core/schemas/
+  - test/fixtures/kb/
+procedure.authoring.lint-in-ci:
+  - packages/core/src/cli/lint.ts
+  - packages/core/src/cli/resolve.ts
+  - packages/core/src/cli/docs.ts
+  - packages/core/README.md
+procedure.authoring.lint-kb:
+  - packages/core/src/cli/lint.ts
+  - packages/core/src/cli/simp.ts
+  - packages/core/README.md
+procedure.docs.export-cli:
+  - packages/core/src/cli/docs.ts
+  - packages/core/src/cli/simp.ts
+  - packages/core/src/assets.ts
+  - README.md
+procedure.docs.export-library:
+  - packages/core/src/docs.ts
+  - packages/core/src/kb.ts
+  - packages/core/src/assets.ts
+  - packages/core/README.md
+procedure.federation.publish-static-simp:
+  - packages/core/src/cli/index-file.ts
+  - packages/core/src/cli/simp.ts
+  - packages/core/src/simp-index.ts
+  - packages/node/src/static-peer.ts
+  - packages/node/src/folder-peer.ts
+  - packages/node/src/open-peer.ts
+  - packages/core/src/simp-sources.ts
+  - packages/kb-proxy/src/index.ts
+procedure.federation.reference-other-simp:
+  - packages/core/src/ids.ts
+  - packages/core/src/links.ts
+  - packages/core/src/lint-graph.ts
+  - packages/node/src/lint-peers.ts
+procedure.federation.run-simp-node:
+  - packages/node/src/bin.ts
+  - packages/node/src/server.ts
+  - packages/node/src/config.ts
+  - packages/node/src/http.ts
+procedure.federation.write-simp-doc:
+  - packages/core/schemas/simp.schema.json
+  - packages/core/src/loader.ts
+  - packages/core/src/lint-graph.ts
+procedure.integration.configure-extensions:
+  - packages/core/README.md
+  - packages/core/src/kb.ts
+  - packages/core/src/tools/core.ts
+  - packages/core/src/cli/context.ts
+procedure.integration.embed-kb:
+  - packages/core/README.md
+  - packages/core/src/kb.ts
+  - packages/core/src/tools/core.ts
+procedure.integration.load-git-kb:
+  - packages/core/src/git-source.ts
+  - packages/core/README.md
+procedure.integration.run-cli-runners:
+  - packages/core/README.md
+  - packages/core/src/cli/lint.ts
+  - packages/core/src/cli/context.ts
+  - packages/core/src/index.ts
+  - packages/core/src/cli/simp.ts
+procedure.mcp.connect-to-simp-node:
+  - packages/mcp/src/kb-source.ts
+  - packages/mcp/src/bin.ts
+  - packages/mcp/src/http-bin.ts
+  - packages/mcp/src/server.ts
+procedure.mcp.deploy-docker:
+  - Dockerfile
+  - .dockerignore
+  - packages/mcp/src/http-bin.ts
+  - README.md
+procedure.mcp.start-http:
+  - packages/mcp/src/http-bin.ts
+  - packages/mcp/src/http.ts
+  - Dockerfile
+  - README.md
+procedure.mcp.start-stdio:
+  - packages/mcp/src/kb-source.ts
+  - packages/mcp/src/bin.ts
+  - packages/mcp/README.md
+  - README.md
+procedure.planning.resolve-cli:
+  - packages/core/src/cli/resolve.ts
+  - packages/core/src/cli/simp.ts
+  - packages/core/src/render.ts
+procedure.planning.resolve-tools:
+  - packages/core/src/tools/core.ts
+procedure.planning.search-cli:
+  - packages/core/src/cli/search.ts
+  - packages/core/src/cli/simp.ts
+  - packages/core/README.md
+procedure.planning.search-tools:
+  - packages/core/src/tools/core.ts
+  - packages/core/README.md
+procedure.ui.connect-simp-node:
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/store.ts
+  - packages/node/src/http.ts
+procedure.ui.delete-node:
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/components/inspector.tsx
+  - packages/ui/src/workspace/service.ts
+procedure.ui.inspect-relationships:
+  - packages/ui/src/components/inspector.tsx
+  - packages/ui/src/components/kb-graph.tsx
+  - packages/ui/src/routes/graph.tsx
+  - packages/ui/src/workspace/service.ts
+procedure.ui.install-skills:
+  - packages/ui/src/routes/skills.tsx
+  - packages/ui/src/routes/__root.tsx
+  - .agents/skills/
+procedure.ui.launch-workspace:
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
+  - package.json
+  - README.md
+procedure.ui.maintain-nodes:
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/components/node-dialog.tsx
+  - packages/ui/src/routes/nodes/index.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/components/kb-graph.tsx
+procedure.ui.open-static-kb:
+  - packages/ui/src/workspace/static-kb.ts
+  - packages/ui/src/workspace/store.ts
+  - packages/ui/src/workspace/context.tsx
+  - packages/kb-proxy/src/index.ts
+  - packages/kb-proxy/wrangler.jsonc
+procedure.ui.preview-docs:
+  - packages/ui/src/routes/docs/$.tsx
+  - packages/ui/src/components/node-docs.tsx
+  - packages/ui/src/workspace/service.ts
+  - README.md
+procedure.ui.repair-issues:
+  - packages/ui/src/routes/issues.tsx
+  - packages/ui/src/routes/__root.tsx
+  - packages/ui/src/routes/nodes/$id.tsx
+  - packages/ui/src/workspace/service.ts
+simp:
+  - packages/core/src/simp-doc.ts
+  - packages/core/src/docs.ts
+state.authoring.documents-exist:
+  - packages/core/src/source.ts
+  - packages/core/src/loader.ts
+  - packages/core/src/cli/lint.ts
+state.authoring.no-lint-errors:
+  - packages/core/src/cli/lint.ts
+  - packages/core/src/cli/search.ts
+  - packages/core/src/cli/resolve.ts
+  - packages/core/src/cli/docs.ts
+state.mcp.tools-connected:
+  - packages/mcp/src/server.ts
+  - packages/core/src/tools/core.ts
+state.ui.workspace-running:
+  - packages/ui/src/workspace/context.tsx
+  - packages/ui/src/workspace/service.ts
+  - packages/ui/src/routes/__root.tsx

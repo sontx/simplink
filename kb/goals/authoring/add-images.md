@@ -15,9 +15,6 @@ when_to_use:
   - User sees lint warning W110 or W111 about an image and wants to know how images work.
 procedures:
   - procedure.authoring.add-images
-sources:
-  - packages/core/src/assets.ts
-  - packages/core/README.md
 ---
 
 The user wants pictures in their guides. Images are plain Markdown in node bodies: people see them in exported docs and the UI, while agents read only their alt text in plans.

@@ -8,6 +8,7 @@ import {
   type FederatedStatus,
 } from "../federation/kb.js";
 import { parseRef } from "../ids.js";
+import { servedFields } from "../served-fields.js";
 import type { LookupNode } from "../federation/protocol.js";
 import type { DocSource } from "../source.js";
 import type { ResolveOptions } from "../resolve.js";
@@ -352,9 +353,7 @@ export function defaultToolSpecs(opts: KBToolsOptions = {}): KBToolSpec[] {
     },
     get_node: async (a, kb) => {
       const n = await requireNode(kb, a.id);
-      const fields = Object.fromEntries(
-        Object.entries(n.fields).filter(([k]) => !COMMON_KEYS.has(k)),
-      );
+      const fields = servedFields(n.fields, COMMON_KEYS);
       const body = (n.body ?? "").trim();
       const max: number = a.max_body_chars;
       return json({

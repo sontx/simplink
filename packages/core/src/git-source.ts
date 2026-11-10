@@ -5,6 +5,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import type { DocSource } from "./source.js";
 import { fsSource } from "./platform.js";
+import { SIMP_SOURCES_FILE } from "./simp-sources.js";
 
 const exec = promisify(execFile);
 
@@ -24,6 +25,7 @@ export interface GitSourceOptions {
  * @param repo - Clone URL or local repository path.
  * @param options - Revision, relative KB directory, and optional persistent checkout.
  * @returns A source that clones on list; temporary clones are cleaned up after reading.
+ * Its `read` returns the `simp-sources.yaml` captured by the latest list, so lint can check it.
  * Existing persistent checkouts are reused without fetching or resetting local edits.
  * @throws Source listing rejects for Git failures, a mismatched checkout origin, or a directory escaping the repository. */
 export function gitSource(
@@ -31,12 +33,15 @@ export function gitSource(
   options: GitSourceOptions = {},
 ): DocSource {
   const { ref, directory = "" } = options;
+  // The temporary clone is gone once list returns, so keep the sidecar here.
+  let sidecar: string | undefined;
   return {
     name:
       options.checkout === undefined
         ? repo
         : path.resolve(options.checkout, directory),
     async list() {
+      sidecar = undefined;
       if (
         path.posix.isAbsolute(directory) ||
         path.win32.isAbsolute(directory) ||
@@ -105,11 +110,15 @@ export function gitSource(
           throw new Error(
             "Git source directory must stay within the repository",
           );
-        return await fsSource(folder).list();
+        const files = fsSource(folder);
+        const listed = await files.list();
+        sidecar = await files.read?.(SIMP_SOURCES_FILE);
+        return listed;
       } finally {
         if (temporary !== undefined)
           await rm(temporary, { recursive: true, force: true });
       }
     },
+    read: (relPath) => (relPath === SIMP_SOURCES_FILE ? sidecar : undefined),
   };
 }

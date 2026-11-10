@@ -265,7 +265,7 @@ relative to the node file:
 ## 9. Update mode
 
 Screens change, so the shot list breaks over time. The script is built to tell you how, instead of
-quietly producing a wrong image. Recapture the shots of every node whose `sources` changed
+quietly producing a wrong image. Recapture the shots of every node whose sources (in `kb/simp-sources.yaml`) changed
 (`capture.mjs --only <node id>`), or all of them after a large UI change, and read each line:
 
 | Result                               | Meaning                                                                                  | What to do                                                                                                                                                              |
