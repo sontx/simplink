@@ -9,7 +9,7 @@ aliases:
   - set up the MCP server
   - expose KB over MCP
 when_to_use:
-  - Người dùng muốn trợ lý AI của họ gọi được các công cụ tìm kiếm và lập kế hoạch của KB.
+  - User wants their AI assistant to call the KB's search and planning tools.
   - User wants a desktop or IDE MCP client to use the KB.
   - User wants to host the KB tools as a shared HTTP service for several agents.
 procedures:

@@ -10,7 +10,7 @@ aliases:
   - Simplink skills for Claude Code or Codex
   - generate a KB from my codebase
 when_to_use:
-  - Người dùng muốn Claude Code, Codex hoặc agent khác tự tạo hay cập nhật KB từ mã nguồn hoặc tài liệu.
+  - User wants Claude Code, Codex, or another agent to create or update the KB from source code or docs.
   - User wants a coding agent to write the KB instead of writing every node by hand.
   - User asks what the Skills page is or how to install the skills bundle.
 procedures:

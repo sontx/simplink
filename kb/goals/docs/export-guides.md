@@ -9,7 +9,7 @@ aliases:
   - generate a docs site
   - publish KB as documentation
 when_to_use:
-  - Người dùng muốn biến knowledge base thành tài liệu cho người đọc.
+  - User wants to turn the knowledge base into documentation for human readers.
   - User wants the same guidance that agents use to appear on a documentation site.
   - User wants Markdown files to feed into a static site generator.
 procedures:

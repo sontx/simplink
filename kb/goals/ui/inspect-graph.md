@@ -5,11 +5,12 @@ summary: Explore how nodes connect in the graph, change relationships, and check
 aliases:
   - xem đồ thị tri thức
   - nối các nút với nhau
+  - mục tiêu phụ thuộc vào quy trình nào
   - view the knowledge graph
   - link nodes together
   - preview the agent plan
 when_to_use:
-  - Người dùng muốn hiểu một mục tiêu phụ thuộc vào những quy trình và trạng thái nào.
+  - User wants to understand which procedures and states a goal depends on.
   - User wants to add or remove a precondition, requirement, or constraint link without editing YAML.
   - User wants to see what plan an agent receives for a goal.
 procedures:

@@ -8,7 +8,6 @@ aliases:
   - delete a node
   - remove a node
 when_to_use:
-  - Người dùng muốn xóa một nút không còn dùng nữa.
   - User wants to remove an obsolete goal, procedure, or state and keep the KB valid.
 procedures:
   - procedure.ui.delete-node

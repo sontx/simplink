@@ -5,11 +5,11 @@ summary: Make builds or tests fail when KB changes introduce errors, too many wa
 aliases:
   - kiểm tra KB tự động
   - chặn lỗi KB trong CI
+  - pipeline CI báo lỗi khi KB sai
   - check the KB in CI
   - KB validation in a pipeline
   - test the KB in my test suite
 when_to_use:
-  - Người dùng muốn pipeline CI báo lỗi khi ai đó sửa KB sai.
   - User wants a CI build to fail when the KB is invalid.
   - Developer wants unit tests that lint the KB or check a plan without spawning a process.
 procedures:

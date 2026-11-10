@@ -8,7 +8,7 @@ aliases:
   - add a node in the browser
   - edit node markdown
 when_to_use:
-  - Người dùng muốn thêm mục tiêu, quy trình hoặc trạng thái mới mà không tự tạo tệp.
+  - User wants to add a new goal, procedure, or state without creating the file by hand.
   - User wants to change a node's title, fields, or steps and see validation right away.
 procedures:
   - procedure.ui.maintain-nodes

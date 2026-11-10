@@ -10,7 +10,7 @@ aliases:
   - validate my KB
   - KB has errors
 when_to_use:
-  - Người dùng thấy thông báo "KB has lint error(s)" và muốn sửa.
+  - User sees the message "KB has lint error(s)" and wants to fix it.
   - User wants to check that their KB files are valid before publishing or serving them.
   - User sees error codes such as E006 or E007 and wants to know what they mean.
 procedures:

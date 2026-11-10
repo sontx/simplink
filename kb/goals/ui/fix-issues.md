@@ -8,7 +8,7 @@ aliases:
   - fix errors in the UI
   - review lint issues visually
 when_to_use:
-  - Người dùng thấy số lỗi trên thanh tiêu đề của giao diện và muốn sửa.
+  - User sees the error count in the UI header and wants to fix the errors.
   - User edited files outside the UI and wants to see the updated findings.
 procedures:
   - procedure.ui.repair-issues

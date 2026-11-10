@@ -8,7 +8,7 @@ aliases:
   - load KB from git
   - knowledge base in a repository
 when_to_use:
-  - Người dùng lưu knowledge base trong một kho Git và muốn ứng dụng đọc trực tiếp từ đó.
+  - User keeps the knowledge base in a Git repository and wants an app to read it directly from there.
   - Developer wants to load a specific branch, tag, or subfolder of a repository as the KB.
 procedures:
   - procedure.integration.load-git-kb

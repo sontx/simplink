@@ -6,11 +6,12 @@ aliases:
   - tạo knowledge base
   - xây dựng cơ sở tri thức
   - viết tài liệu cho AI agent
+  - bắt đầu KB mới cho sản phẩm của tôi
   - create a knowledge base
   - start a new KB
   - author product guidance
 when_to_use:
-  - Người dùng muốn bắt đầu một knowledge base mới cho sản phẩm của họ.
+  - User wants to start a new knowledge base for their product.
   - User wants to describe what their product can do so that an AI agent can guide users.
   - User has no KB yet and asks how to organize the files.
 procedures:

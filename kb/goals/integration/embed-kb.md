@@ -9,7 +9,7 @@ aliases:
   - use the core library
   - call KB tools from code
 when_to_use:
-  - Lập trình viên muốn dùng KB trong ứng dụng Node.js của họ.
+  - Developer wants to use the KB in their own Node.js application.
   - Developer wants an in-house assistant or chatbot to search the KB and follow its plans.
   - Developer wants to pass KB tools to a model provider directly instead of through MCP.
 procedures:

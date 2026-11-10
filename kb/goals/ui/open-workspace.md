@@ -9,7 +9,7 @@ aliases:
   - start the UI
   - open a local folder in the browser
 when_to_use:
-  - Người dùng muốn xem và chỉnh sửa knowledge base bằng giao diện thay vì trình soạn thảo văn bản.
+  - User wants to view and edit the knowledge base in a UI instead of a text editor.
   - User wants to browse and edit a locally cloned KB using a browser.
 procedures:
   - procedure.ui.launch-workspace

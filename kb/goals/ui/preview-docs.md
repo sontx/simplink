@@ -8,7 +8,7 @@ aliases:
   - preview the docs site
   - check docs before export
 when_to_use:
-  - Người dùng muốn xem tài liệu sẽ hiển thị thế nào trước khi xuất bản.
+  - User wants to see how the docs will look before publishing them.
   - User wants to check where a node's page appears after changing docs.path or docs.order.
 procedures:
   - procedure.ui.preview-docs

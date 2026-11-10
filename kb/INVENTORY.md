@@ -15,7 +15,7 @@ Synced 2026-11-10 (update mode): KB images (`packages/core/src/assets.ts`) get n
 
 Audited 2026-10-22 against all `main..simp-federation` commits: federation, simp links, lint codes E012/E016/W106–W109, static publishing, UI connection, and `startSimpNode` were already covered. Fixed stale MCP nodes: `simp-mcp` options (`--simp`, peer flags) in `procedure.mcp.start-stdio` and `procedure.mcp.start-http`, `/healthz` `peers` in `constraint.mcp.http-boundary`, and `--simp` startup rules in `constraint.mcp.loaded-snapshot`.
 
-Aliases and goal `when_to_use` will include Vietnamese with diacritics and English. Procedures will use public CLI commands, library APIs, MCP tools, or exact English UI labels.
+Aliases will include Vietnamese with diacritics and English; goal `when_to_use`, titles, summaries, and bodies are English. Procedures will use public CLI commands, library APIs, MCP tools, or exact English UI labels.
 
 ## Area: Author and validate a knowledge base
 

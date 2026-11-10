@@ -9,7 +9,7 @@ aliases:
   - docker image for the KB
   - container for KB tools
 when_to_use:
-  - Người dùng muốn chạy máy chủ MCP của KB trên máy chủ hoặc cụm container.
+  - User wants to run the KB's MCP server on a server or a container cluster.
   - User wants a container image that serves the KB tools over HTTP with a health check.
 procedures:
   - procedure.mcp.deploy-docker

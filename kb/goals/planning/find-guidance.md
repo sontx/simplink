@@ -5,11 +5,11 @@ summary: Search the KB with a user's own words to find the goal, procedure, or r
 aliases:
   - tìm hướng dẫn trong KB
   - tra cứu knowledge base
+  - tìm mục tiêu phù hợp với yêu cầu
   - search the knowledge base
   - find the right goal
   - look up how to do something
 when_to_use:
-  - Người dùng hỏi cách làm một việc và agent cần tìm mục tiêu phù hợp.
   - User or agent wants to find which KB goal matches a request.
   - User wants to check whether the KB covers a topic before writing new nodes.
 procedures:

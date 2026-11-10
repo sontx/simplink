@@ -9,7 +9,7 @@ aliases:
   - get a step-by-step plan
   - what do I need to do
 when_to_use:
-  - Người dùng đã có mã mục tiêu và muốn biết các bước cần làm.
+  - User already has a goal ID and wants to know the steps to take.
   - Agent wants an ordered plan with prerequisites before answering a user.
   - User wants to see how known states or a chosen option change the plan.
 procedures:

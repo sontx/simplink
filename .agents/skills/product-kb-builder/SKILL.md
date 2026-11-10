@@ -74,8 +74,8 @@ For each node:
 - Prefer `simp://` Markdown body links; use `simp:///goal.area.task` locally and `simp://peer/goal.area.task` remotely. Wikilinks remain supported.
 - Write steps as the **user** experiences them (UI labels from the i18n files, or public API calls),
   never internal function names.
-- Write `aliases` and `when_to_use` in both Vietnamese (with diacritics) and English, in the words a
-  real user would type — see the modeling guide's retrieval section.
+- Write `aliases` in both Vietnamese (with diacritics) and English, and `when_to_use` in the KB's
+  primary language, in the words a real user would type — see the modeling guide's retrieval section.
 - If something is inferred rather than evidenced, add `needs-review` to `tags` and a line
   `Unverified: <what and why>` in the body. Never present a guess as fact; the agent will repeat it to users.
 

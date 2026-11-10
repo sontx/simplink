@@ -10,7 +10,7 @@ aliases:
   - add images to guides
   - illustrate steps with pictures
 when_to_use:
-  - Người dùng muốn tài liệu xuất ra có ảnh màn hình cho từng bước.
+  - User wants exported docs to show a screenshot for each step.
   - User wants readers to see which screen and control a step refers to.
   - User sees lint warning W110 or W111 about an image and wants to know how images work.
 procedures:

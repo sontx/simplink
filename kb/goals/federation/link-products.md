@@ -10,7 +10,6 @@ aliases:
 when_to_use:
   - I want to link products whose workflows depend on each other.
   - An agent needs to search or plan across multiple product knowledge bases.
-  - Tôi muốn kết nối các cơ sở tri thức và lập kế hoạch qua nhiều sản phẩm.
 procedures:
   - procedure.federation.reference-other-simp
   - procedure.federation.run-simp-node
