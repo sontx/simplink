@@ -479,3 +479,27 @@ test("docs CLI rejects symlink aliases and escaping page directories before any 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("goal pages list multiple when_to_use situations as bullets and keep a single one inline", async () => {
+  const many =
+    "---\ntype: goal\ntitle: Many\nsummary: m\naliases: [many]\nwhen_to_use:\n  - User wants one thing.\n  - User wants [[procedure.a]].\nprocedures: [procedure.a]\n---\n";
+  const kb = await createKB(
+    memorySource({
+      "goals/many.md": many,
+      "goals/one.md": goal(["procedure.a"]),
+      "procedures/a.md": proc("A"),
+    }),
+  );
+  for (const layout of ["graph", "site"] as const) {
+    const pages = kb.docs({ layout });
+    const page = (name: string) =>
+      pages.find((p) => p.path.endsWith(`${name}.md`))!.content;
+    assert.match(
+      page("many"),
+      /\*\*When to use:\*\*\n\n- User wants one thing\.\n- User wants \[A\]\([^)]+\)\.\n/,
+      layout,
+    );
+    assert.doesNotMatch(page("many"), /\.;/, layout);
+    assert.match(page("one"), /\*\*When to use:\*\* g\n/, layout);
+  }
+});

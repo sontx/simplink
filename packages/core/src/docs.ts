@@ -283,7 +283,14 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       else if (typeof value === "string" && value)
         sections.push(`**${name}:** ${prose(value)}`);
     };
-    field(t.whenToUse, node.data.when_to_use);
+    // Each when_to_use entry is a separate situation, usually a full
+    // sentence, so two or more read as a list rather than one run-on line.
+    const situations = node.data.when_to_use;
+    if (Array.isArray(situations) && situations.length > 1)
+      sections.push(
+        `**${t.whenToUse}:**\n\n${situations.map((s) => `- ${prose(String(s))}`).join("\n")}`,
+      );
+    else field(t.whenToUse, situations);
     field(t.check, node.data.check);
     field(
       site ? t.requirementLevel : t.severity,
