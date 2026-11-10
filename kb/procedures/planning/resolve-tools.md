@@ -23,7 +23,7 @@ sources:
 4. Add `plan` and `permissions` when the tenant is known, so that alternatives are ranked by availability.
 5. Set `token_budget` (200 to 8000, default 2000) to fit the plan into the agent's context.
 6. Optionally set `language` (for example `"vi"`) to get the plan wording in that language. It defaults to the `language` field in `simp.md`, then English. Node content is returned as written.
-7. Follow the returned Markdown plan, and ask the user to confirm each **CHECK** step and decide each **CHOOSE** step.
+7. Follow the returned Markdown plan, and ask the user to confirm each **CHECK** step and decide each **CHOOSE** step. A `Screen:` line is the alt text of that step's screenshot; use it to tell the user what they should see.
 
 ## Failure handling
 

@@ -1,0 +1,71 @@
+{
+  "baseUrl": "http://localhost:4173",
+  "viewport": { "width": 1280, "height": 800 },
+  "locale": "en-US",
+  "colorScheme": "light",
+  "highlightColor": "#2563eb",
+  "shots": [
+    {
+      "out": "assets/ui/open-kb-folder.webp",
+      "node": "procedure.ui.launch-workspace",
+      "step": 2,
+      "note": "Run `pnpm ui` and `simp-node serve --kb kb --allowed-origin http://localhost:4173` first; shots 1-2 must run before connecting.",
+      "url": "/",
+      "highlight": ["role=button[name='Open KB folder']"],
+      "clip": "section:has(h1:text-is('Open a knowledge base'))",
+      "padding": 24
+    },
+    {
+      "out": "assets/ui/connect-simp-node.webp",
+      "node": "procedure.ui.connect-simp-node",
+      "steps": [2, 3],
+      "url": "/",
+      "actions": [
+        {
+          "fill": "role=textbox[name='Simp node or static KB URL']",
+          "value": "http://localhost:3393"
+        }
+      ],
+      "highlight": [
+        {
+          "selector": "role=textbox[name='Simp node or static KB URL']",
+          "label": 2
+        },
+        { "selector": "role=button[name='Connect']", "label": 3 }
+      ],
+      "clip": "section:has(h1:text-is('Open a knowledge base'))"
+    },
+    {
+      "out": "assets/ui/graph-inspector.webp",
+      "node": "procedure.ui.inspect-relationships",
+      "steps": [1, 5],
+      "url": "/",
+      "actions": [
+        {
+          "fill": "role=textbox[name='Simp node or static KB URL']",
+          "value": "http://localhost:3393"
+        },
+        { "click": "role=button[name='Connect']" },
+        { "waitFor": "role=button[name='Plan']" },
+        { "wait": 800 }
+      ],
+      "highlight": [
+        { "selector": "role=radiogroup[name='Graph depth']", "label": 1 },
+        { "selector": "role=button[name='Plan']", "label": 5 }
+      ]
+    },
+    {
+      "out": "assets/ui/docs-preview.webp",
+      "node": "procedure.ui.preview-docs",
+      "steps": [2, 3, 6, 7],
+      "url": "/docs",
+      "actions": [{ "waitFor": "role=button[name='Download docs (.zip)']" }],
+      "highlight": [
+        { "selector": "role=tablist[name='Docs layout']", "label": 2 },
+        { "selector": "role=button[name='Language']", "label": 3 },
+        { "selector": "role=button[name='Markdown']", "label": 6 },
+        { "selector": "role=button[name='Download docs (.zip)']", "label": 7 }
+      ]
+    }
+  ]
+}

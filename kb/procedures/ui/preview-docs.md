@@ -23,11 +23,14 @@ sources:
 
 1. Open **Docs** in the sidebar.
 2. Choose **Site** or **Graph** under **Docs layout**.
-3. Choose the language in the header's language menu. Generated headings and steps in the preview, the downloads, and agent plans follow it. Node content is shown as written.
+
+   ![Docs view on the Overview page: (2) the Site and Graph layout tabs, (3) the language button in the header, (6) the Markdown button above the page, (7) Download docs (.zip) at the bottom of the navigation](../../assets/ui/docs-preview.webp)
+
+3. Choose the language in the header's language menu (3). Generated headings and steps in the preview, the downloads, and agent plans follow it. Node content is shown as written.
 4. Browse the pages with the navigation, the breadcrumb, **Previous** and **Next**, and **On this page**.
 5. To see where a node is published, open the node and select its **Docs** tab, then **Open docs**.
-6. Select **Markdown** to download the current page.
-7. Select **Download docs (.zip)** to download all generated Markdown pages for the selected layout, preserving folders and relative links. This works in folder and memory modes; assets are not included.
+6. Select **Markdown** (6) to download the current page.
+7. Select **Download docs (.zip)** (7) to download all generated Markdown pages for the selected layout, preserving folders and relative links. Images the pages link are included at their KB paths; missing or unreadable ones are skipped. This works in folder, memory, and remote workspaces.
 8. Review the pages before publishing. Like the preview, the ZIP can include pages from a KB with lint errors; `simp-docs` requires a valid KB.
 
 ## Failure handling

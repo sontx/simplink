@@ -21,7 +21,8 @@ sources:
 - The KB must have no lint errors (`KB has N lint error(s); run simp-lint <dir> first.`).
 - The KB and output directories must not contain each other, including through symbolic links (`KB and output directories must not overlap`). An existing output path must be a directory.
 - Every page destination must stay inside the output directory and outside the KB. A dangling symbolic link in the path is rejected.
-- An existing destination must be a regular file that is not hardlinked (`Refusing to overwrite hardlinked output page`).
+- An existing destination must be a regular file that is not hardlinked (`Refusing to overwrite hardlinked output page`, or `output image` for a copied image). Image destinations get the same checks as pages.
+- Images in hidden paths (a segment starting with `.`) and `.md` targets are never copied.
 
 ## Publication paths
 
