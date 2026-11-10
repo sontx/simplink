@@ -52,6 +52,34 @@ const code = (text: string) => {
   return `${fence} ${text} ${fence}`;
 };
 
+/**
+ * Localizes the format-defined procedure section headings (`## Steps`, `## Failure handling`)
+ * that authors always write in English; headings inside fenced code stay literal.
+ */
+function localizeProcedureHeadings(body: string, t: Messages["docs"]): string {
+  const headings: Record<string, string> = {
+    steps: t.steps,
+    "failure handling": t.failureHandling,
+  };
+  let fence: string | null = null;
+  return body
+    .split("\n")
+    .map((line) => {
+      const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+      if (marker) {
+        if (fence === null) fence = marker;
+        else if (marker[0] === fence[0] && marker.length >= fence.length)
+          fence = null;
+        return line;
+      }
+      if (fence !== null) return line;
+      const m = /^(##\s+)(.+?)(\s*)$/.exec(line);
+      const localized = m && headings[m[2].toLowerCase()];
+      return localized ? `${m[1]}${localized}${m[3]}` : line;
+    })
+    .join("\n");
+}
+
 /** Transform prose only; fence delimiters and matching backtick runs stay literal. */
 function proseLinks(
   text: string,
@@ -143,7 +171,7 @@ function choiceWarnings(plan: PlanStep[], m: Messages): string[] {
 
 /**
  * Generates documentation pages in memory without writing files.
- * Generated headings and plan wording follow `opts.locale`; authored node content is unchanged.
+ * Generated headings, plan wording, and the format-defined procedure headings (`## Steps`, `## Failure handling`) follow the output language; other authored content is unchanged.
  * @param graph - Graph snapshot to document.
  * @param opts - Layout, language, and plan resolution options; layout defaults to site and language to English.
  * @returns Markdown pages with relative output paths.
@@ -218,7 +246,15 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       field(t.tags, node.tags);
     }
     if (node.body)
-      sections.push(proseLinks(node.body, link, site ? getChoices(node) : []));
+      sections.push(
+        proseLinks(
+          node.type === "procedure"
+            ? localizeProcedureHeadings(node.body, t)
+            : node.body,
+          link,
+          site ? getChoices(node) : [],
+        ),
+      );
     const choices = getChoices(node);
     if (choices.length)
       sections.push(

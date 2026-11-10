@@ -82,6 +82,33 @@ test("Vietnamese docs translate generated wording but keep paths and authored te
   assert.match(page(graph, "procedures/send.md"), /## Điều kiện tiên quyết/);
 });
 
+test("Vietnamese docs localize procedure Steps and Failure handling headings", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/send.md": goal(["procedure.send"]),
+      "procedures/send.md": proc(
+        "Send",
+        "",
+        "1. do send\n\n## Failure handling\nRetry later.\n\n```md\n## Steps\n```",
+      ),
+    }),
+  );
+  assert.equal(kb.status.errors, 0);
+  for (const layout of ["site", "graph"] as const) {
+    const pages = kb.docs({ layout, locale: "vi" });
+    const procedure = pages.find((p) =>
+      p.content.includes("\n# Send\n"),
+    )!.content;
+    assert.match(procedure, /^## Các bước$/m);
+    assert.match(procedure, /^## Xử lý lỗi$/m);
+    assert.ok(!/^## Failure handling$/m.test(procedure));
+    assert.match(procedure, /```md\n## Steps\n```/, "code stays literal");
+  }
+  const english = kb.docs({ layout: "graph" });
+  assert.match(page(english, "procedures/send.md"), /^## Steps$/m);
+  assert.match(page(english, "procedures/send.md"), /^## Failure handling$/m);
+});
+
 test("simp.md language is the default and an explicit locale overrides it", async () => {
   const kb = await createKB(memorySource(files("language: vi\n")));
   assert.equal(kb.status.errors, 0);
