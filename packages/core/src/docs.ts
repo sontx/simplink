@@ -12,7 +12,13 @@ import {
   type ResolveOptions,
 } from "./resolve.js";
 import { renderPlanSteps } from "./render.js";
-import { EDGE_KINDS, type KBGraph, type ChoiceDef } from "./types.js";
+import { resolveAsset } from "./assets.js";
+import {
+  EDGE_KINDS,
+  type KBGraph,
+  type ChoiceDef,
+  type NodeImage,
+} from "./types.js";
 import {
   messagesFor,
   translateDiagnostic,
@@ -85,6 +91,7 @@ function proseLinks(
   text: string,
   link: (id: string, title?: string, fragment?: string) => string,
   choices: ChoiceDef[] = [],
+  asset?: (url: string) => string | undefined,
 ): string {
   let result = "";
   let i = 0;
@@ -127,6 +134,15 @@ function proseLinks(
       const until = closing ? closing.index + run.length : i + run.length;
       result += text.slice(i, until);
       i = until;
+      continue;
+    }
+    const image =
+      asset &&
+      /^!\[([^\]\n]*)\]\(([^\s)]+)((?:\s+"[^"\n]*")?)\)/.exec(text.slice(i));
+    const moved = image && asset!(image[2]);
+    if (image && moved !== undefined) {
+      result += `![${image[1]}](${moved}${image[3]})`;
+      i += image[0].length;
       continue;
     }
     const markdown = /^\[([^\]\n]*)\]\((simp:\/\/[^\s)]*)\)/.exec(
@@ -190,6 +206,28 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
   const sourceGraph = graph;
   if (site) graph = siteGraph(graph);
   const pages = [...graph.nodes.values()].map((node) => {
+    // Images are copied beside the pages at their KB paths (see docAssets).
+    const href = (target: string) =>
+      path
+        .relative(path.dirname(node.path), target)
+        .split("/")
+        // Per segment, so `#` and `?` in a file name are escaped rather than read as a fragment or query.
+        .map((part) =>
+          encodeURIComponent(part).replace(/[()]/g, (c) =>
+            c === "(" ? "%28" : "%29",
+          ),
+        )
+        .join("/");
+    const sourcePath = sourceGraph.nodes.get(node.id)?.path ?? node.path;
+    const asset = (url: string) => {
+      const src = resolveAsset(sourcePath, url);
+      return src === undefined ? undefined : href(src);
+    };
+    const imageMd = (img: NodeImage) =>
+      `![${label(img.alt.replace(/\s+/g, " "))}](${href(img.src)})`;
+    // Goal pages draw plan images (taken out of step text); remote nodes' images live in their own KB.
+    const planImage = (owner: string, img: NodeImage) =>
+      sourceGraph.nodes.has(owner) && !parseRef(owner).simp ? imageMd(img) : "";
     const link = (id: string, title?: string, fragment?: string): string => {
       id = localize(id, simpDoc(sourceGraph)?.name);
       const ref = parseRef(id);
@@ -207,15 +245,14 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       }
       const target = graph.nodes.get(id);
       if (!target) return id.includes("`") ? code(id) : `\`${id}\``;
-      const relative = path.relative(path.dirname(node.path), target.path);
-      const url = encodeURI(relative).replace(/[()]/g, (c) =>
-        c === "(" ? "%28" : "%29",
-      );
-      return `[${label(title ?? target.title)}](${url}${fragment === undefined ? "" : `#${fragment}`})`;
+      return `[${label(title ?? target.title)}](${href(target.path)}${fragment === undefined ? "" : `#${fragment}`})`;
     };
     const prose = (text: string) => proseLinks(text, link);
     if (site && node.type === "simp" && node.body.trim())
-      return { path: node.path, content: prose(node.body).trim() + "\n" };
+      return {
+        path: node.path,
+        content: proseLinks(node.body, link, [], asset).trim() + "\n",
+      };
     const sections = [
       `---\ntitle: ${JSON.stringify(node.title)}\ndescription: ${JSON.stringify(node.summary)}\n---`,
       `# ${node.title}`,
@@ -253,6 +290,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
             : node.body,
           link,
           site ? getChoices(node) : [],
+          asset,
         ),
       );
     const choices = getChoices(node);
@@ -315,7 +353,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
         sections.push(
           prose(
             site
-              ? renderDocPlan(best.plan, (id) => link(id), "", m)
+              ? renderDocPlan(best.plan, (id) => link(id), "", m, planImage)
               : renderPlanSteps(best.plan, "", (id) => link(id), m),
           ),
         );

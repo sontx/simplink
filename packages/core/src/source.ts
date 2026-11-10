@@ -18,6 +18,8 @@ export interface DocSource {
   name?: string;
   /** Returns all source files synchronously or asynchronously. Paths must be unique relative POSIX paths. */
   list(): MaybePromise<SourceFile[]>;
+  /** Optional: relative POSIX paths of the non-Markdown files beside the documents. When given, lint reports missing images (W110). */
+  assets?(): MaybePromise<string[]>;
 }
 
 /**

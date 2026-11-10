@@ -119,6 +119,7 @@ test("passes upstream errors through and rejects oversized files", async () => {
     upstream("x".repeat(5_000_001)).fetch,
   );
   assert.equal(large.status, 413);
+  assert.equal(large.headers.get("cache-control"), null);
 });
 
 test("answers CORS preflight requests", async () => {
@@ -128,4 +129,70 @@ test("answers CORS preflight requests", async () => {
   );
   assert.equal(response.status, 204);
   assert.match(response.headers.get("access-control-allow-methods")!, /GET/);
+});
+
+test("streams images with a type from the extension and a sandbox policy", async () => {
+  let pulls = 0;
+  const chunks = Array.from({ length: 100 }, (_, i) => new Uint8Array([i]));
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulls++;
+      const chunk = chunks.shift();
+      if (chunk) controller.enqueue(chunk);
+      else controller.close();
+    },
+  });
+  const response = await handle(
+    proxy("https://kb.example/assets/shot.PNG"),
+    {},
+    (async (input: string) => {
+      const upstream = new Response(body, {
+        headers: { "content-type": "application/octet-stream" },
+      });
+      Object.defineProperty(upstream, "url", { value: input });
+      return upstream;
+    }) as typeof fetch,
+  );
+  // Passed through, not buffered: only a few chunks are pulled ahead before the client reads.
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.ok(pulls < 10, `pulled ${pulls} of 100 chunks before any read`);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "image/png");
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "default-src 'none'; sandbox",
+  );
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.deepEqual(
+    [...new Uint8Array(await response.arrayBuffer())],
+    Array.from({ length: 100 }, (_, i) => i),
+  );
+});
+
+test("refuses oversized images and redirects to another file type", async () => {
+  const declared = await handle(
+    proxy("https://kb.example/a.png"),
+    {},
+    upstream("x", { headers: { "content-length": "10000001" } }).fetch,
+  );
+  assert.equal(declared.status, 413);
+  assert.equal(declared.headers.get("cache-control"), null);
+  const streamed = await handle(
+    proxy("https://kb.example/a.png"),
+    {},
+    upstream("x".repeat(10_000_001)).fetch,
+  );
+  assert.equal(streamed.status, 200);
+  await assert.rejects(streamed.arrayBuffer());
+  const redirected = await handle(
+    proxy("https://kb.example/a.png"),
+    {},
+    upstream("<svg/>", {}, "https://kb.example/a.svg").fetch,
+  );
+  assert.equal(redirected.status, 404);
+  assert.equal(
+    (await handle(proxy("https://kb.example/a.exe"), {}, upstream("x").fetch))
+      .status,
+    400,
+  );
 });

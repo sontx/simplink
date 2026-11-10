@@ -112,9 +112,10 @@ function Docs() {
   const downloadZip = useMutation({
     mutationFn: async () =>
       downloadBlob(
-        new Blob([new Uint8Array(service.exportDocsZip(layout, language))], {
-          type: "application/zip",
-        }),
+        new Blob(
+          [new Uint8Array(await service.exportDocsZip(layout, language))],
+          { type: "application/zip" },
+        ),
         `${service.store.name}-docs-${layout}.zip`,
       ),
   });

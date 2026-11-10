@@ -49,6 +49,15 @@ export * from "./tools/core.js";
 
 export { exportDocs, type DocPage, type DocsOptions } from "./docs.js";
 
+export {
+  bodyImages,
+  docAssets,
+  isLocalUrl,
+  planImages,
+  resolveAsset,
+  type BodyImage,
+} from "./assets.js";
+
 export * from "./simp-doc.js";
 
 export {

@@ -82,6 +82,7 @@ test("directory store walks Markdown only, excludes dot entries and creates nest
   assert.deepEqual(await store.list(), [
     { relPath: "goals/nested/page.md", content: "hello" },
   ]);
+  assert.deepEqual(store.assetPaths, ["images/logo.svg"]);
   await assert.rejects(
     store.write("goals/nested/page.md", "overwrite", { create: true }),
     /File already exists/,
@@ -105,4 +106,25 @@ test("a failed writable close rejects without changing the service file snapshot
   );
   assert.equal(service.nodeDetail("capability.page").raw, raw);
   assert.equal((await store.list())[0].content, raw);
+});
+
+test("directory store hands images over as files without reading them", async () => {
+  const root = folder("KB");
+  const store = directoryStore(root);
+  await store.write("assets/shot.png", "png");
+  let reads = 0;
+  const handle = (await root.getDirectoryHandle("assets")).entries.get(
+    "shot.png",
+  ) as FileHandle;
+  const getFile = handle.getFile.bind(handle);
+  handle.getFile = async () => {
+    reads++;
+    return getFile();
+  };
+  await store.list();
+  assert.equal(reads, 0);
+  const file = await store.asset!("assets/shot.png");
+  assert.equal(reads, 1);
+  assert.equal(await (file as Blob).text(), "png");
+  await assert.rejects(store.asset!("assets/missing.png"));
 });

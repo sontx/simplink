@@ -182,3 +182,15 @@ export interface ChoiceDef {
   /** Available branch options. */
   options: ChoiceOptionDef[];
 }
+
+/**
+ * A local Markdown image in a procedure's `## Steps` or a state's body, attached to plan steps.
+ */
+export interface NodeImage {
+  /** Image path relative to the KB root, such as assets/billing/card-form.png; written relative to the node file. */
+  src: string;
+  /** Alt text: what the image shows; plans for agents carry this instead of the image. */
+  alt: string;
+  /** Procedures only: the 1-based `## Steps` item the image is written in. */
+  step?: number;
+}

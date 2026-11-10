@@ -1,6 +1,6 @@
 ---
 name: product-kb-builder
-description: Build, extend, or re-sync a Markdown graph knowledge base (kb-graph format — goals, procedures, capabilities, states, constraints as Markdown files with YAML frontmatter) from a product's codebase and docs, so an AI agent can search it and turn user goals into step-by-step plans. Use this whenever the user wants to create, bootstrap, populate, extend, update, or sync a product KB, agent knowledge base, or `kb/` folder from code or documentation; document what the product can do for an AI agent or support bot; add a feature or module to the KB; or fix simp-lint errors — even if they don't say "kb-graph" or "skill".
+description: Build, extend, or re-sync a Markdown graph knowledge base (kb-graph format — goals, procedures, capabilities, states, constraints as Markdown files with YAML frontmatter) from a product's codebase and docs, so an AI agent can search it and turn user goals into step-by-step plans. Use this whenever the user wants to create, bootstrap, populate, extend, update, or sync a product KB, agent knowledge base, or `kb/` folder from code or documentation; document what the product can do for an AI agent or support bot; add a feature or module to the KB; add or refresh screenshots of the product's screens for the KB's docs; or fix simp-lint errors — even if they don't say "kb-graph" or "skill".
 ---
 
 # Product KB Builder
@@ -47,9 +47,14 @@ what you find into node types.
 5. Write `kb/INVENTORY.md` from `assets/templates/INVENTORY.md`, including the `simp` row in its
    "Product manifest" section. Root files other than `simp.md` are ignored by the loader, so the
    inventory never pollutes the graph.
-6. **Stop and ask the user to review the inventory.** Summarize: product name and summary, areas, node
+6. If the product has a UI, note in each procedure, state, and capability row which screens deserve a
+   screenshot (`screens: step 1 (form)`), following §1–2 of `references/screenshots.md`. Most rows get
+   none.
+7. **Stop and ask the user to review the inventory.** Summarize: product name and summary, areas, node
    counts per type, the goals (these define what the agent can help with), the proposed entry goals and
-   peers, and the open questions. Do not draft nodes until the user approves or adjusts.
+   peers, the planned screenshots, and the open questions. Ask how to run the product, which demo data
+   and sign-in to use, and whether to capture screenshots at all. Do not draft nodes until the user
+   approves or adjusts.
 
 The approval gate exists because rewriting a wrong model is expensive: goals are user intents, and the
 product team knows the real intents better than the code does. A 5-minute review here saves rewriting
@@ -102,7 +107,7 @@ links to them (see "Product manifest and federation" in `references/schema.md`):
 
 ### Finish every pass — write the checkpoint
 
-After Phase 3 passes with zero lint errors (first build and every update), record where the KB now
+After Phase 4 passes with zero lint errors (first build and every update), record where the KB now
 stands in `simp.md` so the next update can skip unchanged code:
 
 ```yaml
@@ -116,7 +121,31 @@ If the working tree had uncommitted changes you documented, say so in the report
 `commit` will show them again, which is safe. Never advance the checkpoint after a partial or failing
 pass; the next update would silently skip what this one missed.
 
-## Phase 3 — Verify retrieval and plans
+## Phase 3 — Screenshots (UI products, when the user agreed)
+
+Screenshots make the exported guides usable by people; agents read only their alt text. Follow
+`references/screenshots.md`:
+
+1. Check the capture tools first: `node <skill>/scripts/capture.mjs --kb kb --check`. It needs Node.js
+   20+, `playwright` and `sharp` (pinned in `DEPS` at the top of the script), and Chrome, Edge, or
+   Playwright's Chromium. When something is missing it prints the exact install command; ask the user
+   before installing, into a scratch folder passed as `--deps`, never into the product.
+2. Launch the product the documented way (project skill, `CLAUDE.md`, `README`, package scripts) with
+   demo data. Ask instead of guessing when it needs services or credentials you don't have.
+3. Write the approved shots into `kb/assets/shots.json`: where to go, what to click first, which
+   control to highlight, what to mask, what to crop to. When several steps happen on one screen (a
+   form), take one image and mark each step's control with its step number instead of one image per
+   step.
+4. Run `node <skill>/scripts/capture.mjs --kb kb`. It captures, highlights, masks, crops, and
+   compresses each image (WebP by default) and warns about large files. Open every image and recapture
+   the wrong ones.
+5. Link each image inside its step (procedures) or in the body (states, capabilities), with alt text
+   that describes the screen and the highlighted control in the KB's language.
+6. Stop the servers you started. Run `simp-lint`: no W110 (missing image) or W111 (no alt text).
+
+Skip this phase for API-only or CLI products, and when the product can't run with safe demo data.
+
+## Phase 4 — Verify retrieval and plans
 
 Lint checks structure, not usefulness. Check usefulness directly:
 
@@ -130,10 +159,13 @@ Lint checks structure, not usefulness. Check usefulness directly:
    - Do blocking constraints appear?
 3. **Homepage.** Re-read `simp.md`: every entry link resolves (lint reports broken `simp://` links), the
    summary matches what the KB actually covers, and no major goal area is missing from "Start here".
-4. Finish with zero lint errors. Warnings are acceptable only with a reason (e.g. W101 for a node kept for
+4. **Guides.** With screenshots, export the docs (`simp-docs --kb kb --out <scratch>/docs`) and open a
+   goal guide and a procedure page: each image loads beside its step, and `simp-resolve` shows its alt
+   text as a `Screen:` line under that step.
+5. Finish with zero lint errors. Warnings are acceptable only with a reason (e.g. W101 for a node kept for
    future linking); list them in the report.
 
-## Phase 4 — Report
+## Phase 5 — Report
 
 Give the user a short report:
 
@@ -141,6 +173,7 @@ Give the user a short report:
   `checkpoint` (or why it was not advanced).
 - Areas covered, node counts per type, goals added.
 - Retrieval results: queries that failed to find their goal, if any.
+- Screenshots: how many, the total size of `kb/assets/`, and shots skipped or failed with the reason.
 - Every `needs-review` node with its open question.
 - Remaining warnings and why.
 - Suggested next areas.
@@ -162,12 +195,16 @@ Give the user a short report:
 4. Keep `simp.md` in sync: add new entry goals to "Start here", remove links to deprecated goals, and
    update `summary` when the product's scope changes. Never rename `name`. Create the manifest if the KB
    predates it.
-5. Re-run Phase 3 for the affected goals only, then advance `checkpoint` (see "Finish every pass").
+5. Recapture the screenshots of affected nodes (`capture.mjs --only <node id>`) and act on each
+   result: `same` needs nothing; `CHANGED`/`REVIEW` means open the image and update its alt text and
+   steps; `FAIL` keeps the old image and names what broke (a renamed label lists the current names).
+   Move an image with its step when steps change. See §9 of `references/screenshots.md`.
+6. Re-run Phase 4 for the affected goals only, then advance `checkpoint` (see "Finish every pass").
    If nothing in scope changed, still advance it so the next pass starts later.
 
 ## Quality bar
 
-- **Goals are user intents, not screens.** "Send a Zalo broadcast" is a goal; "Broadcast settings page"
+- **Goals are user intents, not screens.** "Send an SMS broadcast" is a goal; "Broadcast settings page"
   is not. If you cannot phrase it as "I want to …", it is not a goal.
 - **One procedure = one coherent way to do something.** If two paths share most steps and differ at one
   point, use `choices`; if they differ end to end, make two procedures under the goal.
@@ -177,14 +214,18 @@ Give the user a short report:
   code into the KB. The KB may be served to tenants.
 - **Prefer fewer, accurate nodes** over broad, speculative coverage. A missing node is a known gap; a wrong
   node is a confident wrong answer.
+- **Screenshots earn their place.** Only where a reader could get lost, from demo data, in the KB's
+  language, masked, cropped, and compressed. A stale or wrong screenshot misleads more than none.
 
 ## Files in this skill
 
 | Path                           | Read when                                                                           |
 | ------------------------------ | ----------------------------------------------------------------------------------- |
 | `references/schema.md`         | Before writing any node; when fixing lint errors                                    |
-| `references/modeling-guide.md` | Phase 1 (choosing node types), Phase 2 (aliases, steps), Phase 3 (fixing retrieval) |
+| `references/modeling-guide.md` | Phase 1 (choosing node types), Phase 2 (aliases, steps), Phase 4 (fixing retrieval) |
 | `references/discovery.md`      | Phase 1 and update mode                                                             |
+| `references/screenshots.md`    | Phase 1 (planning screens), Phase 3, and update mode for nodes with images          |
 | `assets/templates/*.md`        | Used by `new_node.mjs`; read only to change templates                               |
 | `scripts/new_node.mjs`         | Create every node file, including root `simp.md` (`new_node.mjs simp`)              |
 | `scripts/inventory_check.mjs`  | After each area; before the report                                                  |
+| `scripts/capture.mjs`          | Phase 3: capture, highlight, and compress the shots in `kb/assets/shots.json`       |

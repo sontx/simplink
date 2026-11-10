@@ -100,6 +100,7 @@ export const en: Messages = {
     check: "CHECK",
     run: "RUN",
     choose: "CHOOSE",
+    screen: "Screen",
     how: "How",
     ifFalse: "If false",
     runStep: (step, ref) => `run step ${step} (${ref})`,

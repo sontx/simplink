@@ -20,7 +20,7 @@ test("docs zip exports every generated page with nested paths in either layout a
       kind,
     });
     for (const layout of ["site", "graph"]) {
-      const archive = unzipSync(service.exportDocsZip(layout));
+      const archive = unzipSync(await service.exportDocsZip(layout));
       assert.deepEqual(
         Object.keys(archive).sort(),
         service.docs(layout).sort(),
@@ -33,7 +33,7 @@ test("docs zip exports every generated page with nested paths in either layout a
       for (const [path, content] of Object.entries(archive))
         assert.equal(strFromU8(content), service.page(layout, path).content);
     }
-    assert.throws(() => service.exportDocsZip("bad"), /Invalid docs layout/);
+    await assert.rejects(service.exportDocsZip("bad"), /Invalid docs layout/);
   }
 });
 
@@ -57,4 +57,61 @@ test("zip exports current edits and unchanged assets, excluding dot files and fo
   ]);
   assert.equal(strFromU8(zip["capabilities/page.md"]), "edited");
   assert.equal(strFromU8(zip["images/logo.svg"]), "<svg/>");
+});
+
+test("docs zip and lint use image names only; images are read when zipped and missing ones are skipped", async () => {
+  let reads = 0;
+  const shot = new Blob(["png"]);
+  const lazy = new Proxy(shot, {
+    get(target, key) {
+      if (key === "arrayBuffer") reads++;
+      const value = Reflect.get(target, key);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+  const service = await WorkspaceService.open(
+    memoryStore(
+      {
+        "goals/send.md": `---
+type: goal
+title: Send
+summary: Send
+aliases: [send]
+when_to_use: [send]
+procedures: [procedure.send]
+---
+`,
+        "procedures/send.md": `---
+type: procedure
+title: Send
+summary: Send
+---
+## Steps
+
+1. Open
+
+   ![Form](../assets/form.png)
+
+2. Send ![Gone](../assets/gone.png)
+`,
+      },
+      { "assets/form.png": lazy },
+      "KB",
+    ),
+  );
+  assert.equal(reads, 0);
+  assert.deepEqual(
+    service
+      .snapshot()
+      .issues.filter((i) => i.code === "W110")
+      .map((i) => i.message),
+    ['image "../assets/gone.png" does not exist'],
+  );
+  const zip = unzipSync(await service.exportDocsZip("site"));
+  assert.equal(reads, 1);
+  assert.equal(strFromU8(zip["assets/form.png"]), "png");
+  assert.equal(zip["assets/gone.png"], undefined);
+  assert.equal(await service.asset("assets/form.png"), lazy);
+  await assert.rejects(service.asset("../assets/form.png"), /File not found/);
+  await assert.rejects(service.asset(".hidden/x.png"), /File not found/);
 });

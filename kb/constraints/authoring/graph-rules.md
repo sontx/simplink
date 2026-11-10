@@ -12,6 +12,7 @@ sources:
   - packages/core/src/lint-graph.ts
   - packages/core/src/graph.ts
   - packages/core/src/markdown.ts
+  - packages/core/src/assets.ts
 ---
 
 ## Errors (block search, resolution, and export)
@@ -41,6 +42,8 @@ Code in backticks or fenced blocks is ignored when finding links and steps.
 | `W107` | A procedure's `availability` is wider than a capability it `uses`.                  |
 | `W109` | A peer is unreachable during `simp-node lint --peers`; remote existence is unknown. |
 | `W108` | A choice has only one option.                                                       |
+| `W110` | A body image's file is missing or outside the KB (filesystem sources only).         |
+| `W111` | An image has no alt text; agents read only the alt text.                            |
 
 `simp-lint` exits with code 1 on any error. Warnings affect the exit code only when `--max-warnings` is exceeded.
 

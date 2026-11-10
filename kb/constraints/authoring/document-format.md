@@ -23,7 +23,7 @@ sources:
 
 ## Paths and IDs
 
-- Only `.md` files are loaded. Files directly in the KB root (such as `INVENTORY.md`) and any path segment starting with `.` are ignored.
+- Only `.md` files are loaded; other files, such as images under `assets/`, are left alone. Files directly in the KB root (such as `INVENTORY.md`) and any path segment starting with `.` are ignored.
 - The first folder sets the node type: `goals/`, `procedures/`, `capabilities/`, `states/`, or `constraints/`. Other folders produce `E003`.
 - The ID is the type followed by the remaining path segments, joined with dots: `procedures/billing/update-card.md` becomes `procedure.billing.update-card`.
 - Every segment after the type folder must be lowercase kebab-case (`a-z`, `0-9`, single hyphens). Dots, underscores, and uppercase letters produce `E004`.

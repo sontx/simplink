@@ -39,10 +39,10 @@ Signals in code:
   the other phrasing as an alias.
 - **Procedure**: 2–10 steps. Longer usually means a hidden prerequisite procedure or a choice.
   One procedure per way of doing it, not per screen.
-- **State**: binary and checkable. "Account is set up" is too vague; "Zalo OA connected" is right.
+- **State**: binary and checkable. "Account is set up" is too vague; "SMS sender connected" is right.
 - **Capability**: only when it carries availability, constraints, or is used by several procedures.
   Don't create a capability for every button.
-- **Constraint**: one rule family per node ("Zalo broadcast policy"), with specifics in the body.
+- **Constraint**: one rule family per node ("SMS broadcast policy"), with specifics in the body.
 
 ## 3. Branching
 
@@ -69,7 +69,7 @@ duplicates.
 
 **when_to_use** — situations, not features, 1–4 per goal:
 
-- Good: "User wants to message many Zalo customers at once"
+- Good: "User wants to text many customers at once"
 - Bad: "Broadcast feature"
 
 **Summary** — one sentence on the outcome, ≤ 200 chars. It is what the agent sees in search results.
@@ -77,7 +77,7 @@ duplicates.
 ## 5. Writing steps
 
 - Use the exact UI labels from i18n files, in the KB's primary language, with paths like
-  `Settings → Channels → Zalo`.
+  `Settings → Channels → SMS`.
 - One action per step; start with a verb.
 - For API procedures: method and path, key fields — no auth secrets or internal hosts.
 - No internal function names, table names, or feature-flag names.
@@ -88,14 +88,14 @@ duplicates.
 Evidence:
 
 - `src/pages/broadcast/New.tsx` creates a broadcast; `i18n/vi.json` labels "Tạo chiến dịch".
-- `src/api/broadcast.ts` throws `ZALO_NOT_CONNECTED` if the channel is missing.
+- `src/api/broadcast.ts` throws `SMS_NOT_CONNECTED` if the channel is missing.
 - `config/plans.ts`: scheduling only on `pro` and `enterprise`.
-- `docs/help/broadcast.md`: "How to send a Zalo broadcast".
+- `docs/help/broadcast.md`: "How to send an SMS broadcast".
 
 Model:
 
-- goal `goal.broadcast.send-zalo` (from the docs title)
-- procedure `procedure.broadcast.send-zalo` (from the page + labels)
-- state `state.channel.zalo-connected`: `check` from the settings UI, `satisfied_by: [procedure.channel.connect-zalo]` (from the error guard)
+- goal `goal.broadcast.send-sms` (from the docs title)
+- procedure `procedure.broadcast.send-sms` (from the page + labels)
+- state `state.channel.sms-connected`: `check` from the settings UI, `satisfied_by: [procedure.channel.connect-sms]` (from the error guard)
 - capability `capability.broadcast.schedule` with `availability: { plans: [pro, enterprise] }` (from the plan matrix)
 - constraint only if a policy or limit is evidenced

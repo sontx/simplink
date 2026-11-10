@@ -2,6 +2,7 @@
 
 Product: TODO · Primary language: TODO · Scope: TODO
 Status values: `planned` → `drafted` → `verified`, or `skipped` (with a reason in notes).
+Screenshots: note them per row as `screens: step 1 (form)`; most rows need none (see references/screenshots.md).
 This file sits at the KB root, so the loader ignores it.
 
 ## Product manifest

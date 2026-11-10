@@ -22,6 +22,9 @@ sources:
 
 1. Run `pnpm build` and `pnpm ui` in this repository, or use `pnpm dev:ui` during development. Open the URL Vite prints.
 2. Select **Open KB folder**, choose the local KB folder, and grant read/write access. Git URLs are not supported; clone a repository yourself first.
+
+   ![Open a knowledge base card with the Open KB folder button highlighted above the simp node URL form](../../assets/ui/open-kb-folder.webp)
+
 3. In Chromium, edits are saved directly to the folder. Other browsers load a memory copy and show **Changes saved in memory — download to keep them**.
 4. Confirm the folder name and lint counts in the header. Browse Graph, Nodes, Issues, or Docs.
 5. In memory mode, use **Download KB (.zip)** to keep changes and unchanged assets. Dot-files and dot-folders such as `.git` are excluded.

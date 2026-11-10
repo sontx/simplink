@@ -2,7 +2,7 @@ import { loadDocs, type RawDoc } from "./loader.js";
 import type { DocSource } from "./source.js";
 import type { MaybePromise } from "./types.js";
 import type { ValidatorExtension } from "./schema.js";
-import { defaultValidator } from "./platform.js";
+import { defaultValidator, fsSource } from "./platform.js";
 import { localize, rewriteRefs } from "./ids.js";
 import { buildGraph } from "./graph.js";
 import { lintGraph } from "./lint-graph.js";
@@ -106,7 +106,8 @@ export async function lintKB(
   const nodes = new Map<string, KBNode>();
   const locators = new Map<string, SourceLocator>();
 
-  for (const doc of await loadDocs(root)) {
+  const source = typeof root === "string" ? fsSource(root) : root;
+  for (const doc of await loadDocs(source)) {
     const source = locateSource(doc.raw ?? "");
     locators.set(doc.relPath, source);
     const add = (code: string, msg: string, line?: number) =>
@@ -157,7 +158,8 @@ export async function lintKB(
     for (const node of nodes.values())
       node.data = rewriteRefs(node.data, (ref) => localize(ref, name));
   const graph = buildGraph(nodes);
-  issues.push(...lintGraph(graph, (node) => locators.get(node.path)));
+  const assets = source.assets && new Set(await source.assets());
+  issues.push(...lintGraph(graph, (node) => locators.get(node.path), assets));
   for (const rule of opts.rules ?? []) issues.push(...(await rule(graph)));
   const disabled = new Set(opts.disable);
   for (let i = issues.length - 1; i >= 0; i--)

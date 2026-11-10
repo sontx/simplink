@@ -206,6 +206,37 @@ Every node needs `title` and `summary`. Optional fields include `aliases` and
 `tags` (indexed for search), `related`, `status: deprecated`, `availability`,
 `sources`, and `docs`.
 
+### Images
+
+Screenshots make guides easier to follow. Write them as ordinary Markdown
+images in a node's body, with paths relative to the node file, so any editor
+previews them. Keep image files in a folder such as `assets/`; the loader skips
+non-Markdown files.
+
+```md
+<!-- procedures/broadcast/send.md -->
+
+## Steps
+
+1. Select an audience.
+
+   ![Audience picker with the Segment dropdown open](../../assets/broadcast/audience.png)
+
+2. Write the message and send it.
+```
+
+- **Procedures:** an image written in a `## Steps` item, on its line or the
+  lines under it, belongs to that step. Plans take it out of the step text and
+  attach it to the step. Agents get its alt text as a `Screen:` line under the
+  step, never the image, and goal guides show the image under the step.
+- **States:** the body's images show what the state looks like when it's true.
+  They go with the state's check in plans and guides.
+- **Any node:** docs export rewrites local image paths to follow the published
+  page. External URLs stay as written, and images in code are ignored.
+- **Alt text:** describe what's on the screen, because that's all an agent
+  sees. Lint flags an image with no alt text (W111) and, for filesystem KBs and
+  custom sources that implement `assets()`, a missing image file (W110).
+
 ### Node IDs
 
 IDs come from the file path: `procedures/broadcast/send.md` becomes
@@ -419,8 +450,11 @@ docs:
 ```
 
 Use wikilinks for internal links so they follow the publication paths. The
-output is plain Markdown with relative links. Engine configuration and assets
-are up to you. `simp-docs` refuses to write if the KB has lint errors, if two
+output is plain Markdown with relative links, and local image paths follow the
+published pages. `simp-docs` copies the referenced images beside the pages at
+their KB paths and skips missing ones; with `kb.docs()`, copy the files that
+`docAssets(kb.graph)` lists. Engine configuration is up to you. `simp-docs`
+refuses to write if the KB has lint errors, if two
 pages share a route, or if the KB and output directories overlap. It
 overwrites the files it generates but does not remove stale pages, so use a
 fresh output directory for publishing.
@@ -475,7 +509,10 @@ const kb = await createKB(
 | `tools`        | Returns `KBToolSpec[]`. Duplicate names are rejected. A `ToolError` message reaches the caller; other errors become internal errors. `tenantContext: false` hides plan and permission arguments. |
 
 Custom sources implement `{ list(): SourceFile[] | Promise<SourceFile[]> }`.
-Each file has a relative `/`-separated `relPath` and a `content` string.
+Each file has a relative `/`-separated `relPath` and a `content` string. An
+optional `assets(): string[] | Promise<string[]>` lists the relative paths of the
+non-Markdown files, so lint can report missing images (W110). `fsSource` has it;
+`memorySource` and `gitSource` don't, so those skip the check.
 
 ## Related packages
 

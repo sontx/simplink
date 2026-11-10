@@ -32,9 +32,20 @@ const optional = (v: unknown) =>
       string(c.how) &&
       (c.fix === null || string(c.fix)),
   );
+const images = (v: unknown) =>
+  v === undefined ||
+  array(
+    v,
+    (i) =>
+      object(i) &&
+      string(i.src) &&
+      string(i.alt) &&
+      (i.step === undefined || Number.isInteger(i.step)),
+  );
 const plan = (v: unknown): boolean =>
   array(v, (step) => {
-    if (!object(step) || !conditions(step.when)) return false;
+    if (!object(step) || !conditions(step.when) || !images(step.images))
+      return false;
     if (step.kind === "check")
       return (
         ref(step.state) &&

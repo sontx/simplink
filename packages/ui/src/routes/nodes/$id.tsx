@@ -471,7 +471,7 @@ function NodeContent() {
                 </div>
               ))}
             </dl>
-            <Markdown content={node.body} />
+            <Markdown content={node.body} assetBase={node.path} />
             <h2 className="mt-6 mb-2 text-base leading-normal font-semibold">
               {t("Relationships")}
             </h2>

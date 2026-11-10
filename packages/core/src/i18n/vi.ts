@@ -100,6 +100,7 @@ export const vi: Messages = {
     check: "KIỂM TRA",
     run: "THỰC HIỆN",
     choose: "CHỌN",
+    screen: "Màn hình",
     how: "Cách kiểm tra",
     ifFalse: "Nếu sai",
     runStep: (step, ref) => `thực hiện bước ${step} (${ref})`,

@@ -16,7 +16,7 @@ authoritative; this is the readable version. `simp-lint` enforces all of it.
 
 ```text
 kb/<folder>/<seg>/<seg>.md  →  <type>.<seg>.<seg>
-kb/procedures/zalo/send-message.md  →  procedure.zalo.send-message
+kb/procedures/sms/send-message.md  →  procedure.sms.send-message
 ```
 
 | Folder          | Type       |
@@ -114,12 +114,12 @@ choices:
   - id: recipient # slug, unique within the procedure
     question: How are recipients identified?
     options: # ≥ 2 options (1 is a W108 warning)
-      - key: uid # slug, unique within the choice
-        when: You have Zalo user IDs of OA followers # helps the agent/user pick
-        procedure: procedure.zalo.deliver-by-uid
+      - key: contact # slug, unique within the choice
+        when: The recipients are saved contacts # helps the agent/user pick
+        procedure: procedure.sms.deliver-to-contacts
       - key: phone
         when: You only have phone numbers
-        procedure: procedure.zalo.deliver-by-phone
+        procedure: procedure.sms.deliver-by-phone
 ```
 
 Reference each choice exactly once in `## Steps` as its own item: `2. choice:recipient`.
@@ -141,6 +141,21 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 - Wikilinks (`[[id]]`, `[[crm:goal.import|Import]]`) remain supported shorthand.
 - A `simp` body introduces the product and links to entry goals; it has no required step section.
 - Code in backticks or fences is ignored for links and step detection.
+- Images are plain Markdown in the body, relative to the node file; keep files under `assets/`:
+
+  ```md
+  ## Steps
+
+  1. Open **Billing** and click **Update card**.
+
+     ![Card form with Card number, Expiry and CVC fields and a Save button](../../assets/billing/card-form.png)
+  ```
+
+  An image inside a `## Steps` item belongs to that step: plans attach it there and agents read its
+  alt text as a `Screen:` line. A state's body images show what "true" looks like. Alt text is all
+  an agent sees, so describe the screen (W111 if empty). Add one where a reader could get lost on a
+  step, one per state, and one overview per capability. Never paste image bytes or base64.
+  How to choose, capture, compress, and link them: `references/screenshots.md`.
 - Unverified content: tag `needs-review` and add a body line `Unverified: <what and why>`.
 
 ## 6. Lint codes and fixes
@@ -172,6 +187,8 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | W107 | Procedure availability wider than a capability it uses | Narrow `availability`                                     |
 | W109 | Peer unreachable during online lint | Check endpoint, authentication, and network; do not infer missing nodes |
 | W108 | Choice with one option                                 | Remove the choice or add options                          |
+| W110 | Image file not found, or outside the KB                | Add the file or fix the path (relative to the node file)  |
+| W111 | Image without alt text                                 | Describe what the screen shows                            |
 
 YAML gotchas: quote values containing `: `, `#`, or starting with `[`, `{`, `*`, `&`, `!`, `@`.
 Permissions like `broadcast:api` need quotes inside flow lists: `["broadcast:api"]`.

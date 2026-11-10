@@ -22,10 +22,13 @@ sources:
 ## Steps
 
 1. Open **Graph**, narrow the view with **Node types**, **Relationships**, and **Depth** if needed, and select a node to open the **NODE INSPECTOR**.
+
+   ![Graph view of a read-only workspace with a goal selected and its node inspector on the right: (1) the Depth buttons in the filter panel, (5) the Plan button at the bottom of the inspector](../../assets/ui/graph-inspector.webp)
+
 2. To add a relationship, select **+** next to a relationship kind such as **Preconditions** or **Uses**, then pick the target in the **Find {type}…** list; only targets of the allowed type are offered.
 3. To remove a relationship, select **×** next to its target.
 4. To connect two nodes on the canvas, drag from one node to another, then pick the relationship kind in **Connect nodes**.
-5. For a goal or procedure, select **Plan** to view the **Agent plan** that an agent would receive.
+5. For a goal or procedure, select **Plan** (5) to view the **Agent plan** that an agent would receive.
 6. To edit `choices` or body links, select **Open editor** (**View source** in a read-only workspace) and change them in the **Source** tab.
 
 ## Failure handling

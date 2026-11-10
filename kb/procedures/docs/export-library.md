@@ -15,6 +15,7 @@ constrained_by:
 sources:
   - packages/core/src/docs.ts
   - packages/core/src/kb.ts
+  - packages/core/src/assets.ts
   - packages/core/README.md
 ---
 
@@ -26,6 +27,7 @@ sources:
 4. Pass `locale`, for example `kb.docs({ locale: "vi" })`, to choose the language of generated wording. `kb.docs` defaults to the `language` field in `simp.md`. To add a language or change wording, pass partial messages through `createKB(dir, { locales: { ja: { docs: { steps: "手順" } } } })`.
 5. Without a facade, call `exportDocs(graph, options)`; it uses only the options you pass, and English unless you set `locale`.
 6. Write or serve each returned `{ path, content }` page; these functions write nothing themselves.
+7. If nodes link local images, copy each path returned by `docAssets(kb.graph)` from the KB to the same relative path beside the pages. Pass the source graph, not a site layout graph.
 
 ## Failure handling
 

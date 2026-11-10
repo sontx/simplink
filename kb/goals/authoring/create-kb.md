@@ -22,4 +22,4 @@ sources:
   - README.md
 ---
 
-The user wants a new Simplink knowledge base. It is a set of Markdown files that describe user goals, the procedures that achieve them, and the states, capabilities, and constraints those procedures depend on.
+The user wants a new Simplink knowledge base. It is a set of Markdown files that describe user goals, the procedures that achieve them, and the states, capabilities, and constraints those procedures depend on. To have a coding agent write the files, see [[goal.authoring.use-agent-skills]].

@@ -20,6 +20,7 @@ sources:
 - A source is `fsSource(root)`, `memorySource(files, name?)`, or any object with `list()` that returns `{ relPath, content }` entries, either directly or as a promise.
 - Each `relPath` must be relative and `/`-separated, with no backslashes, empty, `.` or `..` segments, or drive prefixes, and must be unique. Otherwise loading fails with `Invalid source path` or `Duplicate source path`.
 - Non-Markdown files, paths with a segment starting with `.`, and files in the root folder are ignored.
+- An optional `assets()` method returns the relative paths of non-Markdown files, directly or as a promise, so lint can report missing images (`W110`). `fsSource` implements it, including symlinked images that stay inside the KB; `memorySource` and `gitSource` do not, so they skip that check.
 
 ## Git sources
 
