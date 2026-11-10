@@ -28,7 +28,7 @@ export const en: Messages = {
     siteEdges: {
       procedures: "Ways to do this",
       requires: "Preparation guides",
-      preconditions: "Before you begin",
+      preconditions: "Prerequisite checks",
       optional_preconditions: "Optional preparation",
       produces: "Result",
       uses: "Features used",
@@ -141,5 +141,27 @@ export const en: Messages = {
       `requires permission: ${permissions} (${ids})`,
     unreachable: (id) => `unreachable node "${id}"`,
     availabilityNotChecked: (id) => `availability of ${id} not checked`,
+  },
+  readerDiagnostics: {
+    missingNode: (from, id) =>
+      `${from} refers to ${id}, which is not documented.`,
+    missingProcedure: (goal, id) =>
+      `${goal} lists a method that is not documented: ${id}.`,
+    cycle: (id) =>
+      `${id} depends on itself, so its steps are not repeated here.`,
+    maxDepth: (id) => `Steps for ${id} are not expanded here; see its page.`,
+    noSatisfier: (state) => `No fix is documented for ${state}.`,
+    noChoiceOption: (_choice, key) =>
+      `The selected method "${key}" is not documented, so all methods are shown.`,
+    noAvailableOption: () =>
+      "None of the methods for this choice is available.",
+    requiresPlan: (id, plans) => `${id} requires plan: ${plans}`,
+    requiresPermission: (id, permissions) =>
+      `${id} requires permission: ${permissions}`,
+    requiresPlanGrouped: (plans, ids) => `requires plan: ${plans} (${ids})`,
+    requiresPermissionGrouped: (permissions, ids) =>
+      `requires permission: ${permissions} (${ids})`,
+    unreachable: (id) => `${id} could not be loaded.`,
+    availabilityNotChecked: (id) => `Availability of ${id} was not checked.`,
   },
 };

@@ -1,25 +1,32 @@
-import { en, translateDiagnostic, type Messages } from "./i18n/index.js";
+import { en, readerDiagnostic, type Messages } from "./i18n/index.js";
 import type { AvailabilityInfo, PlanStep } from "./resolve.js";
 import type { NodeImage } from "./types.js";
 
 /** Markdown for one image of the node `owner`; "" leaves it out. */
 export type DocImage = (owner: string, img: NodeImage) => string;
 
+/**
+ * Reader-facing availability note, or "" when nothing restricts the plan, since
+ * "available" on every guide tells the reader nothing.
+ */
 export const docAvailability = (
   a: AvailabilityInfo,
-  m: Messages = en,
+  m: Messages,
+  link: (id: string) => string,
 ): string =>
   a.available === true
-    ? m.availability.available
+    ? ""
     : a.available === null
       ? m.availability.docsUnknown
       : m.availability.unavailable(
-          a.unavailableReasons.map((r) => translateDiagnostic(r, m)),
+          a.unavailableReasons.map((r) => readerDiagnostic(r, m, link)),
         );
 
 /** Reader-facing label for a constraint severity, falling back to the severity label, then the raw value. */
 export const requirementLabel = (value: string, m: Messages = en): string =>
   m.docs.requirementLabels[value] ?? m.severity[value] ?? value;
+
+const suffix = (note: string) => (note ? `; ${note}` : "");
 
 /** Reader-facing steps; generated references are formatted separately from authored prose. */
 export function renderDocPlan(
@@ -62,7 +69,7 @@ export function renderDocPlan(
           `${pad}   ${j + 1}. ${step.question}${step.selected ? m.docPlan.selected(step.selected) : ""}`,
           ...step.options.map((o) =>
             [
-              `${pad}      - **${o.key}**: ${o.when} — ${link(o.procedure.id)}; ${docAvailability(o, m)}`,
+              `${pad}      - **${o.key}**: ${o.when} — ${link(o.procedure.id)}${suffix(docAvailability(o, m, link))}`,
               ...o.constraints.map(
                 (c) =>
                   `${pad}        - ${requirementLabel(c.severity, m)}: ${link(c.id)} — ${c.summary}`,

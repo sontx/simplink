@@ -2,9 +2,14 @@ import { en } from "./en.js";
 import { vi } from "./vi.js";
 import type { LocaleOptions, MessageOverrides, Messages } from "./messages.js";
 
-export type { LocaleOptions, MessageOverrides, Messages } from "./messages.js";
+export type {
+  DiagnosticMessages,
+  LocaleOptions,
+  MessageOverrides,
+  Messages,
+} from "./messages.js";
 
-export { translateDiagnostic } from "./diagnostics.js";
+export { readerDiagnostic, translateDiagnostic } from "./diagnostics.js";
 
 export { en, vi };
 

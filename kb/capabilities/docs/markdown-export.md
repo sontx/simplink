@@ -21,7 +21,7 @@ sources:
 
 ## Site layout (default)
 
-Goals become guides with the full walkthrough, choices, restrictions, and resolver warnings. Blocking constraints are listed under **Before you start**, ahead of the steps (one needed only by a conditional fix says when it applies; one needed only by a choice option is shown at that option instead), and warning constraints under **Good to know**, after them; the graph layout keeps a single **Constraints** list with each item labeled **Blocking:** or **Warning:**. Default locations keep each node's folders under its type:
+Goals become guides with the full walkthrough, choices, restrictions, and resolver warnings. Blocking constraints are listed under **Before you start**, ahead of the steps (one needed only by a conditional fix says when it applies; one needed only by a choice option is shown at that option instead), and warning constraints under **Good to know**, after them; the graph layout keeps a single **Constraints** list with each item labeled **Blocking:** or **Warning:**. Procedure and feature pages split their own constraints the same way, and list preconditions under **Prerequisite checks**. Availability is shown only when a plan or permission restricts a guide, alternative, or choice option. Resolver warnings link the nodes they mention and use reader wording, such as "Steps for [Setup] are not expanded here", instead of node IDs. Default locations keep each node's folders under its type:
 
 | Node type  | Default path                          |
 | ---------- | ------------------------------------- |

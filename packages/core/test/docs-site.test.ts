@@ -127,7 +127,7 @@ test("site walkthroughs retain choices, conditional fixes, availability, constra
     "requires plan: enterprise",
     "Required: [C]",
     "Obtain consent",
-    "max depth reached",
+    "are not expanded here; see its page.",
     "Retry carefully.",
     "If",
     "Keep `procedure.a` literal",
@@ -385,4 +385,86 @@ test("site guides qualify conditional blocking constraints and leave choice-only
     assert.ok(!before.includes("Branch"), guide);
     assert.match(guide, /- Required: \[Branch\]\([^)]+\) — Needs consent/);
   }
+});
+
+test("site guides omit the availability line and suffix when everything is available", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a", "procedure.b"]),
+      "procedures/a.md": proc("A"),
+      "procedures/b.md": proc("B"),
+    }),
+  );
+  const guide = kb.docs().find((p) => p.path === "guides/g.md")!.content;
+  assert.ok(!guide.includes("Availability:"), guide);
+  assert.match(guide, /## Alternatives\n\n- \[B\]\([^)]+\)\n/);
+  assert.ok(!guide.includes("— available"), guide);
+
+  const gated = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc("A", "availability:\n  plans: [pro]\n"),
+    }),
+  );
+  const page = gated.docs().find((p) => p.path === "guides/g.md")!.content;
+  assert.match(page, /Availability: check plan and permission requirements/);
+});
+
+test("site procedure pages group their constraints like guides and name preconditions distinctly", async () => {
+  const kb = await createKB(
+    memorySource({
+      "procedures/a.md": proc(
+        "A",
+        "preconditions: [state.ready]\nconstrained_by: [constraint.consent, constraint.slow]\n",
+      ),
+      "procedures/fix.md": proc("Fix"),
+      "states/ready.md": state("Ready", "procedure.fix"),
+      "constraints/consent.md":
+        "---\ntype: constraint\ntitle: Consent\nsummary: Obtain consent\nseverity: blocking\n---",
+      "constraints/slow.md":
+        "---\ntype: constraint\ntitle: Slow\nsummary: Large sends take a while\nseverity: warning\n---",
+    }),
+  );
+  assert.equal(kb.status.errors, 0, JSON.stringify(kb.issues));
+  const page = kb.docs().find((p) => p.path === "guides/how-to/a.md")!.content;
+  const before = page.indexOf("## Before you start");
+  const steps = page.indexOf("## Steps");
+  const after = page.indexOf("## Good to know");
+  assert.ok(before >= 0 && before < steps && steps < after, page);
+  assert.match(
+    page,
+    /## Before you start\n\n- \*\*\[Consent\]\([^)]+\)\*\*\\\n {2}Obtain consent\n/,
+  );
+  assert.match(page, /## Good to know\n\n- \*\*\[Slow\]\([^)]+\)\*\*\\\n/);
+  assert.ok(!page.includes("## Requirements"), page);
+  assert.match(page, /## Prerequisite checks\n\n- \[Ready\]/);
+  assert.ok(!page.includes("Before you begin"), page);
+  const graphPage = kb
+    .docs({ layout: "graph" })
+    .find((p) => p.path === "procedures/a.md")!.content;
+  assert.match(graphPage, /## Constrained by\n/);
+});
+
+test("site guide warnings link nodes and use reader wording instead of raw IDs", async () => {
+  const kb = await createKB(
+    memorySource({
+      "goals/g.md": goal(["procedure.a"]),
+      "procedures/a.md": proc("A", "requires: [procedure.b]\n"),
+      "procedures/b.md": proc("B", "requires: [procedure.c]\n"),
+      "procedures/c.md": proc("C"),
+    }),
+  );
+  const guide = kb
+    .docs({ maxDepth: 1 })
+    .find((p) => p.path === "guides/g.md")!.content;
+  const warnings = guide.slice(guide.indexOf("## Warnings"));
+  assert.match(
+    warnings,
+    /- Steps for \[C\]\([^)]+\) are not expanded here; see its page\./,
+  );
+  assert.ok(!/procedure\.\w/.test(warnings), warnings);
+  const graph = kb
+    .docs({ layout: "graph", maxDepth: 1 })
+    .find((p) => p.path === "goals/g.md")!.content;
+  assert.match(graph, /max depth reached at procedure\.c; skipped/);
 });

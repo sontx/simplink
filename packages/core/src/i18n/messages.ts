@@ -108,22 +108,30 @@ export interface Messages {
     failureHandling: string;
     omitted: (sections: string[]) => string;
   };
-  /** Resolver warnings and unavailability reasons. */
-  diagnostics: {
-    missingNode: (from: string, id: string) => string;
-    missingProcedure: (goal: string, id: string) => string;
-    cycle: (id: string) => string;
-    maxDepth: (id: string) => string;
-    noSatisfier: (state: string) => string;
-    noChoiceOption: (choice: string, key: string) => string;
-    noAvailableOption: (choice: string) => string;
-    requiresPlan: (id: string, plans: string) => string;
-    requiresPermission: (id: string, permissions: string) => string;
-    requiresPlanGrouped: (plans: string, ids: string) => string;
-    requiresPermissionGrouped: (permissions: string, ids: string) => string;
-    unreachable: (id: string) => string;
-    availabilityNotChecked: (id: string) => string;
-  };
+  /** Resolver warnings and unavailability reasons, as plain text with node IDs. */
+  diagnostics: DiagnosticMessages;
+  /**
+   * The same diagnostics worded for site docs readers. Node arguments arrive as
+   * Markdown links (or code for unknown nodes) instead of raw IDs.
+   */
+  readerDiagnostics: DiagnosticMessages;
+}
+
+/** Wording for each resolver diagnostic; arguments follow the canonical English form. */
+export interface DiagnosticMessages {
+  missingNode: (from: string, id: string) => string;
+  missingProcedure: (goal: string, id: string) => string;
+  cycle: (id: string) => string;
+  maxDepth: (id: string) => string;
+  noSatisfier: (state: string) => string;
+  noChoiceOption: (choice: string, key: string) => string;
+  noAvailableOption: (choice: string) => string;
+  requiresPlan: (id: string, plans: string) => string;
+  requiresPermission: (id: string, permissions: string) => string;
+  requiresPlanGrouped: (plans: string, ids: string) => string;
+  requiresPermissionGrouped: (permissions: string, ids: string) => string;
+  unreachable: (id: string) => string;
+  availabilityNotChecked: (id: string) => string;
 }
 
 /** Recursively optional message catalog used to add or reword a language. */

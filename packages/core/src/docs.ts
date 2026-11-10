@@ -27,6 +27,7 @@ import {
 } from "./types.js";
 import {
   messagesFor,
+  readerDiagnostic,
   translateDiagnostic,
   type LocaleOptions,
   type Messages,
@@ -173,7 +174,15 @@ function proseLinks(
   return result;
 }
 
-function choiceWarnings(plan: PlanStep[], m: Messages): string[] {
+/**
+ * Warnings raised inside choice options. Graph docs prefix them with the raw
+ * `choice/option` IDs; site docs name the question and option key instead.
+ */
+function choiceWarnings(
+  plan: PlanStep[],
+  word: (warning: string) => string,
+  site: boolean,
+): string[] {
   return plan.flatMap((s) =>
     s.kind === "run"
       ? s.steps.flatMap((step) =>
@@ -182,9 +191,9 @@ function choiceWarnings(plan: PlanStep[], m: Messages): string[] {
             : step.options.flatMap((option) => [
                 ...option.warnings.map(
                   (warning) =>
-                    `${step.choice}/${option.key}: ${translateDiagnostic(warning, m)}`,
+                    `${site ? `${step.question} (**${option.key}**)` : `${step.choice}/${option.key}`}: ${word(warning)}`,
                 ),
-                ...choiceWarnings(option.plan, m),
+                ...choiceWarnings(option.plan, word, site),
               ]),
         )
       : [],
@@ -291,6 +300,25 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       field(t.aliases, node.aliases);
       field(t.tags, node.tags);
     }
+    // Site pages split their own constraints like guides do: blocking ones
+    // before the body, warnings where the link sections start.
+    const ownConstraints = site
+      ? (graph.out.get(node.id) ?? []).filter(
+          (e) => e.source === "frontmatter" && e.kind === "constrained_by",
+        )
+      : [];
+    const constraintEntry = (id: string) => {
+      const summary = graph.nodes.get(id)?.summary;
+      return `- **${link(id)}**${summary ? `\\\n  ${prose(summary)}` : ""}`;
+    };
+    const isBlocking = (id: string) =>
+      graph.nodes.get(id)?.data.severity === "blocking";
+    const ownBlocking = ownConstraints.filter((e) => isBlocking(e.to));
+    const ownAdvisory = ownConstraints.filter((e) => !isBlocking(e.to));
+    if (ownBlocking.length)
+      sections.push(
+        `## ${t.beforeYouStart}\n\n${ownBlocking.map((e) => constraintEntry(e.to)).join("\n")}`,
+      );
     if (node.body)
       sections.push(
         proseLinks(
@@ -316,7 +344,12 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       const target = graph.nodes.get(id);
       return `- ${link(id)}${target?.summary ? ` — ${prose(target.summary)}` : ""}`;
     };
+    if (ownAdvisory.length)
+      sections.push(
+        `## ${requirement("warning")}\n\n${ownAdvisory.map((e) => constraintEntry(e.to)).join("\n")}`,
+      );
     for (const kind of EDGE_KINDS) {
+      if (site && kind === "constrained_by") continue;
       const edges = (graph.out.get(node.id) ?? []).filter(
         (e) => e.source === "frontmatter" && e.kind === kind,
       );
@@ -337,7 +370,7 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       const [best, ...others] = resolved.alternatives;
       const availability = (a: AvailabilityInfo) =>
         site
-          ? docAvailability(a, m)
+          ? docAvailability(a, m, link)
           : a.available === true
             ? m.availability.available
             : a.available === null
@@ -345,9 +378,11 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
               : m.availability.unavailable(
                   a.unavailableReasons.map((r) => translateDiagnostic(r, m)),
                 );
+      const word = (w: string) =>
+        site ? readerDiagnostic(w, m, link) : translateDiagnostic(w, m);
       const warnings = [...resolved.warnings, ...(best?.warnings ?? [])]
-        .map((w) => translateDiagnostic(w, m))
-        .concat(choiceWarnings(best?.plan ?? [], m));
+        .map(word)
+        .concat(choiceWarnings(best?.plan ?? [], word, site));
       const stepsHeading = `## ${site ? t.steps : t.recommendedPlan}`;
       if (!best) sections.push(`${stepsHeading}\n\n${t.noProcedure}`);
       else {
@@ -370,8 +405,9 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
         );
         if (site && blocking.length)
           sections.push(`## ${t.beforeYouStart}\n\n${blocking.join("\n")}`);
+        const note = availability(best);
         sections.push(
-          `${stepsHeading}\n\n${link(best.procedure.id)}\n\n${t.availability}: ${prose(availability(best))}`,
+          `${stepsHeading}\n\n${link(best.procedure.id)}${note ? `\n\n${t.availability}: ${prose(note)}` : ""}`,
         );
         if (best.deprecated) sections.push(`> ${t.deprecatedDependency}`);
         if (best.satisfiedStates.length)
@@ -418,7 +454,15 @@ export function exportDocs(graph: KBGraph, opts: DocsOptions = {}): DocPage[] {
       }
       if (others.length)
         sections.push(
-          `## ${t.alternatives}\n\n${others.map((a) => `- ${link(a.procedure.id)} — ${prose(availability(a))}${a.deprecated ? `; ${t.deprecatedDependencySuffix}` : ""}`).join("\n")}`,
+          `## ${t.alternatives}\n\n${others
+            .map((a) => {
+              const notes = [
+                availability(a),
+                a.deprecated ? t.deprecatedDependencySuffix : "",
+              ].filter(Boolean);
+              return `- ${link(a.procedure.id)}${notes.length ? ` — ${prose(notes.join("; "))}` : ""}`;
+            })
+            .join("\n")}`,
         );
       if (warnings.length)
         sections.push(

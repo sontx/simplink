@@ -28,7 +28,7 @@ export const vi: Messages = {
     siteEdges: {
       procedures: "Các cách thực hiện",
       requires: "Hướng dẫn chuẩn bị",
-      preconditions: "Trước khi bắt đầu",
+      preconditions: "Điều kiện cần kiểm tra",
       optional_preconditions: "Chuẩn bị tùy chọn",
       produces: "Kết quả",
       uses: "Tính năng sử dụng",
@@ -145,5 +145,29 @@ export const vi: Messages = {
     unreachable: (id) => `không truy cập được nút "${id}"`,
     availabilityNotChecked: (id) =>
       `chưa kiểm tra điều kiện khả dụng của ${id}`,
+  },
+  readerDiagnostics: {
+    missingNode: (from, id) =>
+      `${from} tham chiếu đến ${id}, mục này chưa có tài liệu.`,
+    missingProcedure: (goal, id) =>
+      `${goal} có một cách thực hiện chưa có tài liệu: ${id}.`,
+    cycle: (id) =>
+      `${id} phụ thuộc vào chính nó nên các bước không được lặp lại ở đây.`,
+    maxDepth: (id) =>
+      `Các bước của ${id} không được mở rộng ở đây; xem trang của mục này.`,
+    noSatisfier: (state) => `Chưa có hướng dẫn khắc phục cho ${state}.`,
+    noChoiceOption: (_choice, key) =>
+      `Phương thức đã chọn "${key}" chưa có tài liệu nên hiển thị tất cả phương thức.`,
+    noAvailableOption: () =>
+      "Không có phương thức nào khả dụng cho lựa chọn này.",
+    requiresPlan: (id, plans) => `${id} yêu cầu gói: ${plans}`,
+    requiresPermission: (id, permissions) =>
+      `${id} yêu cầu quyền: ${permissions}`,
+    requiresPlanGrouped: (plans, ids) => `yêu cầu gói: ${plans} (${ids})`,
+    requiresPermissionGrouped: (permissions, ids) =>
+      `yêu cầu quyền: ${permissions} (${ids})`,
+    unreachable: (id) => `Không tải được ${id}.`,
+    availabilityNotChecked: (id) =>
+      `Chưa kiểm tra điều kiện khả dụng của ${id}.`,
   },
 };

@@ -154,16 +154,22 @@ test("diagnostics stay English in results and are translated when rendered", asy
     text,
     /lựa chọn "pick" không có phương án "missing"; hiển thị tất cả/,
   );
+  const guide = page(
+    kb.docs({
+      locale: "vi",
+      tenant: { plan: "free" },
+      choices: { pick: "missing" },
+    }),
+    "guides/send.md",
+  );
   assert.match(
-    page(
-      kb.docs({
-        locale: "vi",
-        tenant: { plan: "free" },
-        choices: { pick: "missing" },
-      }),
-      "guides/send.md",
-    ),
-    /## Cảnh báo\n\n- lựa chọn "pick"/,
+    guide,
+    /## Cảnh báo\n\n- Phương thức đã chọn "missing" chưa có tài liệu/,
+  );
+  assert.match(
+    guide,
+    /không khả dụng — yêu cầu gói: pro \(\[Send\]\([^)]+\)\)/,
+    "site availability links the gated procedure instead of its ID",
   );
 });
 
