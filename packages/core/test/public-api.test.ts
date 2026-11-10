@@ -51,10 +51,11 @@ test("built package supports async engines, renderer and policy through awaited 
   assert.equal((await kb.search("export")).hits[0].id, "goal.g");
   assert.equal(core.exportDocs(kb.graph, { layout: "graph" }).length, 2);
   assert.ok(kb.docs().some((page) => page.path === "index.md"));
-  assert.match(
-    kb.docs().find((page) => page.path === "guides/g.md")!.content,
-    /Availability: available/,
-  );
+  // The tenant policy allows the plan, so docs carry no availability note
+  // (a denied plan would read "unavailable — Denied").
+  const guide = kb.docs().find((page) => page.path === "guides/g.md")!.content;
+  assert.match(guide, /## Steps/);
+  assert.doesNotMatch(guide, /Availability|unavailable/);
   const help: string[] = [];
   assert.equal(
     await core.runDocs(["--help"], { stdout: (s) => help.push(s) }),
