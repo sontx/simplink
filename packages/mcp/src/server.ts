@@ -13,7 +13,7 @@ export const SERVER_INSTRUCTIONS =
   "IDs like `crm:goal.x` belong to other products; use them as-is.";
 
 /** MCP server exposing the KB tools. Transport-agnostic: connect stdio, in-memory, or HTTP. */
-export function createMcpServer(tools: KBTools, version = "0.2.1"): McpServer {
+export function createMcpServer(tools: KBTools, version = "0.3.0"): McpServer {
   const server = new McpServer(
     { name: "simp-graph", version },
     { capabilities: { tools: {} }, instructions: SERVER_INSTRUCTIONS },
