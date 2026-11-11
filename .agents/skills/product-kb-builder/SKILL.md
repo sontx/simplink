@@ -28,7 +28,7 @@ quality of what you write here is the quality of the agent's answers.
 3. **Read `references/schema.md` now.** It defines every field, edge, and lint code. Writing files from
    memory of the format causes lint churn.
 4. **Ask two things** if the user hasn't said: the KB's primary language for titles and steps
-   (aliases are always bilingual Vietnamese + English), and which product areas are in scope.
+   (`when_to_use` follows it too; aliases may mix languages), and which product areas are in scope.
 
 ## Phase 1 — Discover and inventory (write no KB nodes yet)
 
@@ -76,8 +76,10 @@ For each node:
 - Prefer `simp://` Markdown body links; use `simp:///goal.area.task` locally and `simp://peer/goal.area.task` remotely. Wikilinks remain supported.
 - Write steps as the **user** experiences them (UI labels from the i18n files, or public API calls),
   never internal function names.
-- Write `aliases` in both Vietnamese (with diacritics) and English, and `when_to_use` in the KB's
-  primary language, in the words a real user would type — see the modeling guide's retrieval section.
+- Write `when_to_use` only in the KB's primary language — the same language as the body — because it is
+  rendered into the exported docs. `aliases` are search-only and may hold many terms in any languages
+  users search in (for example Vietnamese with diacritics and English). Both use the words a real user
+  would type — see the modeling guide's retrieval section.
 - If something is inferred rather than evidenced, add `needs-review` to `tags` and a line
   `Unverified: <what and why>` in the body. Never present a guess as fact; the agent will repeat it to users.
 
@@ -97,7 +99,7 @@ links to them (see "Product manifest and federation" in `references/schema.md`):
 
 1. Create it with `node <skill>/scripts/new_node.mjs simp --kb kb` (never by hand).
 2. Fill `name` (stable lowercase kebab-case; changing it later breaks every peer that references it),
-   `title`, `summary`, and bilingual `aliases`. Set `language` to the KB's primary language.
+   `title`, `summary`, and multilingual `aliases`. Set `language` to the KB's primary language.
 3. Body: two or three sentences on what the product is for, then a `## Start here` list linking the
    approved entry goals, e.g. `- [Import customers](simp:///goal.import.customers)`. Link goals, not
    procedures; the resolver and docs reach the rest of the graph from them.
@@ -157,7 +159,8 @@ Lint checks structure, not usefulness. Check usefulness directly:
 
 1. **Retrieval.** For each goal, write 2–3 queries a real user might type — at least one in Vietnamese and
    one in English, _not_ copied from its aliases. Run `npx simp-search "<query>" --kb kb`. The goal should
-   appear in the top 3 `Goals`. If it doesn't, improve `aliases` / `when_to_use`, not the query.
+   appear in the top 3 `Goals`. If it doesn't, improve `aliases` / `when_to_use`, not the query — a miss in a
+   language other than the KB's goes into `aliases`, never `when_to_use`.
 2. **Plans.** Run `npx simp-resolve <goal-id> --kb kb` for each goal and read it as the user would:
    - Is a prerequisite missing? Add a `preconditions` state (with `satisfied_by`) or a `requires` procedure.
    - Does a step depend on a decision? Model it as a `choices` entry.

@@ -61,13 +61,16 @@ Search weights: title 5, aliases 4, when_to_use 4, tags 3, id words 2, summary 2
 Queries are diacritic-folded, so `gửi tin` and `gui tin` match the same; you never need no-diacritic
 duplicates.
 
-**Aliases** — the words users actually type, 3–8 per goal:
+**Aliases** — the words users actually type, 3–8 per goal. Aliases are search-only (not rendered in
+docs), so they may mix languages:
 
-- Vietnamese with diacritics _and_ English.
+- Every language users search in, e.g. Vietnamese with diacritics _and_ English.
 - Colloquial forms and product jargon: "nhắn tin hàng loạt", "bulk message", "campaign".
 - Not marketing copy, not the title repeated, and no alias shared with another goal (W105).
 
-**when_to_use** — situations, not features, 1–4 per goal:
+**when_to_use** — situations, not features, 1–4 per goal. Write them only in the KB's primary language
+(the language of the body): they are rendered into the exported docs, so a mixed language reads as a
+broken page. Put cross-language search terms in `aliases` instead.
 
 - Good: "User wants to text many customers at once"
 - Bad: "Broadcast feature"

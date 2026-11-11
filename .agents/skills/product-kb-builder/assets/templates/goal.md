@@ -6,7 +6,7 @@ aliases:
   - TODO cách người dùng nói (tiếng Việt)
   - TODO how users say it (English)
 when_to_use:
-  - TODO user situation, e.g. "User wants to …"
+  - TODO user situation in the KB's language (same as the body), e.g. "User wants to …"
 procedures: []
 ---
 

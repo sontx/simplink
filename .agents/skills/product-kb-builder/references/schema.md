@@ -40,7 +40,7 @@ kb/procedures/sms/send-message.md  →  procedure.sms.send-message
 | `type`         | yes      | enum                                           | Must match the folder                                |
 | `title`        | yes      | string                                         | Short, user-facing                                   |
 | `summary`      | yes      | string                                         | ≤ 200 chars (W103). Shown in search results          |
-| `aliases`      |          | string[]                                       | Search synonyms, VI + EN                             |
+| `aliases`      |          | string[]                                       | Search-only synonyms; any languages users search in  |
 | `tags`         |          | string[]                                       | Use `needs-review` for unverified nodes              |
 | `related`      |          | id[]                                           | Soft link, any type                                  |
 | `status`       |          | `active` \| `deprecated`                       | Default `active`                                     |
@@ -78,7 +78,7 @@ Edges are declared in one direction only; the reverse direction is computed.
 
 | Field                    | On                    | Target                  | Meaning                                                              |
 | ------------------------ | --------------------- | ----------------------- | -------------------------------------------------------------------- |
-| `when_to_use`            | goal (required, ≥1)   | strings                 | User situations; strongly weighted in search                         |
+| `when_to_use`            | goal (required, ≥1)   | strings                 | User situations in the KB's language (rendered in docs); weighted    |
 | `procedures`             | goal (required, ≥1)   | procedure ids           | Alternative ways to achieve the goal                                 |
 | `requires`               | procedure             | procedure ids           | Must run **before** this one (always)                                |
 | `requires`               | capability            | capability ids          | Capability dependency                                                |
@@ -196,7 +196,7 @@ Each option's procedure is resolved as a sub-plan with its own preconditions and
 | E017 | Malformed `simp-sources.yaml` | Map node IDs to non-empty lists of path/URL strings |
 | E015 | Duplicate choice id or option key                      | Rename                                                    |
 | W101 | Orphan node                                            | Link it from a procedure/goal, or delete it               |
-| W102 | Goal without aliases                                   | Add VI + EN aliases                                       |
+| W102 | Goal without aliases                                   | Add aliases in the languages users search in              |
 | W103 | Summary > 200 chars                                    | Shorten                                                   |
 | W104 | Active node references a deprecated one                | Update the reference                                      |
 | W105 | Alias shared by several goals                          | Make aliases specific                                     |
