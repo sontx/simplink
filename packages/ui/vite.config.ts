@@ -4,6 +4,11 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { fileURLToPath } from "node:url";
+import { cp, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+const kbDir = fileURLToPath(new URL("../../kb", import.meta.url));
+const outDir = fileURLToPath(new URL("./dist", import.meta.url));
 
 export default defineConfig({
   base: process.env.SIMPLINK_UI_BASE ?? "/",
@@ -23,6 +28,32 @@ export default defineConfig({
           });
       },
     },
+    {
+      // Publishes Simplink's own KB as a static KB under <base>/simp, without the private sources sidecar.
+      name: "publish-simp-kb",
+      apply: "build",
+      async closeBundle() {
+        const {
+          buildSimpIndex,
+          formatSimpIndex,
+          fsSource,
+          SIMP_INDEX_FILE,
+          SIMP_SOURCES_FILE,
+        } = await import("@sontx/simplink-core");
+        const target = path.join(outDir, "simp");
+        await cp(kbDir, target, {
+          recursive: true,
+          filter: (source) =>
+            path.relative(kbDir, source) !== SIMP_SOURCES_FILE &&
+            !path.basename(source).startsWith("."),
+        });
+        const index = await buildSimpIndex(fsSource(target));
+        await writeFile(
+          path.join(target, SIMP_INDEX_FILE),
+          formatSimpIndex(index),
+        );
+      },
+    },
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
@@ -37,5 +68,5 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
-  build: { outDir: "dist", emptyOutDir: true },
+  build: { outDir, emptyOutDir: true },
 });

@@ -25,6 +25,7 @@ import { usePreferences } from "../components/preferences.js";
 import { SimpNetwork } from "../components/simp-network.js";
 import { AssetContext } from "../components/markdown.js";
 import {
+  BookOpen,
   FolderOpen,
   Globe,
   HardDrive,
@@ -73,6 +74,11 @@ const staticOptions = {
   proxy:
     (import.meta.env.VITE_SIMPLINK_KB_PROXY as string | undefined) || undefined,
 };
+
+// Simplink's own KB, published as a static KB by the UI build (see vite.config.ts).
+const SIMP_KB_URL =
+  (import.meta.env.VITE_SIMPLINK_SIMP_KB as string | undefined) ||
+  "https://simp.sontx.dev/simp";
 
 interface RemoteSession {
   url: string;
@@ -313,8 +319,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   // The URL is remembered across visits; the token only for this tab, so a refresh reconnects.
-  async function connect() {
-    if (opening.current || !nodeUrl.trim()) return;
+  async function connect(url = nodeUrl, key = token) {
+    if (opening.current || !url.trim()) return;
     opening.current = true;
     const wasDirty = !!active.current?.service.store.dirty;
     setBusy(true);
@@ -323,17 +329,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       if (
         await activate(
-          await urlStore(nodeUrl, token, staticOptions),
+          await urlStore(url, key, staticOptions),
           undefined,
           wasDirty,
         )
       )
-        saveRemoteSession({ url: nodeUrl.trim(), token });
-      try {
-        localStorage.setItem("simplink-node-url", nodeUrl.trim());
-      } catch {
-        /* Remembering the URL is optional. */
-      }
+        saveRemoteSession({ url: url.trim(), token: key });
+      // Only a typed URL is remembered for the form; the Simplink KB has its own button.
+      if (url === nodeUrl)
+        try {
+          localStorage.setItem("simplink-node-url", url.trim());
+        } catch {
+          /* Remembering the URL is optional. */
+        }
     } catch (error) {
       setError(error);
     } finally {
@@ -467,6 +475,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           >
             <FolderOpen />
             {t("Open KB folder")}
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="mt-2 w-full"
+            disabled={busy}
+            onClick={() => void connect(SIMP_KB_URL, "")}
+          >
+            <BookOpen />
+            {t("Load Simplink knowledge base")}
           </Button>
           <form
             className="mt-6 space-y-2 border-t pt-6"

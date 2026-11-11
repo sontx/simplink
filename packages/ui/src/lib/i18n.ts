@@ -106,6 +106,7 @@ export const vietnamese: Readonly<Record<string, string>> = {
   "Folder access requires HTTPS or localhost.":
     "Truy cập thư mục yêu cầu HTTPS hoặc localhost.",
   "Open KB folder": "Mở thư mục cơ sở tri thức",
+  "Load Simplink knowledge base": "Tải cơ sở tri thức Simplink",
   Recent: "Gần đây",
   Reopen: "Mở lại",
   "Reopen {name}": "Mở lại {name}",
