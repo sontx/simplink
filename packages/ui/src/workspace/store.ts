@@ -344,6 +344,19 @@ export async function remoteStore(
       if (!Object.hasOwn(files, relPath)) throw new Error("File not found");
       return files[relPath];
     },
+    // Read as bytes rather than an <img> URL, which could not send the token; a node too old for the route answers 404.
+    async asset(relPath) {
+      const response = await fetch(
+        `${peerUrl}/v1/assets/${relPath.split("/").map(encodeURIComponent).join("/")}`,
+        {
+          headers: token ? { authorization: `Bearer ${token}` } : {},
+          signal: AbortSignal.timeout(peerOptions.timeoutMs),
+        },
+      );
+      if (!response.ok)
+        throw new Error(`HTTP ${response.status} for ${relPath}`);
+      return response.blob();
+    },
     write: readOnly,
     remove: readOnly,
   };

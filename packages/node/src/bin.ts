@@ -150,10 +150,8 @@ peerOptions(
       const json = opts.logFormat === "json",
         ui = tty && !json;
       if (ui) p.intro("simp-node");
-      const { kb } = await loadKB(
-        path.resolve(opts.kb ?? env.KB_DIR ?? "kb"),
-        ui,
-      );
+      const root = path.resolve(opts.kb ?? env.KB_DIR ?? "kb");
+      const { kb } = await loadKB(root, ui);
       const log = (entry: Record<string, unknown>) =>
         process.stdout.write(
           `${json ? JSON.stringify({ t: new Date().toISOString(), ...entry }) : prettyLine(entry)}
@@ -161,6 +159,7 @@ peerOptions(
         );
       const node = await startSimpNode({
         kb,
+        assetRoot: root,
         host: opts.host,
         port: opts.port,
         basePath: opts.basePath,

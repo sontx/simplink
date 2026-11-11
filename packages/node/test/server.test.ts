@@ -78,3 +78,39 @@ test("startSimpNode on loopback refuses foreign Host headers by default", async 
     await open.close();
   }
 });
+
+test("startSimpNode serves referenced images from a KB folder or the assetRoot of a loaded KB", async () => {
+  const { mkdtemp, mkdir, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const path = await import("node:path");
+  const root = await mkdtemp(path.join(tmpdir(), "simp-node-assets-"));
+  await mkdir(path.join(root, "states"));
+  await mkdir(path.join(root, "assets"));
+  await writeFile(
+    path.join(root, "simp.md"),
+    "---\ntype: simp\ntitle: Shop\nsummary: Shop\nname: shop\n---\n\nShop\n",
+  );
+  await writeFile(
+    path.join(root, "states/ready.md"),
+    "---\ntype: state\ntitle: Ready\nsummary: Ready\ncheck: It is ready\n---\n\n![Form](../assets/form.png)\n",
+  );
+  await writeFile(path.join(root, "assets/form.png"), "png");
+  const kb = await createKB(root);
+  try {
+    for (const [opts, status] of [
+      [{ kb: root }, 200],
+      [{ kb, assetRoot: root }, 200],
+      [{ kb }, 404],
+    ] as const) {
+      const node = await startSimpNode({ ...opts, port: 0 });
+      try {
+        const response = await fetch(`${node.url}/v1/assets/assets/form.png`);
+        assert.equal(response.status, status);
+      } finally {
+        await node.close();
+      }
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

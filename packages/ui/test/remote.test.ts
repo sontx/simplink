@@ -11,6 +11,10 @@ import {
   remoteStore,
 } from "../src/workspace/store.js";
 import { WorkspaceService } from "../src/workspace/service.js";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { unzipSync, strFromU8 } from "fflate";
 
 async function serve(handler: RequestListener) {
   const server = createServer(handler).listen(0, "127.0.0.1");
@@ -122,5 +126,40 @@ test("playground tools reach peers declared with an HTTP URL", async () => {
     assert.match(result.content, /crm:/);
   } finally {
     server.close();
+  }
+});
+
+test("a simp node's images reach the preview and the docs zip, with the node's token", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "simp-remote-assets-"));
+  await mkdir(path.join(root, "states"));
+  await mkdir(path.join(root, "assets"));
+  await writeFile(
+    path.join(root, "simp.md"),
+    "---\ntype: simp\ntitle: Shop\nsummary: Shop\nname: shop\n---\n\nShop\n",
+  );
+  await writeFile(
+    path.join(root, "states/ready.md"),
+    "---\ntype: state\ntitle: Ready\nsummary: Ready\ncheck: It is ready\n---\n\n![Form](../assets/form.png) ![Gone](../assets/gone.png)\n",
+  );
+  await writeFile(path.join(root, "assets/form.png"), "png");
+  const server = await serve(
+    createSimpNodeHandler({
+      kb: await createKB(root),
+      token: "secret",
+      assetRoot: root,
+    }),
+  );
+  try {
+    const service = await WorkspaceService.open(
+      await remoteStore(server.url, "secret"),
+    );
+    const image = await service.asset("assets/form.png");
+    assert.equal(typeof image === "string" ? image : await image.text(), "png");
+    const zip = unzipSync(await service.exportDocsZip("site"));
+    assert.equal(strFromU8(zip["assets/form.png"]), "png");
+    assert.equal(zip["assets/gone.png"], undefined);
+  } finally {
+    server.close();
+    await rm(root, { recursive: true, force: true });
   }
 });

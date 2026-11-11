@@ -1,9 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { timingSafeEqual } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { realpath, stat } from "node:fs/promises";
+import nodePath from "node:path";
 import { Ajv } from "ajv";
 import {
   NODE_TYPES,
   createPeerService,
+  docAssets,
   newTrace,
   type PeerServiceOptions,
   type PeerService,
@@ -28,6 +32,11 @@ export type SimpNodeHandlerOptions = (
   allowedHosts?: string[];
   /** Origin allowlist; defaults to `https://simp.sontx.dev`. Other browser origins are refused. `*` allows any origin. */
   allowedOrigins?: string[];
+  /**
+   * KB folder that images are served from at `GET <base>/v1/assets/<path>`. Only images that node bodies
+   * reference are served, and never a file outside the folder. Omit to serve no images.
+   */
+  assetRoot?: string;
   /** Called once per finished request with method, path, status, and duration. */
   onRequest?: (e: Record<string, unknown>) => void;
 };
@@ -41,6 +50,20 @@ const trace = {
     visited: { type: "array", items: { type: "string" } },
   },
 };
+// Image types a KB body can reference; anything else is served as bytes.
+const IMAGE_TYPES: Record<string, string> = {
+  ".apng": "image/apng",
+  ".avif": "image/avif",
+  ".bmp": "image/bmp",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+};
+const ASSET_ROUTE = "/v1/assets/";
 const ajv = new Ajv({ allErrors: true });
 const schemas = {
   explore: {
@@ -81,7 +104,7 @@ const validators = Object.fromEntries(
 /**
  * Creates a `node:http` request handler that serves the simp peer API
  * (`manifest`, `nodes`, `explore`, `lookup`, and `resolve` when delegate is
- * served) under the base path, plus `GET /healthz`. Mount it on your own
+ * served, and `assets/<path>` when `assetRoot` is set) under the base path, plus `GET /healthz`. Mount it on your own
  * server; use {@link startSimpNode} to load a KB and listen in one call.
  */
 export function createSimpNodeHandler(
@@ -125,6 +148,43 @@ export function createSimpNodeHandler(
     const authorized =
       !opts.token ||
       (actual.length === expected.length && timingSafeEqual(actual, expected));
+    // An image a node body references, read from the KB folder; a symlink out of it is not served.
+    const sendAsset = async (encoded: string) => {
+      let rel: string;
+      try {
+        rel = decodeURIComponent(encoded);
+      } catch {
+        send(404, { error: "not found" });
+        return;
+      }
+      const root = await realpath(opts.assetRoot!).catch(() => undefined);
+      const file =
+        root && docAssets(service.kb.graph).includes(rel)
+          ? await realpath(nodePath.join(root, rel)).catch(() => undefined)
+          : undefined;
+      const info =
+        file && file.startsWith(root + nodePath.sep)
+          ? await stat(file).catch(() => undefined)
+          : undefined;
+      if (!info?.isFile()) {
+        send(404, { error: "not found" });
+        return;
+      }
+      res.writeHead(200, {
+        "content-type":
+          IMAGE_TYPES[nodePath.extname(file!).toLowerCase()] ??
+          "application/octet-stream",
+        "content-length": String(info.size),
+        // An SVG opened directly runs no script and cannot read the node's origin.
+        "content-security-policy": "sandbox",
+        "x-content-type-options": "nosniff",
+        "cache-control": "no-cache",
+        ...cors,
+      });
+      createReadStream(file!)
+        .on("error", () => res.destroy())
+        .pipe(res);
+    };
     if (path === "/healthz") {
       if (req.method !== "GET") {
         send(405, { error: "method not allowed" }, "GET");
@@ -152,14 +212,15 @@ export function createSimpNodeHandler(
     );
     if (
       !path.startsWith(`${(opts.basePath ?? "/simp").replace(/\/$/, "")}/`) ||
-      ![
+      ((![
         "/v1/manifest",
         "/v1/nodes",
         "/v1/explore",
         "/v1/lookup",
         "/v1/resolve",
       ].includes(route) ||
-      (route === "/v1/resolve" && !service.resolve)
+        (route === "/v1/resolve" && !service.resolve)) &&
+        !(opts.assetRoot && route.startsWith(ASSET_ROUTE)))
     ) {
       send(404, { error: "not found" });
       return;
@@ -169,7 +230,11 @@ export function createSimpNodeHandler(
       return;
     }
     const method =
-      route === "/v1/manifest" || route === "/v1/nodes" ? "GET" : "POST";
+      route === "/v1/manifest" ||
+      route === "/v1/nodes" ||
+      route.startsWith(ASSET_ROUTE)
+        ? "GET"
+        : "POST";
     // Preflights carry no credentials, so answer them before the token check.
     if (req.method === "OPTIONS" && cors["access-control-allow-origin"]) {
       res
@@ -191,6 +256,10 @@ export function createSimpNodeHandler(
       return;
     }
     try {
+      if (route.startsWith(ASSET_ROUTE)) {
+        await sendAsset(route.slice(ASSET_ROUTE.length));
+        return;
+      }
       if (method === "GET") {
         send(
           200,

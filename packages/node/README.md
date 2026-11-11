@@ -139,6 +139,7 @@ All routes are under `--base-path` (default `/simp`). Protocol version is `1`.
 | `POST /v1/explore` | Search, optionally forwarded to peers                             |
 | `POST /v1/lookup`  | Fetch nodes by ID, optionally forwarded to peers                  |
 | `POST /v1/resolve` | Resolve a plan. Available only when `delegate` is served.         |
+| `GET /v1/assets/*` | An image a node body references, from the KB folder. Nothing else |
 | `GET /healthz`     | Public KB status. With the token, it also probes and lists peers. |
 
 When `--token` is set, requests need `Authorization: Bearer <token>`. Only

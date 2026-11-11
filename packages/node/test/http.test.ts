@@ -209,3 +209,87 @@ test("allowed origin * gives CORS to any origin and still requires the token", a
     await server.close();
   }
 });
+
+test("assets route serves only images that node bodies reference, from inside the KB folder", async () => {
+  const { mkdtemp, mkdir, writeFile, symlink, rm } =
+    await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const path = await import("node:path");
+  const root = await mkdtemp(path.join(tmpdir(), "simp-assets-"));
+  const outside = await mkdtemp(path.join(tmpdir(), "simp-outside-"));
+  await mkdir(path.join(root, "states"));
+  await mkdir(path.join(root, "assets"));
+  await writeFile(
+    path.join(root, "simp.md"),
+    "---\ntype: simp\ntitle: Shop\nsummary: Shop\nname: shop\n---\n\nShop\n",
+  );
+  await writeFile(
+    path.join(root, "states/ready.md"),
+    "---\ntype: state\ntitle: Ready\nsummary: Ready\ncheck: It is ready\n---\n\n" +
+      "![Form](../assets/my%20form.png) ![Leak](../assets/link.png) ![Gone](../assets/gone.png)\n",
+  );
+  await writeFile(path.join(root, "assets/my form.png"), "png");
+  await writeFile(path.join(root, "assets/unused.png"), "unused");
+  await writeFile(path.join(outside, "secret.png"), "secret");
+  await symlink(
+    path.join(outside, "secret.png"),
+    path.join(root, "assets/link.png"),
+  );
+  const kb = await createKB(root);
+  const server = await serve(
+    createSimpNodeHandler({
+      kb,
+      token: "secret",
+      assetRoot: root,
+      allowedOrigins: ["http://ui.test"],
+    }),
+  );
+  const get = (rel: string, auth = true) =>
+    fetch(`${server.url}/simp/v1/assets/${rel}`, {
+      headers: {
+        origin: "http://ui.test",
+        ...(auth ? { authorization: "Bearer secret" } : {}),
+      },
+    });
+  try {
+    assert.equal((await get("assets/my%20form.png", false)).status, 401);
+    const ok = await get("assets/my%20form.png");
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers.get("content-type"), "image/png");
+    assert.equal(
+      ok.headers.get("access-control-allow-origin"),
+      "http://ui.test",
+    );
+    assert.equal(await ok.text(), "png");
+    for (const rel of [
+      "assets/unused.png",
+      "assets/link.png",
+      "assets/gone.png",
+      "simp.md",
+      "states/ready.md",
+      "assets/..%2Fsimp.md",
+      "%E0%A4%A",
+    ])
+      assert.equal((await get(rel)).status, 404, rel);
+  } finally {
+    await server.close();
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("assets route is absent without an asset root", async () => {
+  const server = await serve(
+    createSimpNodeHandler({
+      kb: await createKB(crmRoot.pathname.replace(/^\/(\w:)/, "$1")),
+    }),
+  );
+  try {
+    assert.equal(
+      (await fetch(`${server.url}/simp/v1/assets/simp.md`)).status,
+      404,
+    );
+  } finally {
+    await server.close();
+  }
+});

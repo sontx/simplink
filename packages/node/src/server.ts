@@ -18,6 +18,8 @@ import { loadPeerConfig, type PeerOverrides } from "./config.js";
 export interface SimpNodeOptions {
   /** KB folder path or an already loaded KB; the KB must have a root `simp.md`. Defaults to `kb`. */
   kb?: string | KB;
+  /** KB folder that referenced images are served from; defaults to `kb` when it is a path. Pass it with a loaded KB to serve them. */
+  assetRoot?: string;
   /** Interface to listen on. Defaults to `127.0.0.1`. */
   host?: string;
   /** Port to listen on; `0` picks a free port. Defaults to `3393`. */
@@ -109,6 +111,8 @@ export async function startSimpNode(
       service,
       basePath,
       token: opts.token,
+      // Serves the images node bodies reference, from the KB folder when one is known.
+      assetRoot: opts.assetRoot ? path.resolve(opts.assetRoot) : root,
       allowedHosts,
       allowedOrigins: opts.allowedOrigins,
       onRequest: (entry) => opts.log?.({ msg: "request", ...entry }),
